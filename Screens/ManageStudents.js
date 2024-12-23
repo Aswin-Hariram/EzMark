@@ -4,9 +4,9 @@ import Feather from '@expo/vector-icons/Feather';
 import Entypo from '@expo/vector-icons/Entypo';
 import { Colors } from '../assets/Colors';
 
-const ManageTeachers = () => {
+const ManageStudents = () => {
     const [searchQuery, setSearchQuery] = useState('');
-    const [Teachers, setTeachers] = useState([
+    const [Students, setStudents] = useState([
         { id: '1', profile: require('../assets/Teachers/profile.png'), Name: 'Gowtham', Department: 'CSE' },
         { id: '2', profile: require('../assets/Teachers/woman.png'), Name: 'Jane', Department: 'ECE' },
         { id: '3', profile: require('../assets/Teachers/profile.png'), Name: 'John', Department: 'EEE' },
@@ -17,7 +17,7 @@ const ManageTeachers = () => {
         { id: '8', profile: require('../assets/Teachers/woman.png'), Name: 'Doe', Department: 'MECH' },
     ]);
 
-    const filteredTeachers = Teachers.filter(
+    const filteredStudents = Students.filter(
         (teacher) =>
             teacher.Name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             teacher.Department.toLowerCase().includes(searchQuery.toLowerCase())
@@ -29,7 +29,7 @@ const ManageTeachers = () => {
             <View style={styles.search}>
                 <TextInput
                     style={styles.input}
-                    placeholder="Search Teachers"
+                    placeholder="Search Students"
                     value={searchQuery}
                     onChangeText={setSearchQuery}
                     cursorColor={Colors.SECONDARY}
@@ -37,11 +37,11 @@ const ManageTeachers = () => {
                 <Feather style={{ marginRight: 5 }} name="search" size={22} color={Colors.SECONDARY} />
             </View>
 
-            {/* Teachers List */}
-            {filteredTeachers.length > 0 ? (
+            {/* Students List */}
+            {filteredStudents.length > 0 ? (
                 <FlatList
                     style={{ marginTop: 13 }}
-                    data={filteredTeachers}
+                    data={filteredStudents}
                     renderItem={({ item }) => (
                         <View style={styles.teacherCard}>
                             <View style={styles.image}>
@@ -60,7 +60,7 @@ const ManageTeachers = () => {
                 />
             ) : (
                 <View style={{ alignItems: 'center', marginTop: 20 }}>
-                    <Text style={{ color: Colors.SECONDARY, fontSize: 16 }}>No teachers found</Text>
+                    <Text style={{ color: Colors.SECONDARY, fontSize: 16 }}>No Students found</Text>
                 </View>
             )}
 
@@ -79,7 +79,7 @@ const ManageTeachers = () => {
     );
 };
 
-export default ManageTeachers;
+export default ManageStudents;
 
 const styles = StyleSheet.create({
     container: {

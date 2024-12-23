@@ -5,6 +5,9 @@ import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import ManageTeachers from './ManageTeachers';
 import { Colors } from '../assets/Colors';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import ManageStudents from './ManageStudents';
+import ManageClasses from './ManageClasses';
 // Sample data for recent attendance activities
 const recentAttendanceData = [
     { id: '1', className: 'Class 1A', subject: 'Maths', date: '2024-12-22', percentage: '95%' },
@@ -95,24 +98,24 @@ const AdminDashboardScreen = () => {
 
                         if (route.name === 'Dashboard') {
                             iconName = 'dashboard';
-                        } else if (route.name === 'Manage Teachers') {
+                        } else if (route.name === 'Teachers') {
                             iconName = 'people';
-                        } else if (route.name === 'Reports') {
-                            iconName = 'bar-chart';
+                        } else if (route.name === 'Students') {
+                            iconName = 'person';
                         } else if (route.name === 'Classes') {
                             iconName = 'class';
                         }
 
                         return <Icon name={iconName} size={size} color={color} />;
                     },
-                    tabBarActiveTintColor: '#007bff',
+                    tabBarActiveTintColor: Colors.SECONDARY,
                     tabBarInactiveTintColor: 'gray',
                 })}
             >
                 <Tab.Screen name="Dashboard" component={Dashboard} />
-                <Tab.Screen name="Manage Teachers" component={ManageTeachers} />
-                <Tab.Screen name="Reports" component={Reports} />
-                <Tab.Screen name="Classes" component={Classes} />
+                <Tab.Screen name="Teachers" component={ManageTeachers} />
+                <Tab.Screen name="Students" component={ManageStudents} />
+                <Tab.Screen name="Classes" component={ManageClasses} />
             </Tab.Navigator>
       
     );
