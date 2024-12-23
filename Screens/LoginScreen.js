@@ -1,16 +1,42 @@
 import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Divider } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { RadioButtonItem, RadioButtonGroup } from 'expo-radio-button';
-
+import RadioGroup from 'react-native-radio-buttons-group';
+import Entypo from '@expo/vector-icons/Entypo';
 import { Colors } from '../assets/Colors';
 
-
 const LoginScreen = () => {
-  const [current, setCurrent] = useState('test2'); // Example of state management for selected option
- 
+  const [selectedId, setSelectedId] = useState('1'); // Default selection set to "Student"
+  const [email, setEmail] = useState(''); // State for email input
+  const [password, setPassword] = useState(''); // State for password input
+  const [showPassword, setShowPassword] = useState(false); // State for password visibility toggle
 
+  const radioButtons = useMemo(
+    () => [
+      {
+        id: '1',
+        label: 'Student',
+        value: 'Student',
+      },
+      {
+        id: '2',
+        label: 'Teacher',
+        value: 'Teacher',
+      },
+      {
+        id: '3',
+        label: 'Admin',
+        value: 'Admin',
+      },
+    ],
+    []
+  );
+
+  function handleLogin(){
+    console.log('Email:', email);
+    console.log('Password',password);
+  }
   return (
     <View style={styles.container}>
       <SafeAreaView>
@@ -25,46 +51,65 @@ const LoginScreen = () => {
           {/* Email Input */}
           <View style={styles.inputWrapper}>
             <Image style={styles.icon} source={require('../assets/Login/email.png')} />
-            <TextInput style={styles.textInput} placeholder='Email ID' />
+            <TextInput
+              style={styles.textInput}
+              placeholder="Email ID"
+              inputMode="email"
+              value={email}
+              onChangeText={setEmail}
+            />
+            {email.length > 0 && (
+              <TouchableOpacity onPress={() => setEmail('')}>
+                <Entypo name="cross" size={24} color="black" />
+              </TouchableOpacity>
+            )}
           </View>
           <Divider />
 
           {/* Password Input */}
           <View style={styles.inputWrapper}>
             <Image style={styles.icon} source={require('../assets/Login/lock.png')} />
-            <TextInput style={styles.textInput} placeholder='Password' secureTextEntry />
-            <Text style={styles.forgotText}>Forgot?</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Password"
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+            />
+            {password.length === 0 ? (
+              <Text style={styles.forgotText}>Forgot?</Text>
+            ) : (
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Entypo
+                  name={showPassword ? 'eye-with-line' : 'eye'}
+                  size={20}
+                  color="gray"
+                />
+              </TouchableOpacity>
+            )}
           </View>
           <Divider />
         </View>
 
         {/* Radio Button Section */}
         <View style={styles.radioButtonContainer}>
-          <RadioButtonGroup
-            containerStyle={styles.radioButtonGroup}
-            selected={current}
-            onSelected={(value) => setCurrent(value)}
-            radioBackground={Colors.SECONDARY}
-          >
-            <RadioButtonItem value="test2" label="Student" />
-            <RadioButtonItem
-              value="test"
-              label="Teacher"
-            />
-            <RadioButtonItem
-              value="test3"
-              label="Admin"
-            />
-          </RadioButtonGroup>
+          <RadioGroup
+            layout="row" // Set the layout to horizontal
+            radioButtons={radioButtons}
+            onPress={setSelectedId}
+            selectedId={selectedId} // Pass default selected ID
+          />
         </View>
 
         {/* Login Button */}
-        <TouchableOpacity style={styles.loginButton}>
+        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
           <Text style={styles.loginButtonText}>Login</Text>
         </TouchableOpacity>
 
         {/* Signup */}
-        <Text style={styles.signup}>New to EMark App, <Text style={{ color: Colors.SECONDARY }}>Need Help?</Text></Text>
+        <Text style={styles.signup}>
+          New to EzMark App, <Text style={{ color: Colors.SECONDARY }}>Need Help?</Text>
+        </Text>
       </SafeAreaView>
     </View>
   );
@@ -83,7 +128,7 @@ const styles = StyleSheet.create({
     height: 300,
     alignSelf: 'center',
     marginBottom: 10,
-    objectFit: 'contain',
+    resizeMode: 'contain',
   },
   loginText: {
     fontSize: 30,
@@ -104,6 +149,11 @@ const styles = StyleSheet.create({
     height: 20,
     marginTop: 0,
   },
+  clearIcon: {
+    width: 20,
+    height: 20,
+    tintColor: 'gray', // Adjust color as needed
+  },
   textInput: {
     flex: 1,
     height: 40,
@@ -113,19 +163,16 @@ const styles = StyleSheet.create({
   forgotText: {
     marginTop: 10,
     color: Colors.SECONDARY,
-    fontSize:17,
-    fontFamily:'Signika',
+    fontSize: 17,
+    fontFamily: 'Signika',
     fontWeight: 'condensedBold',
     marginLeft: 'auto',
-  
   },
   radioButtonContainer: {
     marginTop: 30,
-  },
-  radioButtonGroup: {
-    flexDirection: 'row',
-    justifyContent:'space-evenly',
-    alignItems:'left',
+    flexDirection: 'row', // Horizontal layout for the radio buttons
+    justifyContent: 'space-around', // Space between the radio buttons
+    alignItems: 'center', // Align the radio buttons in the center
   },
   loginButton: {
     backgroundColor: Colors.PRIMARY,
