@@ -1,17 +1,31 @@
 import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import React from 'react';
+import React, { useState } from 'react';
 import { Divider } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { RadioButtonItem, RadioButtonGroup } from 'expo-radio-button';
+import { useFonts } from 'expo-font';
+import fonts from '../assets/Signika.ttf';
+import { Colors } from '../assets/Colors';
+
 
 const LoginScreen = () => {
+  const [current, setCurrent] = useState('test2'); // Example of state management for selected option
+  const [loaded, error] = useFonts({
+    'Signika': fonts,
+  });
+
+  if (!loaded) {
+    return <Text>Loading...</Text>; // Display loading screen until the font is loaded
+  }
+
   return (
     <View style={styles.container}>
       <SafeAreaView>
         {/* Image Section */}
-        <Image style={styles.image} source={require('../assets/Login/undraw_step-to-the-sun_wp49.png')} />
+        <Image style={styles.image} source={require('../assets/Login/signinImage.png')} />
 
         {/* Login Text */}
-        <Text style={styles.loginText}>Login</Text>
+        <Text style={[styles.loginText, { fontFamily: 'Signika' }]}>Login</Text>
 
         {/* Input Fields Section */}
         <View style={styles.inputContainer}>
@@ -20,7 +34,7 @@ const LoginScreen = () => {
             <Image style={styles.icon} source={require('../assets/Login/email.png')} />
             <TextInput style={styles.textInput} placeholder='Email ID' />
           </View>
-          <Divider/>
+          <Divider />
 
           {/* Password Input */}
           <View style={styles.inputWrapper}>
@@ -28,15 +42,36 @@ const LoginScreen = () => {
             <TextInput style={styles.textInput} placeholder='Password' secureTextEntry />
             <Text style={styles.forgotText}>Forgot?</Text>
           </View>
-          <Divider/>
+          <Divider />
+        </View>
+
+        {/* Radio Button Section */}
+        <View style={styles.radioButtonContainer}>
+          <RadioButtonGroup
+            containerStyle={styles.radioButtonGroup}
+            selected={current}
+            onSelected={(value) => setCurrent(value)}
+            radioBackground={Colors.SECONDARY}
+          >
+            <RadioButtonItem value="test2" label="Student" />
+            <RadioButtonItem
+              value="test"
+              label="Teacher"
+            />
+            <RadioButtonItem
+              value="test3"
+              label="Admin"
+            />
+          </RadioButtonGroup>
         </View>
 
         {/* Login Button */}
         <TouchableOpacity style={styles.loginButton}>
           <Text style={styles.loginButtonText}>Login</Text>
         </TouchableOpacity>
+
         {/* Signup */}
-        <Text style={styles.signup}>New to EMark App? <Text style={{color:'blue'}}>Register</Text></Text>
+        <Text style={styles.signup}>New to EMark App, <Text style={{ color: Colors.SECONDARY }}>Need Help?</Text></Text>
       </SafeAreaView>
     </View>
   );
@@ -51,14 +86,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   image: {
-    width: 400,
+    width: 300,
     height: 300,
     alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
+    objectFit: 'contain',
   },
   loginText: {
     fontSize: 30,
-    marginBottom: 30,
+    marginBottom: 0,
   },
   inputContainer: {
     flexDirection: 'column',
@@ -68,7 +104,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginTop:30
+    marginTop: 25,
   },
   icon: {
     width: 20,
@@ -83,28 +119,39 @@ const styles = StyleSheet.create({
   },
   forgotText: {
     marginTop: 10,
-    color: 'blue',
-    fontWeight:'3000',
+    color: Colors.SECONDARY,
+    fontSize:17,
+    fontFamily:'Signika',
+    fontWeight: 'condensedBold',
     marginLeft: 'auto',
+  
+  },
+  radioButtonContainer: {
+    marginTop: 30,
+  },
+  radioButtonGroup: {
+    flexDirection: 'row',
+    justifyContent:'space-evenly',
+    alignItems:'left',
   },
   loginButton: {
-    backgroundColor: 'blue',
+    backgroundColor: Colors.PRIMARY,
     width: 300,
     height: 50,
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 50,
-    marginLeft:30
+    marginTop: 25,
+    alignSelf: 'center',
   },
   loginButtonText: {
     fontSize: 20,
     color: 'white',
     textAlign: 'center',
   },
-  signup:{
-    textAlign:'center',
-    marginTop:50,
-    fontSize:17
-  }
+  signup: {
+    textAlign: 'center',
+    marginTop: 25,
+    fontSize: 17,
+  },
 });
