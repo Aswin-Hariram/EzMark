@@ -10,6 +10,7 @@ import { useFonts } from 'expo-font';
 import fonts from './assets/Signika.ttf';
 import fonts1 from './assets/Fonts/Metrophobic-Regular.ttf';
 import { Text } from 'react-native';
+import StudentProfile from './Screens/StudentProfile';
 
 export default function App() {
   const [loaded, error] = useFonts({
@@ -25,12 +26,13 @@ export default function App() {
 
   function RootStack() {
     return (
-      <Stack.Navigator initialRouteName='Login' screenOptions={{headerShown:false}}>
+      <Stack.Navigator initialRouteName='AdminDashboardScreen' screenOptions={{headerShown:false}}>
        <Stack.Screen name="AdminDashboardScreen" component={AdminDashboardScreen}/>
         <Stack.Screen name="Login" component={LoginScreen}/>
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="ManageTeacher" component={ManageTeachers}/>
         <Stack.Screen name="TeacherProfile" component={TeacherProfile}/>
+        <Stack.Screen name="StudentProfile" component={StudentProfile}/>
       </Stack.Navigator>
     );
   }

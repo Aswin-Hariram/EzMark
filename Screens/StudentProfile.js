@@ -6,8 +6,8 @@ import { useNavigation } from '@react-navigation/native';
 import dp from "../assets/Teachers/profile.png";
 import { TextInput } from 'react-native-paper';
 import { Colors } from '../assets/Colors';
-const TeacherProfile = ({ route }) => {
-  const { teacher } = route.params;
+const StudentProfile = ({ route }) => {
+  const { student } = route.params;
 
   const [chips, setChips] = useState([
     { id: 1, label: 'Teams' },
@@ -38,7 +38,7 @@ const TeacherProfile = ({ route }) => {
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={28} color="black" />
           </TouchableOpacity>
-          <Text style={styles.headerText}>Edit Teacher</Text>
+          <Text style={styles.headerText}>Edit Student</Text>
         </View>
 
         {/* Profile Section */}
@@ -54,8 +54,8 @@ const TeacherProfile = ({ route }) => {
         <View style={{ ...styles.classesHeader, flexDirection: 'column' }}>
           <Text style={styles.classTitle}>Personal details</Text>
           <TextInput
-            label="Teacher Name"
-            value={teacher.Name}
+            label="Student Name"
+            value={student.Name}
 
             mode="outlined"
             outlineColor="#153448"
@@ -70,7 +70,7 @@ const TeacherProfile = ({ route }) => {
 
 
           <TextInput
-            label="Teacher Email"
+            label="Student Email"
             mode="outlined"
             outlineColor="#153448"
             activeOutlineColor='#153448'
@@ -82,7 +82,7 @@ const TeacherProfile = ({ route }) => {
 
 
           <TextInput
-            label="Teacher Department"
+            label="Student Department"
             mode="outlined"
             outlineColor="#153448"
             activeOutlineColor='#153448'
@@ -96,7 +96,7 @@ const TeacherProfile = ({ route }) => {
         </View>
         {/* Classes Handling */}
         <View style={styles.classesHeader}>
-          <Text style={styles.classTitle}>Classes Subjects</Text>
+          <Text style={styles.classTitle}>Subjects Enrolled</Text>
           <TouchableOpacity onPress={() => setEdit(!edit)}>
             <View style={styles.editChip}>
               <Text style={styles.editChipText}>{edit ? 'Done' : 'Edit'}</Text>
@@ -136,54 +136,16 @@ const TeacherProfile = ({ route }) => {
             <Text style={styles.noChipsText}>No Classes Available</Text>
           )}
         </View>
-        {/* Classes Handling */}
-        <View style={styles.classesHeader}>
-          <Text style={styles.classTitle}>Classes Classes</Text>
-          <TouchableOpacity onPress={() => setEdit(!edit)}>
-            <View style={styles.editChip}>
-              <Text style={styles.editChipText}>{edit ? 'Done' : 'Edit'}</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-
-        {/* Chips Section */}
-        <View style={styles.chipContainer}>
-          {chips.length > 0 ? (
-            chips.map((chip) => (
-              <View key={chip.id} style={styles.chipWrapper}>
-                <TouchableOpacity
-                  style={selectedChip === chip.id ? styles.selectedChip : styles.chip}
-                  onPress={() => setSelectedChip(chip.id)}
-                >
-                  <Text
-                    style={
-                      selectedChip === chip.id ? styles.selectedChipText : styles.chipText
-                    }
-                  >
-                    {chip.label}
-                  </Text>
-                </TouchableOpacity>
-                {edit && (
-                  <TouchableOpacity
-                    style={styles.removeChipButton}
-                    onPress={() => removeChip(chip.id)}
-                  >
-                    <Ionicons name="close" size={20} color="red" />
-                  </TouchableOpacity>
-                )}
-              </View>
-            ))
-          ) : (
-            <Text style={styles.noChipsText}>No Classes Available</Text>
-          )}
-        </View>
+       
       </ScrollView>
+
+
+       
     </SafeAreaView>
   );
 };
 
-export default TeacherProfile;
+export default StudentProfile;
 
 const styles = StyleSheet.create({
   container: {
