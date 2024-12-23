@@ -4,7 +4,7 @@ import React from 'react'
 const ClassScreen = () => {
   return (
     <View>
-      <Text>ClassScreen</Text>
+      <Text>ClassScreen Aswin</Text>
     </View>
   )
 }
