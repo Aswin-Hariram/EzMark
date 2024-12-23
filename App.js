@@ -6,15 +6,26 @@ import { HeaderTitle } from '@react-navigation/elements';
 import AdminDashboardScreen from './Screens/AdminDashboardScreen';
 import ManageTeachers from './Screens/ManageTeachers';
 import TeacherProfile from './Screens/TeacherProfile';
+import { useFonts } from 'expo-font';
+import fonts from './assets/Signika.ttf';
+import fonts1 from './assets/Fonts/Metrophobic-Regular.ttf';
+import { Text } from 'react-native';
 
 export default function App() {
+  const [loaded, error] = useFonts({
+    'Signika': fonts,
+    'Metro':fonts1
+  });
 
+  if (!loaded) {
+    return <Text>Loading...</Text>; // Display loading screen until the font is loaded
+  }
 
   const Stack = createNativeStackNavigator();
 
   function RootStack() {
     return (
-      <Stack.Navigator initialRouteName='Login' screenOptions={{headerShown:false}}>
+      <Stack.Navigator initialRouteName='AdminDashboardScreen' screenOptions={{headerShown:false}}>
        <Stack.Screen name="AdminDashboardScreen" component={AdminDashboardScreen}/>
         <Stack.Screen name="Login" component={LoginScreen}/>
         <Stack.Screen name="Home" component={HomeScreen} />

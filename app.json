@@ -27,7 +27,8 @@
     "plugins": [
       [
         "expo-font",{
-          "fonts":["../assets/Signika.ttf"]
+          "fonts":["./assets/Fonts/Signika.ttf","./assets/Fonts/Metrophobic-Regular.ttf"]
+        
         }
       ]
     ]

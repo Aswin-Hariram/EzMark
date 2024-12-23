@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import ManageTeachers from './ManageTeachers';
+import { Colors } from '../assets/Colors';
 // Sample data for recent attendance activities
 const recentAttendanceData = [
     { id: '1', className: 'Class 1A', subject: 'Maths', date: '2024-12-22', percentage: '95%' },
@@ -54,7 +55,7 @@ const Dashboard = () => {
                                 </View>
                             </View>
                         </View>
-                        <Text style={styles.sectionTitle}>Recenat Activities</Text>
+                        <Text style={styles.sectionTitle}>Recent Activities</Text>
                     </>
                 )}
                 renderItem={({ item }) => (
@@ -148,6 +149,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         color: '#333',
+        marginLeft: Platform.OS === 'android' ? 0 : 10, 
         marginBottom: 10,
     },
     cardsRow: {
@@ -156,7 +158,7 @@ const styles = StyleSheet.create({
     },
     card: {
         flex: 1,
-        backgroundColor: '#429EA6',
+        backgroundColor: Colors.SECONDARY,
         padding: 20,
         margin: 10,
         borderRadius: 10,

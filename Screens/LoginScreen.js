@@ -3,20 +3,13 @@ import React, { useState } from 'react';
 import { Divider } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RadioButtonItem, RadioButtonGroup } from 'expo-radio-button';
-import { useFonts } from 'expo-font';
-import fonts from '../assets/Signika.ttf';
+
 import { Colors } from '../assets/Colors';
 
 
 const LoginScreen = () => {
   const [current, setCurrent] = useState('test2'); // Example of state management for selected option
-  const [loaded, error] = useFonts({
-    'Signika': fonts,
-  });
-
-  if (!loaded) {
-    return <Text>Loading...</Text>; // Display loading screen until the font is loaded
-  }
+ 
 
   return (
     <View style={styles.container}>
