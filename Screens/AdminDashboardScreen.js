@@ -1,9 +1,9 @@
 import React from 'react';
 import { Platform, SafeAreaView, StyleSheet, Text, View, FlatList } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-
+import ManageTeachers from './ManageTeachers';
 // Sample data for recent attendance activities
 const recentAttendanceData = [
     { id: '1', className: 'Class 1A', subject: 'Maths', date: '2024-12-22', percentage: '95%' },
@@ -16,7 +16,6 @@ const recentAttendanceData = [
 const Tab = createBottomTabNavigator(); // Declare Tab navigator here
 
 const Dashboard = () => {
-   
 
     return (
         <SafeAreaView style={styles.container}>
@@ -55,7 +54,7 @@ const Dashboard = () => {
                                 </View>
                             </View>
                         </View>
-                        <Text style={styles.sectionTitle}>Recent Activities</Text>
+                        <Text style={styles.sectionTitle}>Recenat Activities</Text>
                     </>
                 )}
                 renderItem={({ item }) => (
@@ -71,11 +70,6 @@ const Dashboard = () => {
     );
 };
 
-const ManageTeachers = () => (
-    <View style={styles.centered}>
-        <Text>Manage Teachers Screen</Text>
-    </View>
-);
 
 const Reports = () => (
     <View style={styles.centered}>
