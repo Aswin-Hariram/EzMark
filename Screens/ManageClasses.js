@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import Feather from '@expo/vector-icons/Feather';
 import Entypo from '@expo/vector-icons/Entypo';
 import { Colors } from '../assets/Colors';
+import { useNavigation } from '@react-navigation/native';
 
 const ManageClasses = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -20,6 +21,7 @@ const ManageClasses = () => {
             cls.ClassName.toLowerCase().includes(searchQuery.toLowerCase()) ||
             cls.Teacher.toLowerCase().includes(searchQuery.toLowerCase())
     );
+    const navigation = useNavigation();
 
     return (
         <SafeAreaView style={styles.container}>
@@ -41,7 +43,8 @@ const ManageClasses = () => {
                     style={{ marginTop: 13 }}
                     data={filteredClasses}
                     renderItem={({ item }) => (
-                        <View style={styles.classCard}>
+                        <TouchableOpacity style={styles.classCard}
+                        onPress={()=>{navigation.navigate("ClassScreen")}}>
                             <View style={styles.info}>
                                 <Text style={styles.className}>{item.ClassName}</Text>
                                 <Text style={styles.teacherName}>Teacher: {item.Teacher}</Text>
@@ -49,7 +52,7 @@ const ManageClasses = () => {
                             <TouchableOpacity style={styles.btn} activeOpacity={0.7}>
                                 <Entypo name="chevron-right" size={24} color={Colors.PRIMARY} />
                             </TouchableOpacity>
-                        </View>
+                        </TouchableOpacity>
                     )}
                     keyExtractor={(item) => item.id}
                 />

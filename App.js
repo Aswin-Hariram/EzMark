@@ -11,6 +11,7 @@ import fonts from './assets/Signika.ttf';
 import fonts1 from './assets/Fonts/Metrophobic-Regular.ttf';
 import { Text } from 'react-native';
 import StudentProfile from './Screens/StudentProfile';
+import ClassScreen from './Screens/ClassScreen';
 
 export default function App() {
   const [loaded, error] = useFonts({
@@ -33,6 +34,7 @@ export default function App() {
         <Stack.Screen name="ManageTeacher" component={ManageTeachers}/>
         <Stack.Screen name="TeacherProfile" component={TeacherProfile}/>
         <Stack.Screen name="StudentProfile" component={StudentProfile}/>
+        <Stack.Screen name="ClassScreen" component={ClassScreen}/>
       </Stack.Navigator>
     );
   }
