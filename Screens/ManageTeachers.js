@@ -1,7 +1,19 @@
-import { FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View, Platform, SafeAreaView } from 'react-native';
+import {
+    FlatList,
+    Image,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+    Platform,
+    SafeAreaView,
+} from 'react-native';
 import React, { useState } from 'react';
 import Feather from '@expo/vector-icons/Feather';
 import Entypo from '@expo/vector-icons/Entypo';
+import { useNavigation } from '@react-navigation/native';
+
 import { Colors } from '../assets/Colors';
 
 const ManageTeachers = () => {
@@ -23,6 +35,8 @@ const ManageTeachers = () => {
             teacher.Department.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const navigation = useNavigation();
+
     return (
         <SafeAreaView style={styles.container}>
             {/* Search Bar */}
@@ -43,7 +57,10 @@ const ManageTeachers = () => {
                     style={{ marginTop: 13 }}
                     data={filteredTeachers}
                     renderItem={({ item }) => (
-                        <View style={styles.teacherCard}>
+                        <TouchableOpacity
+                            style={styles.teacherCard}
+                            onPress={() => navigation.navigate('TeacherProfile', { teacher: item })}
+                        >
                             <View style={styles.image}>
                                 <Image style={styles.profile_img} source={item.profile} />
                             </View>
@@ -51,10 +68,8 @@ const ManageTeachers = () => {
                                 <Text style={styles.teacherName}>{item.Name}</Text>
                                 <Text style={styles.teacherDept}>Department: {item.Department}</Text>
                             </View>
-                            <TouchableOpacity style={styles.btn} activeOpacity={0.7}>
-                                <Entypo name="chevron-right" size={24} color={Colors.PRIMARY} />
-                            </TouchableOpacity>
-                        </View>
+                            <Entypo name="chevron-right" size={24} color={Colors.PRIMARY} />
+                        </TouchableOpacity>
                     )}
                     keyExtractor={(item) => item.id}
                 />
@@ -94,9 +109,9 @@ const styles = StyleSheet.create({
         backgroundColor: 'white',
         marginVertical: 5,
         marginHorizontal: 20,
-        shadowColor: Platform.OS === 'ios' ? '#000' : 'rgba(0, 0, 0, 0.1)',
+        shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: Platform.OS === 'ios' ? 0.2 : 0.5,
+        shadowOpacity: 0.1,
         shadowRadius: 5,
         elevation: 3,
         alignItems: 'center',
@@ -115,7 +130,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         color: '#333',
-        fontFamily: 'Signika',
     },
     teacherDept: {
         fontSize: 14,

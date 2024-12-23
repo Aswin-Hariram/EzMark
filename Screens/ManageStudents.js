@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import Feather from '@expo/vector-icons/Feather';
 import Entypo from '@expo/vector-icons/Entypo';
 import { Colors } from '../assets/Colors';
+import { useNavigation } from '@react-navigation/native';
 
 const ManageStudents = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -16,7 +17,7 @@ const ManageStudents = () => {
         { id: '7', profile: require('../assets/Teachers/profile.png'), Name: 'John', Department: 'EEE' },
         { id: '8', profile: require('../assets/Teachers/woman.png'), Name: 'Doe', Department: 'MECH' },
     ]);
-
+    const navigation = useNavigation();
     const filteredStudents = Students.filter(
         (teacher) =>
             teacher.Name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -43,7 +44,8 @@ const ManageStudents = () => {
                     style={{ marginTop: 13 }}
                     data={filteredStudents}
                     renderItem={({ item }) => (
-                        <View style={styles.teacherCard}>
+                        <TouchableOpacity style={styles.teacherCard}
+                        onPress={() => navigation.navigate('StudentProfile', { student: item })}>
                             <View style={styles.image}>
                                 <Image style={styles.profile_img} source={item.profile} />
                             </View>
@@ -54,7 +56,7 @@ const ManageStudents = () => {
                             <TouchableOpacity style={styles.btn} activeOpacity={0.7}>
                                 <Entypo name="chevron-right" size={24} color={Colors.PRIMARY} />
                             </TouchableOpacity>
-                        </View>
+                        </TouchableOpacity>
                     )}
                     keyExtractor={(item) => item.id}
                 />
