@@ -12,6 +12,7 @@ import fonts1 from './assets/Fonts/Metrophobic-Regular.ttf';
 import { Text } from 'react-native';
 import StudentProfile from './Screens/StudentProfile';
 import ClassScreen from './Screens/ClassScreen';
+import AddTeacher from './Screens/AddTeacher';
 
 export default function App() {
   const [loaded, error] = useFonts({
@@ -35,6 +36,7 @@ export default function App() {
         <Stack.Screen name="TeacherProfile" component={TeacherProfile}/>
         <Stack.Screen name="StudentProfile" component={StudentProfile}/>
         <Stack.Screen name="ClassScreen" component={ClassScreen}/>
+        <Stack.Screen name="AddTeacher" component={AddTeacher}/>
       </Stack.Navigator>
     );
   }

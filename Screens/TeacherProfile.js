@@ -17,9 +17,7 @@ const TeacherProfile = ({ route }) => {
     { id: 5, label: 'Priority' },
     { id: 6, label: 'Companies' },
     { id: 7, label: 'Projects' },
-    { id: 8, label: 'Users' },
-    { id: 9, label: 'Goals' },
-    { id: 10, label: 'Status' },
+    
   ]);
 
   const [selectedChip, setSelectedChip] = useState(null);
@@ -96,7 +94,7 @@ const TeacherProfile = ({ route }) => {
         </View>
         {/* Classes Handling */}
         <View style={styles.classesHeader}>
-          <Text style={styles.classTitle}>Classes Subjects</Text>
+          <Text style={styles.classTitle}>Subjects Enrolled</Text>
           <TouchableOpacity onPress={() => setEdit(!edit)}>
             <View style={styles.editChip}>
               <Text style={styles.editChipText}>{edit ? 'Done' : 'Edit'}</Text>
@@ -133,7 +131,7 @@ const TeacherProfile = ({ route }) => {
               </View>
             ))
           ) : (
-            <Text style={styles.noChipsText}>No Classes Available</Text>
+            <Text style={styles.noChipsText}>No Classes Enrolled</Text>
           )}
         </View>
         {/* Classes Handling */}
