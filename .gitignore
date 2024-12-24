@@ -3,6 +3,8 @@
 # dependencies
 node_modules/
 
+#specific files
+Config/FirebaseConfig.js
 # Expo
 .expo/
 dist/
