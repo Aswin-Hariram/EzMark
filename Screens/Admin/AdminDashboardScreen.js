@@ -1,13 +1,12 @@
 import React from 'react';
 import { Platform, SafeAreaView, StyleSheet, Text, View, FlatList } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import ManageTeachers from './ManageTeachers';
-import { Colors } from '../assets/Colors';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+
+import { Colors } from '../../assets/Colors';
 import ManageStudents from './ManageStudents';
 import ManageClasses from './ManageClasses';
+import ManageTeachers from './ManageTeachers';
 // Sample data for recent attendance activities
 const recentAttendanceData = [
     { id: '1', className: 'Class 1A', subject: 'Maths', date: '2024-12-22', percentage: '95%' },
@@ -33,7 +32,7 @@ const Dashboard = () => {
                         {/* Overview Section */}
                         <View style={styles.section}>
                             <Text style={styles.sectionTitle}>Overview</Text>
-                            <View style={styles.cardsRow}>
+                            <View style={styles.cardsRow} >
                                 <View style={styles.card}>
                                     <Icon name="class" size={30} color="#fff" style={styles.cardIcon} />
                                     <Text style={styles.cardTitle}>Classes</Text>
@@ -75,17 +74,7 @@ const Dashboard = () => {
 };
 
 
-const Reports = () => (
-    <View style={styles.centered}>
-        <Text>Reports Screen</Text>
-    </View>
-);
 
-const Classes = () => (
-    <View style={styles.centered}>
-        <Text>Manage Classes Screen</Text>
-    </View>
-);
 
 const AdminDashboardScreen = () => {
     return (

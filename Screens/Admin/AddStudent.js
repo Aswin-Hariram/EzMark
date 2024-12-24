@@ -7,66 +7,63 @@ import {
     TouchableOpacity,
     Platform,
     Image,
-    FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { TextInput } from 'react-native-paper';
-import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import * as ImagePicker from 'expo-image-picker';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { useNavigation } from '@react-navigation/native';
-import { Colors } from '../assets/Colors';
+import { Colors } from '../../assets/Colors';
 
-const AddTeacher = () => {
-    const [teacherName, setTeacherName] = useState('');
-    const [teacherEmail, setTeacherEmail] = useState('');
-    const [teacherDepartment, setTeacherDepartment] = useState(null);
-    const[StudentClass,setStudentClass] = useState(null);
-    const [selectedChip, setSelectedChip] = useState(null);
-    const [edit, setEdit] = useState(false);
-    const [teacherImage, setTeacherImage] = useState(null);
-    const [departments, setDepartments] = useState([
-
-        { id: 1, label: 'CSE' },
-        { id: 2, label: 'IT' },
-        { id: 3, label: 'ECE' },
-        { id: 4, label: 'EEE' },
-        { id: 5, label: 'Mech' },
-    ]);
-    const[selectedClasses,setclasses] = useState([
-        { id: 1, label: 'CSE A' },
-        { id: 2, label: 'IT A' },
-    ]);
-    const[isClassDrowpopen,setClassDrowpopen]=useState(false);
+const AddStudent = () => {
+    const [studentName, setStudentName] = useState('');
+    const [studentEmail, setStudentEmail] = useState('');
+    const [studentDepartment, setStudentDepartment] = useState(null);
+    const [studentClass, setStudentClass] = useState(null);
+    const [studentImage, setStudentImage] = useState(null);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const [subjects, setSubjects] = useState([
-        { id: 1, label: 'Mathematics' },
-        { id: 2, label: 'Science' },
-        { id: 3, label: 'History' },
-    ]);
-    const[isclassDrownopen,setclassDrownopen] = useState(false);
+    const [isClassDropdownOpen, setIsClassDropdownOpen] = useState(false);
     const [selectedSubjects, setSelectedSubjects] = useState([]);
+
+    const departments = [
+        { id: '1', label: 'CSE' },
+        { id: '2', label: 'IT' },
+        { id: '3', label: 'ECE' },
+        { id: '4', label: 'EEE' },
+        { id: '5', label: 'Mech' },
+    ];
+
+    const classes = [
+        { id: '1', label: 'CSE A' },
+        { id: '2', label: 'IT A' },
+    ];
+
+    const subjects = [
+        { id: '1', label: 'Mathematics' },
+        { id: '2', label: 'Science' },
+        { id: '3', label: 'History' },
+    ];
 
     const navigation = useNavigation();
 
-    const handleSaveTeacher = () => {
-        if (!teacherName || !teacherEmail || !teacherDepartment) {
+    const handleSaveStudent = () => {
+        if (!studentName || !studentEmail || !studentDepartment || !studentClass) {
             alert('Please fill out all fields.');
             return;
         }
 
-        const newTeacher = {
+        const newStudent = {
             id: Date.now().toString(),
-            Name: teacherName,
-            Email: teacherEmail,
-            Department: teacherDepartment,
-            Image: teacherImage,
+            Name: studentName,
+            Email: studentEmail,
+            Department: studentDepartment,
+            Image: studentImage,
             Subjects: selectedSubjects,
-            Classes: selectedClasses,Department
+            Class: studentClass,
         };
 
-        console.log('New teacher added:', newTeacher);
+        console.log('New student added:', newStudent);
         navigation.goBack();
     };
 
@@ -79,20 +76,14 @@ const AddTeacher = () => {
         });
 
         if (!result.canceled) {
-            setTeacherImage(result.assets[0].uri);
+            setStudentImage(result.assets[0].uri);
         }
     };
 
-    const toggleSelection = (id, isSubject) => {
-        if (isSubject) {
-            setSelectedSubjects((prev) =>
-                prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-            );
-        } else {
-            setSelectedClasses((prev) =>
-                prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-            );
-        }
+    const toggleSubjectSelection = (id) => {
+        setSelectedSubjects((prev) =>
+            prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+        );
     };
 
     return (
@@ -102,26 +93,24 @@ const AddTeacher = () => {
                     <TouchableOpacity onPress={() => navigation.goBack()}>
                         <Ionicons name="arrow-back" size={28} color="black" />
                     </TouchableOpacity>
-                    <Text style={styles.headerText}>Add Teacher</Text>
+                    <Text style={styles.headerText}>Add Student</Text>
                 </View>
 
-                {/* Image Upload */}
                 <View style={styles.imageSection}>
                     <TouchableOpacity onPress={pickImage} style={styles.imagePicker}>
-                        {teacherImage ? (
-                            <Image source={{ uri: teacherImage }} style={styles.teacherImage} />
+                        {studentImage ? (
+                            <Image source={{ uri: studentImage }} style={styles.studentImage} />
                         ) : (
                             <Text style={styles.imagePlaceholder}>Upload Image</Text>
                         )}
                     </TouchableOpacity>
                 </View>
 
-                {/* Input Fields */}
                 <View style={styles.formSection}>
                     <TextInput
                         label="Student Name"
-                        value={teacherName}
-                        onChangeText={setTeacherName}
+                        value={studentName}
+                        onChangeText={setStudentName}
                         mode="outlined"
                         outlineColor="#153448"
                         activeOutlineColor="#153448"
@@ -130,8 +119,8 @@ const AddTeacher = () => {
 
                     <TextInput
                         label="Student Email"
-                        value={teacherEmail}
-                        onChangeText={setTeacherEmail}
+                        value={studentEmail}
+                        onChangeText={setStudentEmail}
                         mode="outlined"
                         outlineColor="#153448"
                         activeOutlineColor="#153448"
@@ -139,43 +128,46 @@ const AddTeacher = () => {
                         style={styles.inputField}
                     />
 
-                    <DropDownPicker
-                        open={isDropdownOpen}
-                        value={teacherDepartment}
-                        items={departments}
-                        setOpen={setIsDropdownOpen}
-                        setValue={setTeacherDepartment}
-                        setItems={setDepartments}
-                        placeholder="Select Department"
-                        style={styles.dropdown}
-                        dropDownContainerStyle={styles.dropdownContainer}
-                    />
-                    <DropDownPicker
-                        open={isClassDrowpopen}
-                        value={StudentClass}
-                        items={selectedClasses}
-                        setOpen={setClassDrowpopen}
-                        setValue={setStudentClass}
-                        setItems={setclasses}
-                        placeholder="Select Class"
-                        style={styles.dropdown}
-                        dropDownContainerStyle={styles.dropdownContainer}
-                    />
-                     
-                    
-                </View>
+                    <View style={{ zIndex: isDropdownOpen ? 10 : 0 }}>
+                        <DropDownPicker
+                            open={isDropdownOpen}
+                            value={studentDepartment} // Ensure this matches the selected value
+                            items={departments.map((dept) => ({
+                                label: dept.label, // Display text
+                                value: dept.label, // Actual value stored
+                                key: dept.id, // Unique key
+                            }))}
+                            setOpen={setIsDropdownOpen}
+                            setValue={setStudentDepartment}
+                            placeholder="Select Department"
+                            style={styles.dropdown}
+                            dropDownContainerStyle={styles.dropdownContainer}
+                        />
 
-                {/* Subjects Section */}
-                <View style={styles.chipSection}>
-                    <View style={styles.classesHeader}>
-                        <Text style={styles.classTitle}>Subjects Enrolled</Text>
-                        <TouchableOpacity onPress={() => setEdit(!edit)}>
-                            <View style={styles.editChip}>
-                                <Text style={styles.editChipText}>Add</Text>
-                            </View>
-                        </TouchableOpacity>
+
+
                     </View>
 
+                    <View style={{ zIndex: isClassDropdownOpen ? 9 : 0 }}>
+                        <DropDownPicker
+                            open={isClassDropdownOpen}
+                            value={studentClass} // Ensure this matches the selected value
+                            items={classes.map((cls) => ({
+                                label: cls.label, // Display text
+                                value: cls.label, // Actual value stored
+                                key: cls.id, // Unique key
+                            }))}
+                            setOpen={setIsClassDropdownOpen}
+                            setValue={setStudentClass}
+                            placeholder="Select Class"
+                            style={styles.dropdown}
+                            dropDownContainerStyle={styles.dropdownContainer}
+                        />
+                    </View>
+                </View>
+
+                <View style={styles.chipSection}>
+                    <Text style={styles.classTitle}>Subjects Enrolled</Text>
                     <View style={styles.chipContainer}>
                         {subjects.map((subject) => (
                             <TouchableOpacity
@@ -185,7 +177,7 @@ const AddTeacher = () => {
                                         ? styles.selectedChip
                                         : styles.chip
                                 }
-                                onPress={() => toggleSelection(subject.id, true)}
+                                onPress={() => toggleSubjectSelection(subject.id)}
                             >
                                 <Text
                                     style={
@@ -201,8 +193,7 @@ const AddTeacher = () => {
                     </View>
                 </View>
 
-                {/* Save Button */}
-                <TouchableOpacity style={styles.saveButton} onPress={handleSaveTeacher}>
+                <TouchableOpacity style={styles.saveButton} onPress={handleSaveStudent}>
                     <Text style={styles.saveButtonText}>Save Student</Text>
                 </TouchableOpacity>
             </ScrollView>
@@ -210,7 +201,7 @@ const AddTeacher = () => {
     );
 };
 
-export default AddTeacher;
+export default AddStudent;
 
 const styles = StyleSheet.create({
     container: {
@@ -225,7 +216,7 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginVertical: Platform.OS === 'android' ? 5 :4,
+        marginVertical: Platform.OS === 'android' ? 5 : 4,
     },
     headerText: {
         marginLeft: 10,
@@ -246,7 +237,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#ccc',
     },
-    teacherImage: {
+    studentImage: {
         width: '100%',
         height: '100%',
         borderRadius: 60,
@@ -266,23 +257,17 @@ const styles = StyleSheet.create({
         backgroundColor: 'white',
         borderColor: '#153448',
         marginBottom: 15,
-        zIndex:30
     },
     dropdownContainer: {
         borderColor: '#153448',
+        zIndex: 10, // Ensure dropdown is on top
     },
     chipSection: {
         marginVertical: 15,
     },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 10,
-    },
     chipContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        justifyContent: 'flex-start',
     },
     chip: {
         paddingVertical: 8,
@@ -319,29 +304,8 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
     },
-    classesHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 10,
-    },
     classTitle: {
         fontSize: 16,
         fontWeight: 'bold',
     },
-    editChip: {
-       
-        paddingVertical: 8,
-        paddingHorizontal: 15,
-        borderRadius: 20,
-        
-    },
-    editChipText: {
-        fontSize: 14,
-        color: Colors.PRIMARY,
-        fontFamily:'Signika',
-        fontWeight:'semibold',
-
-    },
 });
-

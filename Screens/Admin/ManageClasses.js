@@ -2,8 +2,9 @@ import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View, Platform
 import React, { useState } from 'react';
 import Feather from '@expo/vector-icons/Feather';
 import Entypo from '@expo/vector-icons/Entypo';
-import { Colors } from '../assets/Colors';
+import { Colors } from '../../assets/Colors';
 import { useNavigation } from '@react-navigation/native';
+import { auth } from '../../Config/FirebaseConfig';
 
 const ManageClasses = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -69,6 +70,10 @@ const ManageClasses = () => {
                 accessibilityLabel="Add Class"
                 onPress={() => {
                     console.log('Add Class button clicked');
+                    auth.signOut().then(async () => {
+                        navigation.navigate('Login');
+                        await AsyncStorage.setItem('userType', '');
+                    });
                 }}
             >
                 <Entypo name="plus" size={24} color="white" />

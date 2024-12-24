@@ -15,7 +15,7 @@ import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import * as ImagePicker from 'expo-image-picker';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { useNavigation } from '@react-navigation/native';
-import { Colors } from '../assets/Colors';
+import { Colors } from '../../assets/Colors';
 
 const AddTeacher = () => {
     const [teacherName, setTeacherName] = useState('');
@@ -67,7 +67,7 @@ const AddTeacher = () => {
 
     const pickImage = async () => {
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: 'images',
             allowsEditing: true,
             aspect: [1, 1],
             quality: 1,
