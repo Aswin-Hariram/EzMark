@@ -14,19 +14,19 @@ import Feather from '@expo/vector-icons/Feather';
 import Entypo from '@expo/vector-icons/Entypo';
 import { useNavigation } from '@react-navigation/native';
 
-import { Colors } from '../assets/Colors';
+import { Colors } from '../../assets/Colors';
 
 const ManageTeachers = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [Teachers, setTeachers] = useState([
-        { id: '1', profile: require('../assets/Teachers/profile.png'), Name: 'Gowtham', Department: 'CSE' },
-        { id: '2', profile: require('../assets/Teachers/woman.png'), Name: 'Jane', Department: 'ECE' },
-        { id: '3', profile: require('../assets/Teachers/profile.png'), Name: 'John', Department: 'EEE' },
-        { id: '4', profile: require('../assets/Teachers/woman.png'), Name: 'Doe', Department: 'MECH' },
-        { id: '5', profile: require('../assets/Teachers/profile.png'), Name: 'Gowtham', Department: 'CSE' },
-        { id: '6', profile: require('../assets/Teachers/woman.png'), Name: 'Jane', Department: 'ECE' },
-        { id: '7', profile: require('../assets/Teachers/profile.png'), Name: 'John', Department: 'EEE' },
-        { id: '8', profile: require('../assets/Teachers/woman.png'), Name: 'Doe', Department: 'MECH' },
+        { id: '1', profile: require('../../assets/Teachers/profile.png'), Name: 'Gowtham', Department: 'CSE' },
+        { id: '2', profile: require('../../assets/Teachers/woman.png'), Name: 'Jane', Department: 'ECE' },
+        { id: '3', profile: require('../../assets/Teachers/profile.png'), Name: 'John', Department: 'EEE' },
+        { id: '4', profile: require('../../assets/Teachers/woman.png'), Name: 'Doe', Department: 'MECH' },
+        { id: '5', profile: require('../../assets/Teachers/profile.png'), Name: 'Gowtham', Department: 'CSE' },
+        { id: '6', profile: require('../../assets/Teachers/woman.png'), Name: 'Jane', Department: 'ECE' },
+        { id: '7', profile: require('../../assets/Teachers/profile.png'), Name: 'John', Department: 'EEE' },
+        { id: '8', profile: require('../../assets/Teachers/woman.png'), Name: 'Doe', Department: 'MECH' },
     ]);
 
     const filteredTeachers = Teachers.filter(

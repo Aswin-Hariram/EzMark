@@ -3,9 +3,9 @@ import React, { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
-import dp from "../assets/Teachers/profile.png";
+import dp from "../../assets/Teachers/profile.png";
 import { TextInput } from 'react-native-paper';
-import { Colors } from '../assets/Colors';
+import { Colors } from '../../assets/Colors';
 const StudentProfile = ({ route }) => {
   const { student } = route.params;
 

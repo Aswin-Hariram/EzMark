@@ -1,28 +1,28 @@
-import { FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View, Platform, SafeAreaView } from 'react-native';
+import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View, Platform, SafeAreaView } from 'react-native';
 import React, { useState } from 'react';
 import Feather from '@expo/vector-icons/Feather';
 import Entypo from '@expo/vector-icons/Entypo';
-import { Colors } from '../assets/Colors';
+import { Colors } from '../../assets/Colors';
 import { useNavigation } from '@react-navigation/native';
+import { auth } from '../../Config/FirebaseConfig';
 
-const ManageStudents = () => {
+const ManageClasses = () => {
     const [searchQuery, setSearchQuery] = useState('');
-    const [Students, setStudents] = useState([
-        { id: '1', profile: require('../assets/Teachers/profile.png'), Name: 'Gowtham', Department: 'CSE' },
-        { id: '2', profile: require('../assets/Teachers/woman.png'), Name: 'Jane', Department: 'ECE' },
-        { id: '3', profile: require('../assets/Teachers/profile.png'), Name: 'John', Department: 'EEE' },
-        { id: '4', profile: require('../assets/Teachers/woman.png'), Name: 'Doe', Department: 'MECH' },
-        { id: '5', profile: require('../assets/Teachers/profile.png'), Name: 'Gowtham', Department: 'CSE' },
-        { id: '6', profile: require('../assets/Teachers/woman.png'), Name: 'Jane', Department: 'ECE' },
-        { id: '7', profile: require('../assets/Teachers/profile.png'), Name: 'John', Department: 'EEE' },
-        { id: '8', profile: require('../assets/Teachers/woman.png'), Name: 'Doe', Department: 'MECH' },
+    const [Classes, setClasses] = useState([
+        { id: '1', ClassName: 'Class 1A', Teacher: 'Mr. Smith' },
+        { id: '2', ClassName: 'Class 2B', Teacher: 'Mrs. Johnson' },
+        { id: '3', ClassName: 'Class 3C', Teacher: 'Ms. Clark' },
+        { id: '4', ClassName: 'Class 4D', Teacher: 'Mr. Taylor' },
+        { id: '5', ClassName: 'Class 5E', Teacher: 'Ms. Lee' },
+        { id: '6', ClassName: 'Class 6F', Teacher: 'Mrs. Brown' },
     ]);
-    const navigation = useNavigation();
-    const filteredStudents = Students.filter(
-        (teacher) =>
-            teacher.Name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            teacher.Department.toLowerCase().includes(searchQuery.toLowerCase())
+
+    const filteredClasses = Classes.filter(
+        (cls) =>
+            cls.ClassName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            cls.Teacher.toLowerCase().includes(searchQuery.toLowerCase())
     );
+    const navigation = useNavigation();
 
     return (
         <SafeAreaView style={styles.container}>
@@ -30,7 +30,7 @@ const ManageStudents = () => {
             <View style={styles.search}>
                 <TextInput
                     style={styles.input}
-                    placeholder="Search Students"
+                    placeholder="Search Classes"
                     value={searchQuery}
                     onChangeText={setSearchQuery}
                     cursorColor={Colors.SECONDARY}
@@ -38,20 +38,17 @@ const ManageStudents = () => {
                 <Feather style={{ marginRight: 5 }} name="search" size={22} color={Colors.SECONDARY} />
             </View>
 
-            {/* Students List */}
-            {filteredStudents.length > 0 ? (
+            {/* Classes List */}
+            {filteredClasses.length > 0 ? (
                 <FlatList
                     style={{ marginTop: 13 }}
-                    data={filteredStudents}
+                    data={filteredClasses}
                     renderItem={({ item }) => (
-                        <TouchableOpacity style={styles.teacherCard}
-                        onPress={() => navigation.navigate('StudentProfile', { student: item })}>
-                            <View style={styles.image}>
-                                <Image style={styles.profile_img} source={item.profile} />
-                            </View>
+                        <TouchableOpacity style={styles.classCard}
+                        onPress={()=>{navigation.navigate("ClassScreen")}}>
                             <View style={styles.info}>
-                                <Text style={styles.teacherName}>{item.Name}</Text>
-                                <Text style={styles.teacherDept}>Department: {item.Department}</Text>
+                                <Text style={styles.className}>{item.ClassName}</Text>
+                                <Text style={styles.teacherName}>Teacher: {item.Teacher}</Text>
                             </View>
                             <TouchableOpacity style={styles.btn} activeOpacity={0.7}>
                                 <Entypo name="chevron-right" size={24} color={Colors.PRIMARY} />
@@ -62,7 +59,7 @@ const ManageStudents = () => {
                 />
             ) : (
                 <View style={{ alignItems: 'center', marginTop: 20 }}>
-                    <Text style={{ color: Colors.SECONDARY, fontSize: 16 }}>No Students found</Text>
+                    <Text style={{ color: Colors.SECONDARY, fontSize: 16 }}>No classes found</Text>
                 </View>
             )}
 
@@ -70,9 +67,13 @@ const ManageStudents = () => {
             <TouchableOpacity
                 style={styles.floating_btn}
                 activeOpacity={0.7}
-                accessibilityLabel="Add Teacher"
+                accessibilityLabel="Add Class"
                 onPress={() => {
-                    console.log('Add Teacher button clicked');
+                    console.log('Add Class button clicked');
+                    auth.signOut().then(async () => {
+                        navigation.navigate('Login');
+                        await AsyncStorage.setItem('userType', '');
+                    });
                 }}
             >
                 <Entypo name="plus" size={24} color="white" />
@@ -81,14 +82,14 @@ const ManageStudents = () => {
     );
 };
 
-export default ManageStudents;
+export default ManageClasses;
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#f5f5f5',
     },
-    teacherCard: {
+    classCard: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         padding: 15,
@@ -103,23 +104,18 @@ const styles = StyleSheet.create({
         elevation: 3,
         alignItems: 'center',
     },
-    profile_img: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-    },
     info: {
         marginLeft: 10,
         flex: 1,
         justifyContent: 'center',
     },
-    teacherName: {
+    className: {
         fontSize: 16,
         fontWeight: '600',
         color: '#333',
         fontFamily: 'Signika',
     },
-    teacherDept: {
+    teacherName: {
         fontSize: 14,
         color: Colors.SECONDARY,
     },
