@@ -4,7 +4,7 @@
 node_modules/
 
 #specific files
-Config/FirebaseConfig.js
+FirebaseConfig.js
 # Expo
 .expo/
 dist/
