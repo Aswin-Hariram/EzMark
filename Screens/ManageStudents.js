@@ -71,8 +71,7 @@ const ManageStudents = () => {
                 style={styles.floating_btn}
                 activeOpacity={0.7}
                 accessibilityLabel="Add Teacher"
-                onPress={() => {
-                    console.log('Add Teacher button clicked');
+                    onPress={()=>{navigation.navigate("AddStudent")
                 }}
             >
                 <Entypo name="plus" size={24} color="white" />

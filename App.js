@@ -13,6 +13,8 @@ import { Text } from 'react-native';
 import StudentProfile from './Screens/StudentProfile';
 import ClassScreen from './Screens/ClassScreen';
 import AddTeacher from './Screens/AddTeacher';
+import ManageStudents from './Screens/ManageStudents';
+import AddStudent from './Screens/AddStudent';
 
 export default function App() {
   const [loaded, error] = useFonts({
@@ -28,7 +30,7 @@ export default function App() {
 
   function RootStack() {
     return (
-      <Stack.Navigator initialRouteName='AdminDashboardScreen' screenOptions={{headerShown:false}}>
+      <Stack.Navigator initialRouteName='ManageStudent' screenOptions={{headerShown:false}}>
        <Stack.Screen name="AdminDashboardScreen" component={AdminDashboardScreen}/>
         <Stack.Screen name="Login" component={LoginScreen}/>
         <Stack.Screen name="Home" component={HomeScreen} />
@@ -37,6 +39,8 @@ export default function App() {
         <Stack.Screen name="StudentProfile" component={StudentProfile}/>
         <Stack.Screen name="ClassScreen" component={ClassScreen}/>
         <Stack.Screen name="AddTeacher" component={AddTeacher}/>
+        <Stack.Screen name="ManageStudent" component={ManageStudents}/>
+        <Stack.Screen name='AddStudent' component={AddStudent}/>
       </Stack.Navigator>
     );
   }
