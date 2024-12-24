@@ -28,9 +28,11 @@ export default function App() {
 
   const Stack = createNativeStackNavigator();
 
+  
+
   function RootStack() {
     return (
-      <Stack.Navigator initialRouteName='AdminDashboardScreen' screenOptions={{headerShown:false}}>
+      <Stack.Navigator initialRouteName='Login' screenOptions={{headerShown:false}}>
        <Stack.Screen name="AdminDashboardScreen" component={AdminDashboardScreen}/>
         <Stack.Screen name="Login" component={LoginScreen}/>
         <Stack.Screen name="Home" component={HomeScreen} />

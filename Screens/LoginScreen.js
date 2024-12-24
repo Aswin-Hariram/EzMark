@@ -1,10 +1,12 @@
-import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import React, { useState, useMemo } from 'react';
 import { Divider } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import RadioGroup from 'react-native-radio-buttons-group';
 import Entypo from '@expo/vector-icons/Entypo';
 import { Colors } from '../assets/Colors';
+import { auth } from '../Config/FirebaseConfig';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 const LoginScreen = () => {
   const [selectedId, setSelectedId] = useState('1'); // Default selection set to "Student"
@@ -33,9 +35,34 @@ const LoginScreen = () => {
     []
   );
 
+  function valid(email, password) {
+   
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+  
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{5,}$/;
+    if (!emailRegex.test(email)) {
+        Alert.alert('Invalid Email', 'Please enter a valid email address.');
+        return false;
+    }
+    if (!passwordRegex.test(password)) {
+      Alert.alert('Invalid Password', 'Password must contain at least 5 characters, 1 uppercase letter, 1 lowercase letter, and 1 number.');
+        return false;
+    }
+
+    return true;
+}
   function handleLogin(){
-    console.log('Email:', email);
-    console.log('Password',password);
+    if(valid(email,password)){
+      signInWithEmailAndPassword(auth,email,password)
+        .then((userCredential) => {
+          console.log('Login Success');
+        }).catch((error) => {
+          Alert.alert('Login Failed', error.message);
+        });
+    }
+    else{
+      console.log('Login Failed');
+    }
   }
   return (
     <View style={styles.container}>
