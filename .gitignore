@@ -3,14 +3,15 @@
 # dependencies
 node_modules/
 
-#specific files
-Config/
+
 # Expo
 .expo/
 dist/
 web-build/
 expo-env.d.ts
 
+Config/FirebaseConfig.js
+Config/
 # Native
 *.orig.*
 *.jks
@@ -18,6 +19,7 @@ expo-env.d.ts
 *.p12
 *.key
 *.mobileprovision
+*.js
 
 # Metro
 .metro-health-check*
