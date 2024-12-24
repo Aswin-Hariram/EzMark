@@ -33,10 +33,14 @@ export default function App() {
   function RootStack() {
     return (
 <<<<<<< HEAD
+<<<<<<< HEAD
       <Stack.Navigator initialRouteName='Login' screenOptions={{headerShown:false}}>
 =======
       <Stack.Navigator initialRouteName='ManageStudent' screenOptions={{headerShown:false}}>
 >>>>>>> a889b83 (AddSTudent created)
+=======
+      <Stack.Navigator initialRouteName='AdminDashboardScreen' screenOptions={{headerShown:false}}>
+>>>>>>> f8debb6 (Add Student change)
        <Stack.Screen name="AdminDashboardScreen" component={AdminDashboardScreen}/>
         <Stack.Screen name="Login" component={LoginScreen}/>
         <Stack.Screen name="Home" component={HomeScreen} />

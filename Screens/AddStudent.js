@@ -18,11 +18,7 @@ import DropDownPicker from 'react-native-dropdown-picker';
 import { useNavigation } from '@react-navigation/native';
 import { Colors } from '../assets/Colors';
 
-<<<<<<< HEAD
-const AddStudent = () => {
-=======
 const AddTeacher = () => {
->>>>>>> c5ffaa8 (AddSTudent created)
     const [teacherName, setTeacherName] = useState('');
     const [teacherEmail, setTeacherEmail] = useState('');
     const [teacherDepartment, setTeacherDepartment] = useState(null);
@@ -39,26 +35,15 @@ const AddTeacher = () => {
         { id: 5, label: 'Mech' },
     ]);
     const[selectedClasses,setclasses] = useState([
-<<<<<<< HEAD
-        { id: 4, label: 'CSE A' },
-        { id: 5, label: 'IT A' },
-=======
         { id: 1, label: 'CSE A' },
         { id: 2, label: 'IT A' },
->>>>>>> c5ffaa8 (AddSTudent created)
     ]);
     const[isClassDrowpopen,setClassDrowpopen]=useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [subjects, setSubjects] = useState([
-<<<<<<< HEAD
-        { id: 6, label: 'Mathematics' },
-        { id: 7, label: 'Science' },
-        { id: 8, label: 'History' },
-=======
         { id: 1, label: 'Mathematics' },
         { id: 2, label: 'Science' },
         { id: 3, label: 'History' },
->>>>>>> c5ffaa8 (AddSTudent created)
     ]);
     const[isclassDrownopen,setclassDrownopen] = useState(false);
     const [selectedSubjects, setSelectedSubjects] = useState([]);
@@ -225,11 +210,7 @@ const AddTeacher = () => {
     );
 };
 
-<<<<<<< HEAD
-export default AddStudent;
-=======
 export default AddTeacher;
->>>>>>> c5ffaa8 (AddSTudent created)
 
 const styles = StyleSheet.create({
     container: {
