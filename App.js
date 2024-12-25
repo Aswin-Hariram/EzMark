@@ -22,6 +22,7 @@ import { Colors } from './assets/Colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import StudentDashBoard from './Screens/Student/StudentDashBoard';
 import TeacherDashBoard from './Screens/Teacher/TeacherDashBoard';
+import AddClass from './Screens/Admin/AddClass';
 
 export default function App() {
   const [loaded, error] = useFonts({
@@ -84,6 +85,7 @@ export default function App() {
         <Stack.Screen name='AddStudent' component={AddStudent} />
         <Stack.Screen name='StudentDashBoard' component={StudentDashBoard} />
         <Stack.Screen name='TeacherDashBoard' component={TeacherDashBoard} />
+        <Stack.Screen name='AddClass' component={AddClass} />
       </Stack.Navigator>
     );
   }

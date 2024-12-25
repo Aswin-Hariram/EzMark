@@ -69,7 +69,7 @@ const LoginScreen = () => {
           await AsyncStorage.setItem('userType', type);
           await signInWithEmailAndPassword(auth, email, password);
           if (type === 'Admin') navigation.navigate('AdminDashboardScreen');
-          else if (type === 'Teacher') navigation.navigate('TeacherDashboard');
+          else if (type === 'Teacher') navigation.navigate('TeacherDashBoard');
           else if(type==='Student') navigation.navigate('StudentDashboard');
           else return;
           return;

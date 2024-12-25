@@ -45,7 +45,7 @@ const ManageClasses = () => {
                     data={filteredClasses}
                     renderItem={({ item }) => (
                         <TouchableOpacity style={styles.classCard}
-                        onPress={()=>{navigation.navigate("ClassScreen")}}>
+                            onPress={() => { navigation.navigate("ClassScreen") }}>
                             <View style={styles.info}>
                                 <Text style={styles.className}>{item.ClassName}</Text>
                                 <Text style={styles.teacherName}>Teacher: {item.Teacher}</Text>
@@ -70,10 +70,9 @@ const ManageClasses = () => {
                 accessibilityLabel="Add Class"
                 onPress={() => {
                     console.log('Add Class button clicked');
-                    auth.signOut().then(async () => {
-                        navigation.navigate('Login');
-                        await AsyncStorage.setItem('userType', '');
-                    });
+
+                    navigation.navigate('AddClass');
+
                 }}
             >
                 <Entypo name="plus" size={24} color="white" />

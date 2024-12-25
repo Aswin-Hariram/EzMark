@@ -10,8 +10,6 @@ dist/
 web-build/
 expo-env.d.ts
 
-Config/FirebaseConfig.js
-Config/
 # Native
 *.orig.*
 *.jks
