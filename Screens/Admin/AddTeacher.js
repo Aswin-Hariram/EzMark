@@ -1,68 +1,100 @@
-import React, { useState } from 'react';
-import {
-    StyleSheet,
-    Text,
-    View,
-    ScrollView,
-    TouchableOpacity,
-    Platform,
-    Image,
-} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Platform, Image, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { TextInput } from 'react-native-paper';
-import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
-import * as ImagePicker from 'expo-image-picker';
-import DropDownPicker from 'react-native-dropdown-picker';
+import { Dropdown } from 'react-native-element-dropdown';
 import { useNavigation } from '@react-navigation/native';
 import { Colors } from '../../assets/Colors';
+import { auth, firestore } from '../../Config/FirebaseConfig';
+import { addDoc, collection, doc, getDoc, setDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import PasswordTextInput from '../../Components/PasswordTextInput';
 
 const AddTeacher = () => {
     const [teacherName, setTeacherName] = useState('');
     const [teacherEmail, setTeacherEmail] = useState('');
     const [teacherDepartment, setTeacherDepartment] = useState(null);
-    const [selectedChip, setSelectedChip] = useState(null);
-    const [edit, setEdit] = useState(false);
+    const [teacherPassword, setTeacherPassword] = useState('');
     const [teacherImage, setTeacherImage] = useState(null);
+    const [loading, setLoading] = useState(false);
     const [departments, setDepartments] = useState([
-
-        { label: 'Mathematics', value: 'Mathematics' },
-        { label: 'Science', value: 'Science' },
-        { label: 'History', value: 'History' },
+        { label: 'Computer Science', value: 'Computer Science' },
+        { label: 'Mechanical Engineering', value: 'Mechanical Engineering' },
+        { label: 'Civil Engineering', value: 'Civil Engineering' },
+        { label: 'Electrical Engineering', value: 'Electrical Engineering' },
+        { label: 'Electronics & Communication', value: 'Electronics & Communication' },
+        { label: 'Information Technology', value: 'Information Technology' },
+        { label: 'Chemical Engineering', value: 'Chemical Engineering' },
+        { label: 'Biotechnology', value: 'Biotechnology' },
     ]);
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const [subjects, setSubjects] = useState([
-        { id: 1, label: 'Mathematics' },
-        { id: 2, label: 'Science' },
-        { id: 3, label: 'History' },
-    ]);
-    const [classes, setClasses] = useState([
-        { id: 1, label: 'Class A' },
-        { id: 2, label: 'Class B' },
-        { id: 3, label: 'Class C' },
-    ]);
+    const [classes, setClasses] = useState([]);
     const [selectedSubjects, setSelectedSubjects] = useState([]);
     const [selectedClasses, setSelectedClasses] = useState([]);
     const navigation = useNavigation();
 
-    const handleSaveTeacher = () => {
+    useEffect(() => {
+        const fetchBasicData = async () => {
+            try {
+                const docRef = doc(firestore, 'BasicData', 'Data');
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.Class) {
+                        const formattedClasses = data.Class.map((cls, index) => ({
+                            id: index + 1,
+                            label: cls,
+                        }));
+                        setClasses(formattedClasses);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching basic data:', error);
+                Alert.alert('Error', 'Failed to load classes.');
+            }
+        };
+        fetchBasicData();
+    }, []);
+
+    const handleSaveTeacher = async () => {
         if (!teacherName || !teacherEmail || !teacherDepartment) {
-            alert('Please fill out all fields.');
-            return;
+            return Alert.alert('Missing Fields', 'Please fill out all fields.');
         }
+        setLoading(true);
+
+        const selectedSubjectLabels = selectedSubjects.map((id) => {
+            const subject = subjects.find((subject) => subject.id === id);
+            return subject ? subject.label : null;
+        }).filter(Boolean);
+
+        const selectedClassLabels = selectedClasses.map((id) => {
+            const cls = classes.find((cls) => cls.id === id);
+            return cls ? cls.label : null;
+        }).filter(Boolean);
 
         const newTeacher = {
             id: Date.now().toString(),
-            Name: teacherName,
-            Email: teacherEmail,
-            Department: teacherDepartment,
-            Image: teacherImage,
-            Subjects: selectedSubjects,
-            Classes: selectedClasses,
+            name: teacherName,
+            email: teacherEmail.toLowerCase(),
+            department: teacherDepartment,
+            image: teacherImage,
+            subjects: selectedSubjectLabels,
+            classes: selectedClassLabels,
+            type: 'Teacher',
+            password: teacherPassword || 'Test123',
         };
 
-        console.log('New teacher added:', newTeacher);
-        navigation.goBack();
+        try {
+            await setDoc(doc(firestore, 'UserData', teacherEmail.toLowerCase()), newTeacher);
+            await createUserWithEmailAndPassword(auth, teacherEmail, teacherPassword || 'defaultPassword123');
+            Alert.alert('Success', 'Teacher added successfully!');
+            navigation.goBack();
+        } catch (error) {
+            console.error('Error saving teacher data:', error);
+            Alert.alert('Error', 'Failed to save teacher data.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const pickImage = async () => {
@@ -72,21 +104,8 @@ const AddTeacher = () => {
             aspect: [1, 1],
             quality: 1,
         });
-
         if (!result.canceled) {
             setTeacherImage(result.assets[0].uri);
-        }
-    };
-
-    const toggleSelection = (id, isSubject) => {
-        if (isSubject) {
-            setSelectedSubjects((prev) =>
-                prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-            );
-        } else {
-            setSelectedClasses((prev) =>
-                prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-            );
         }
     };
 
@@ -100,7 +119,6 @@ const AddTeacher = () => {
                     <Text style={styles.headerText}>Add Teacher</Text>
                 </View>
 
-                {/* Image Upload */}
                 <View style={styles.imageSection}>
                     <TouchableOpacity onPress={pickImage} style={styles.imagePicker}>
                         {teacherImage ? (
@@ -111,7 +129,6 @@ const AddTeacher = () => {
                     </TouchableOpacity>
                 </View>
 
-                {/* Input Fields */}
                 <View style={styles.formSection}>
                     <TextInput
                         label="Teacher Name"
@@ -122,7 +139,6 @@ const AddTeacher = () => {
                         activeOutlineColor="#153448"
                         style={styles.inputField}
                     />
-
                     <TextInput
                         label="Teacher Email"
                         value={teacherEmail}
@@ -133,85 +149,36 @@ const AddTeacher = () => {
                         keyboardType="email-address"
                         style={styles.inputField}
                     />
-
-                    <DropDownPicker
-                        open={isDropdownOpen}
-                        value={teacherDepartment}
-                        items={departments}
-                        setOpen={setIsDropdownOpen}
-                        setValue={setTeacherDepartment}
-                        setItems={setDepartments}
-                        placeholder="Select Department"
+                    <PasswordTextInput
+                        value={teacherPassword}
+                        onChangeText={setTeacherPassword}
+                        placeholder="Enter your password"
+                        lockIconSource={require('../../assets/Login/lock.png')}
+                        style={styles.input}
+                    />
+                    <Dropdown
                         style={styles.dropdown}
-                        dropDownContainerStyle={styles.dropdownContainer}
+                        placeholderStyle={styles.placeholderStyle}
+                        selectedTextStyle={styles.selectedTextStyle}
+                        data={departments}
+                        labelField="label"
+                        valueField="value"
+                        onChange={(item) => setTeacherDepartment(item.value)}
                     />
                 </View>
 
-                {/* Subjects Section */}
                 <View style={styles.chipSection}>
-                    <View style={styles.classesHeader}>
-                        <Text style={styles.classTitle}>Subjects Enrolled</Text>
-                        <TouchableOpacity onPress={() => setEdit(!edit)}>
-                            <View style={styles.editChip}>
-                                <Text style={styles.editChipText}>Add</Text>
-                            </View>
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.chipContainer}>
-                        {subjects.map((subject) => (
-                            <TouchableOpacity
-                                key={subject.id}
-                                style={
-                                    selectedSubjects.includes(subject.id)
-                                        ? styles.selectedChip
-                                        : styles.chip
-                                }
-                                onPress={() => toggleSelection(subject.id, true)}
-                            >
-                                <Text
-                                    style={
-                                        selectedSubjects.includes(subject.id)
-                                            ? styles.selectedChipText
-                                            : styles.chipText
-                                    }
-                                >
-                                    {subject.label}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                </View>
-
-                {/* Classes Section */}
-                <View style={styles.chipSection}>
-                <View style={styles.classesHeader}>
-                        <Text style={styles.classTitle}>Classes Enrolled</Text>
-                        <TouchableOpacity onPress={() => setEdit(!edit)}>
-                            <View style={styles.editChip}>
-                                <Text style={styles.editChipText}>Add</Text>
-                            </View>
-                        </TouchableOpacity>
-                    </View>
-
+                    <Text style={styles.classTitle}>Classes Enrolled</Text>
                     <View style={styles.chipContainer}>
                         {classes.map((cls) => (
                             <TouchableOpacity
                                 key={cls.id}
-                                style={
-                                    selectedClasses.includes(cls.id)
-                                        ? styles.selectedChip
-                                        : styles.chip
-                                }
-                                onPress={() => toggleSelection(cls.id, false)}
+                                style={selectedClasses.includes(cls.id) ? styles.selectedChip : styles.chip}
+                                onPress={() => setSelectedClasses((prev) =>
+                                    prev.includes(cls.id) ? prev.filter(id => id !== cls.id) : [...prev, cls.id]
+                                )}
                             >
-                                <Text
-                                    style={
-                                        selectedClasses.includes(cls.id)
-                                            ? styles.selectedChipText
-                                            : styles.chipText
-                                    }
-                                >
+                                <Text style={selectedClasses.includes(cls.id) ? styles.selectedChipText : styles.chipText}>
                                     {cls.label}
                                 </Text>
                             </TouchableOpacity>
@@ -219,16 +186,17 @@ const AddTeacher = () => {
                     </View>
                 </View>
 
-                {/* Save Button */}
-                <TouchableOpacity style={styles.saveButton} onPress={handleSaveTeacher}>
-                    <Text style={styles.saveButtonText}>Save Teacher</Text>
+                <TouchableOpacity style={styles.saveButton} onPress={handleSaveTeacher} disabled={loading}>
+                    {loading ? (
+                        <ActivityIndicator size="small" color="white" />
+                    ) : (
+                        <Text style={styles.saveButtonText}>Save Teacher</Text>
+                    )}
                 </TouchableOpacity>
             </ScrollView>
         </SafeAreaView>
     );
 };
-
-export default AddTeacher;
 
 const styles = StyleSheet.create({
     container: {
@@ -243,7 +211,7 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginVertical: Platform.OS === 'android' ? 5 :4,
+        marginVertical: Platform.OS === 'android' ? 5 : 4,
     },
     headerText: {
         marginLeft: 10,
@@ -269,9 +237,9 @@ const styles = StyleSheet.create({
         height: '100%',
         borderRadius: 60,
     },
-    imagePlaceholder: {
-        color: '#888',
+    placeholderStyle: {
         fontSize: 16,
+        color: 'gray',
     },
     formSection: {
         marginBottom: 20,
@@ -281,25 +249,24 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     dropdown: {
-        backgroundColor: 'white',
-        borderColor: '#153448',
-        marginBottom: 15,
-    },
-    dropdownContainer: {
-        borderColor: '#153448',
+        height: 50,
+        borderColor: Colors.PRIMARY,
+        borderWidth: 1,
+        borderRadius: 8,
+        paddingHorizontal: 8,
+        marginVertical: 10,
     },
     chipSection: {
         marginVertical: 15,
     },
-    sectionTitle: {
-        fontSize: 18,
+    classTitle: {
+        fontSize: 16,
         fontWeight: 'bold',
         marginBottom: 10,
     },
     chipContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        justifyContent: 'flex-start',
     },
     chip: {
         paddingVertical: 8,
@@ -336,29 +303,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
     },
-    classesHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 10,
-    },
-    classTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    editChip: {
-       
-        paddingVertical: 8,
-        paddingHorizontal: 15,
-        borderRadius: 20,
-        
-    },
-    editChipText: {
-        fontSize: 14,
-        color: Colors.PRIMARY,
-        fontFamily:'Signika',
-        fontWeight:'semibold',
-
-    },
 });
 
+export default AddTeacher;

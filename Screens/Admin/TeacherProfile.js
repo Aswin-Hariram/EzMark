@@ -1,37 +1,158 @@
-import { StyleSheet, Text, View, Image, TouchableOpacity, Platform, ScrollView } from 'react-native';
-import React, { useState } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  Image,
+  TouchableOpacity,
+  ScrollView,
+  Platform,
+  Alert,
+} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Dropdown } from 'react-native-element-dropdown';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import dp from "../../assets/Teachers/profile.png";
-import { TextInput } from 'react-native-paper';
+import { ActivityIndicator, TextInput } from 'react-native-paper';
 import { Colors } from '../../assets/Colors';
+import { deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { auth, firestore } from '../../Config/FirebaseConfig';
+import { getFunctions, httpsCallable } from "firebase/functions";
+
 const TeacherProfile = ({ route }) => {
   const { teacher } = route.params;
-
-  const [chips, setChips] = useState([
-    { id: 1, label: 'Teams' },
-    { id: 2, label: 'Tasks' },
-    { id: 3, label: 'Creators' },
-    { id: 4, label: 'Notes' },
-    { id: 5, label: 'Priority' },
-    { id: 6, label: 'Companies' },
-    { id: 7, label: 'Projects' },
-    
-  ]);
-
-  const [selectedChip, setSelectedChip] = useState(null);
-  const [edit, setEdit] = useState(false);
   const navigation = useNavigation();
+  const [selectedSubjects, setSelectedClasses] = useState([]);
+  const [teacherName, setTeacherName] = useState(teacher.name);
+  const [teacherEmail, setTeacherEmail] = useState(teacher.email);
+  const [value, setValue] = useState(teacher.department);
+  const [teacherPassword, setTeacherPassword] = useState(teacher.password);
+  const [classData, setClassData] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const removeChip = (chipId) => {
-    setChips((prevChips) => prevChips.filter((chip) => chip.id !== chipId));
+  const data = [
+    { label: 'Computer Science', value: 'Computer Science' },
+    { label: 'Mechanical Engineering', value: 'Mechanical Engineering' },
+    { label: 'Civil Engineering', value: 'Civil Engineering' },
+    { label: 'Electrical Engineering', value: 'Electrical Engineering' },
+    { label: 'Electronics & Communication', value: 'Electronics & Communication' },
+    { label: 'Information Technology', value: 'Information Technology' },
+    { label: 'Chemical Engineering', value: 'Chemical Engineering' },
+    { label: 'Biotechnology', value: 'Biotechnology' },
+  ];
+
+  useEffect(() => {
+    const fetchBasic = async () => {
+      try {
+        const docRef = doc(firestore, 'BasicData', 'Data');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.Class) {
+            setClassData(data.Class);
+            setSelectedClasses(teacher.classes);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching document:', error);
+      }
+    };
+    fetchBasic();
+  }, []);
+
+  const updateTeacherInFirestore = async (updatedTeacher) => {
+    try {
+      const teacherRef = doc(firestore, 'UserData', teacher.email); // Assuming email as unique identifier
+      await updateDoc(teacherRef, updatedTeacher);
+      alert('Teacher details updated successfully.');
+      navigation.navigate("AdminDashboardScreen");
+    } catch (error) {
+      console.error('Error updating teacher in Firestore:', error);
+      alert('Failed to update teacher details.');
+    }
+  };
+
+  const deleteFromFirestore = () => {
+    setLoading(true);
+    deleteDoc(doc(firestore, "UserData", teacher.email))
+      .then(() => {
+        alert("Teacher deleted successfully")
+      })
+      .catch((error) => {
+        alert("Error",error.message)
+      })
+      .finally(()=>{
+        setLoading(false)
+        navigation.navigate("AdminDashboardScreen");
+      })
+  }
+  const handleDelete = () => {
+    Alert.alert("Alert", "Do you want to delete Teacher, Are you sure?", [
+      {
+        text: "Yes",
+        onPress: () => { deleteFromFirestore() }
+      },
+      {
+        text: "No",
+        onPress: () => { }
+      }
+    ])
+  }
+
+  const updateTeacherPassword = async (email, newPassword) => {
+    const functions = getFunctions();
+    try {
+      const updatePassword = httpsCallable(functions, "updateTeacherPassword");
+      const result = await updatePassword({ email, newPassword });
+      if (result.data.success) {
+        updateTeacherInFirestore({
+          name: teacherName,
+          email: teacherEmail,
+          password: teacherPassword,
+          department: value,
+          classes: selectedSubjects.length > 0 ? selectedSubjects : teacher.classes,
+        });
+      }
+    } catch (error) {
+      console.error("Error updating password:", error);
+      alert("Failed to update the password. " + error.message);
+    }
+  };
+
+  const validateAndCreateUpdatedTeacher = async () => {
+    if (!teacherName.trim() || !teacherEmail.trim() || !teacherPassword.trim()) {
+      alert('All fields are required. Please fill in the missing details.');
+      return;
+    }
+
+    setLoading(true); // Start loading
+
+    const updatedTeacher = {
+      name: teacherName,
+      email: teacherEmail,
+      password: teacherPassword,
+      department: value,
+      classes: selectedSubjects.length > 0 ? selectedSubjects : teacher.classes,
+    };
+
+    try {
+      if (teacher.password !== teacherPassword) {
+        await updateTeacherPassword(teacherEmail, teacherPassword);
+      } else {
+        await updateTeacherInFirestore(updatedTeacher);
+      }
+    } catch (error) {
+      console.error('Error updating teacher:', error);
+      alert('Failed to update teacher details. Please try again.');
+    } finally {
+      setLoading(false); // End loading
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={28} color="black" />
@@ -39,143 +160,86 @@ const TeacherProfile = ({ route }) => {
           <Text style={styles.headerText}>Edit Teacher</Text>
         </View>
 
-        {/* Profile Section */}
         <View style={styles.profileSection}>
-          <Image
-            style={styles.profileImage}
-            source={dp}
-            width={60}
-            height={60}
-          />
-
+          <Image style={styles.profileImage} source={dp} />
         </View>
-        <View style={{ ...styles.classesHeader, flexDirection: 'column' }}>
+
+        <View style={styles.formSection}>
           <Text style={styles.classTitle}>Personal details</Text>
           <TextInput
             label="Teacher Name"
-            value={teacher.Name}
-
+            value={teacherName}
+            onChangeText={setTeacherName}
             mode="outlined"
-            outlineColor="#153448"
-            activeOutlineColor='#153448'
-            style={{
-              backgroundColor: 'white',
-              marginBottom: 10,
-              marginTop: 20,
-
-            }}
+            outlineColor={Colors.PRIMARY}
+            activeOutlineColor={Colors.PRIMARY}
+            style={styles.input}
           />
-
 
           <TextInput
             label="Teacher Email"
+            value={teacherEmail}
+            onChangeText={setTeacherEmail}
             mode="outlined"
-            outlineColor="#153448"
-            activeOutlineColor='#153448'
-            style={{
-              backgroundColor: 'white',
-              marginBottom: 10,
-            }}
+            outlineColor={Colors.PRIMARY}
+            activeOutlineColor={Colors.PRIMARY}
+            style={styles.input}
           />
 
-
-          <TextInput
-            label="Teacher Department"
-            mode="outlined"
-            outlineColor="#153448"
-            activeOutlineColor='#153448'
-            style={{
-              backgroundColor: 'white',
-              marginBottom: 10,
-            }}
+          <Dropdown
+            style={styles.dropdown}
+            placeholderStyle={styles.placeholderStyle}
+            selectedTextStyle={styles.selectedTextStyle}
+            inputSearchStyle={styles.inputSearchStyle}
+            iconStyle={styles.iconStyle}
+            data={data}
+            labelField="label"
+            valueField="value"
+            search
+            maxHeight={300}
+            value={value}
+            onChange={(item) => setValue(item.value)}
           />
-
-
-        </View>
-        {/* Classes Handling */}
-        <View style={styles.classesHeader}>
-          <Text style={styles.classTitle}>Subjects Enrolled</Text>
-          <TouchableOpacity onPress={() => setEdit(!edit)}>
-            <View style={styles.editChip}>
-              <Text style={styles.editChipText}>{edit ? 'Done' : 'Edit'}</Text>
-            </View>
-          </TouchableOpacity>
         </View>
 
-
-        {/* Chips Section */}
-        <View style={styles.chipContainer}>
-          {chips.length > 0 ? (
-            chips.map((chip) => (
-              <View key={chip.id} style={styles.chipWrapper}>
-                <TouchableOpacity
-                  style={selectedChip === chip.id ? styles.selectedChip : styles.chip}
-                  onPress={() => setSelectedChip(chip.id)}
-                >
-                  <Text
-                    style={
-                      selectedChip === chip.id ? styles.selectedChipText : styles.chipText
-                    }
-                  >
-                    {chip.label}
-                  </Text>
-                </TouchableOpacity>
-                {edit && (
+        <View style={styles.classesSection}>
+          <Text style={styles.classTitle}>Enrolled Classes</Text>
+          <View style={styles.chipContainer}>
+            {classData.length > 0 ? (
+              classData.map((chip) => (
+                <View key={chip} style={styles.chipWrapper}>
                   <TouchableOpacity
-                    style={styles.removeChipButton}
-                    onPress={() => removeChip(chip.id)}
+                    style={selectedSubjects.includes(chip) ? styles.selectedChip : styles.chip}
+                    onPress={() => {
+                      setSelectedClasses((prev) =>
+                        prev.includes(chip) ? prev.filter((subject) => subject !== chip) : [...prev, chip]
+                      );
+                    }}
                   >
-                    <Ionicons name="close" size={20} color="red" />
+                    <Text style={selectedSubjects.includes(chip) ? styles.selectedChipText : styles.chipText}>
+                      {chip}
+                    </Text>
                   </TouchableOpacity>
-                )}
-              </View>
-            ))
-          ) : (
-            <Text style={styles.noChipsText}>No Classes Enrolled</Text>
-          )}
-        </View>
-        {/* Classes Handling */}
-        <View style={styles.classesHeader}>
-          <Text style={styles.classTitle}>Classes Classes</Text>
-          <TouchableOpacity onPress={() => setEdit(!edit)}>
-            <View style={styles.editChip}>
-              <Text style={styles.editChipText}>{edit ? 'Done' : 'Edit'}</Text>
-            </View>
-          </TouchableOpacity>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.noChipsText}>No Classes Available</Text>
+            )}
+          </View>
         </View>
 
-
-        {/* Chips Section */}
-        <View style={styles.chipContainer}>
-          {chips.length > 0 ? (
-            chips.map((chip) => (
-              <View key={chip.id} style={styles.chipWrapper}>
-                <TouchableOpacity
-                  style={selectedChip === chip.id ? styles.selectedChip : styles.chip}
-                  onPress={() => setSelectedChip(chip.id)}
-                >
-                  <Text
-                    style={
-                      selectedChip === chip.id ? styles.selectedChipText : styles.chipText
-                    }
-                  >
-                    {chip.label}
-                  </Text>
-                </TouchableOpacity>
-                {edit && (
-                  <TouchableOpacity
-                    style={styles.removeChipButton}
-                    onPress={() => removeChip(chip.id)}
-                  >
-                    <Ionicons name="close" size={20} color="red" />
-                  </TouchableOpacity>
-                )}
-              </View>
-            ))
+        <TouchableOpacity
+          style={[styles.updateButton, loading && { opacity: 0.7 }]}
+          onPress={validateAndCreateUpdatedTeacher}
+          disabled={loading}
+          onLongPress={handleDelete}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color="white" />
           ) : (
-            <Text style={styles.noChipsText}>No Classes Available</Text>
+            <Text style={styles.updateButtonText}>Update Teacher</Text>
           )}
-        </View>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -193,8 +257,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginVertical: Platform.OS === 'android' ? 20 : 0,
-    marginLeft: 5,
-
   },
   headerText: {
     marginLeft: 10,
@@ -210,31 +272,39 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
   },
-  userName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginTop: 10,
+  formSection: {
+    marginVertical: 20,
   },
-  classesHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-
-    marginHorizontal: 15,
-    marginTop: 20,
+  input: {
+    marginBottom: 10,
+    backgroundColor: 'white',
   },
   classTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
+    marginBottom: 10,
   },
-  editChip: {
-    backgroundColor: '#F1F1F1',
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 5,
+  dropdown: {
+    height: 50,
+    borderColor: 'gray',
+    borderWidth: 0.5,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    marginVertical: 10,
   },
-  editChipText: {
-    fontSize: 15,
-    fontWeight: 'bold',
+  placeholderStyle: {
+    fontSize: 16,
+    color: 'gray',
+  },
+  selectedTextStyle: {
+    fontSize: 16,
+  },
+  inputSearchStyle: {
+    fontSize: 14,
+  },
+  iconStyle: {
+    width: 20,
+    height: 20,
   },
   chipContainer: {
     flexDirection: 'row',
@@ -249,20 +319,17 @@ const styles = StyleSheet.create({
   },
   chip: {
     paddingVertical: 8,
-    paddingHorizontal: 10,
+    paddingHorizontal: 15,
     backgroundColor: '#EEEEEE',
-    opacity:0.8,
-    borderColor:Colors.SECONDARY,
-    borderWidth:0.5,
+    borderColor: Colors.SECONDARY,
+    borderWidth: 0.5,
     borderRadius: 20,
   },
   selectedChip: {
     paddingVertical: 8,
     paddingHorizontal: 15,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: Colors.SECONDARY,
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'gray',
   },
   chipText: {
     fontSize: 14,
@@ -270,10 +337,7 @@ const styles = StyleSheet.create({
   },
   selectedChipText: {
     fontSize: 14,
-    color: 'black',
-  },
-  removeChipButton: {
-    marginLeft: 5,
+    color: 'white',
   },
   noChipsText: {
     fontSize: 16,
@@ -281,11 +345,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: 'black',
-    borderRadius: 5,
-    marginBottom: 10,
-    padding: 10,
+  updateButton: {
+    backgroundColor: Colors.PRIMARY,
+    height: 50,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  updateButtonText: {
+    fontSize: 18,
+    color: 'white',
   },
 });

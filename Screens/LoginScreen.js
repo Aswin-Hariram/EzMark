@@ -59,7 +59,7 @@ const LoginScreen = () => {
     return true;
   };
 
-  const checkAdminAccess = async (email, type,password) => {
+  const checkAdminAccess = async (email, type, password) => {
     try {
       const q = query(collection(firestore, 'UserData'), where('email', '==', email));
       const querySnapshot = await getDocs(q);
@@ -70,7 +70,7 @@ const LoginScreen = () => {
           await signInWithEmailAndPassword(auth, email, password);
           if (type === 'Admin') navigation.navigate('AdminDashboardScreen');
           else if (type === 'Teacher') navigation.navigate('TeacherDashBoard');
-          else if(type==='Student') navigation.navigate('StudentDashboard');
+          else if (type === 'Student') navigation.navigate('StudentDashboard');
           else return;
           return;
         }
@@ -78,7 +78,8 @@ const LoginScreen = () => {
 
       Alert.alert('Access Denied', 'You do not have the required permissions.');
     } catch (error) {
-      console.error('Error querying Firestore:', error);
+      console.log(error)
+      Alert.alert("Invalid Credentials", "Please enter correct password");
     } finally {
       setLoading(false);
     }
@@ -91,7 +92,7 @@ const LoginScreen = () => {
 
     try {
       const type = selectedId === '1' ? 'Student' : selectedId === '2' ? 'Teacher' : 'Admin';
-      await checkAdminAccess(email, type,password);
+      await checkAdminAccess(email.toLowerCase(), type, password);
     } catch (error) {
       Alert.alert('Login Failed', error.message || 'An error occurred. Please try again.');
     } finally {
@@ -100,7 +101,7 @@ const LoginScreen = () => {
   };
 
   if (loading) {
-    return <ActivityIndicator size="large" color={Colors.PRIMARY} />;
+    return <ActivityIndicator size="large" color={Colors.PRIMARY} style={{ marginTop: 500 }} />;
   }
 
   return (
