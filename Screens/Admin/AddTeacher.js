@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { TextInput } from 'react-native-paper';
 import { Dropdown } from 'react-native-element-dropdown';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Colors } from '../../assets/Colors';
 import { auth, firestore } from '../../Config/FirebaseConfig';
 import { addDoc, collection, doc, getDoc, setDoc } from 'firebase/firestore';
@@ -12,6 +12,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import PasswordTextInput from '../../Components/PasswordTextInput';
 
 const AddTeacher = () => {
+    const {getTeachers} = useRoute().params
     const [teacherName, setTeacherName] = useState('');
     const [teacherEmail, setTeacherEmail] = useState('');
     const [teacherDepartment, setTeacherDepartment] = useState(null);
@@ -85,15 +86,17 @@ const AddTeacher = () => {
         };
 
         try {
-            await setDoc(doc(firestore, 'UserData', teacherEmail.toLowerCase()), newTeacher);
+            await setDoc(doc(firestore, 'UserData', newTeacher.id), newTeacher);
             await createUserWithEmailAndPassword(auth, teacherEmail, teacherPassword || 'defaultPassword123');
             Alert.alert('Success', 'Teacher added successfully!');
-            navigation.goBack();
+          
         } catch (error) {
             console.error('Error saving teacher data:', error);
             Alert.alert('Error', 'Failed to save teacher data.');
         } finally {
             setLoading(false);
+            getTeachers()
+            navigation.goBack();
         }
     };
 

@@ -77,7 +77,7 @@ const ManageTeachers = () => {
                     renderItem={({ item }) => (
                         <TouchableOpacity
                             style={styles.teacherCard}
-                            onPress={() => navigation.navigate('TeacherProfile', { teacher: item })}
+                            onPress={() => navigation.navigate('TeacherProfile', { teacher: item,getTeachers:getTeachers })}
                         >
                             <View style={styles.image}>
                                 <Image style={styles.profile_img} source={item.image ? item.image : profilePic} />
@@ -102,7 +102,7 @@ const ManageTeachers = () => {
                 activeOpacity={0.7}
                 accessibilityLabel="Add Teacher"
                 onPress={() => {
-                    navigation.navigate('AddTeacher');
+                    navigation.navigate('AddTeacher',{getTeachers:getTeachers});
                 }}>
                 <Entypo name="plus" size={24} color="white" />
             </TouchableOpacity>

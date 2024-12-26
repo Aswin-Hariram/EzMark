@@ -21,7 +21,7 @@ import { auth, firestore } from '../../Config/FirebaseConfig';
 import { getFunctions, httpsCallable } from "firebase/functions";
 
 const TeacherProfile = ({ route }) => {
-  const { teacher } = route.params;
+  const { teacher,getTeachers } = route.params;
   const navigation = useNavigation();
   const [selectedSubjects, setSelectedClasses] = useState([]);
   const [teacherName, setTeacherName] = useState(teacher.name);
@@ -31,7 +31,7 @@ const TeacherProfile = ({ route }) => {
   const [classData, setClassData] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const data = [
+  const departmentDropdownData = [
     { label: 'Computer Science', value: 'Computer Science' },
     { label: 'Mechanical Engineering', value: 'Mechanical Engineering' },
     { label: 'Civil Engineering', value: 'Civil Engineering' },
@@ -63,19 +63,23 @@ const TeacherProfile = ({ route }) => {
 
   const updateTeacherInFirestore = async (updatedTeacher) => {
     try {
-      const teacherRef = doc(firestore, 'UserData', teacher.email); // Assuming email as unique identifier
+      const teacherRef = doc(firestore, 'UserData', teacher.id); // Assuming email as unique identifier
       await updateDoc(teacherRef, updatedTeacher);
-      alert('Teacher details updated successfully.');
-      navigation.navigate("AdminDashboardScreen");
+     
     } catch (error) {
       console.error('Error updating teacher in Firestore:', error);
       alert('Failed to update teacher details.');
+    }
+    finally{
+      alert('Teacher details updated successfully.');
+      getTeachers()
+      navigation.goBack()
     }
   };
 
   const deleteFromFirestore = () => {
     setLoading(true);
-    deleteDoc(doc(firestore, "UserData", teacher.email))
+    deleteDoc(doc(firestore, "UserData", teacher.id))
       .then(() => {
         alert("Teacher deleted successfully")
       })
@@ -84,7 +88,8 @@ const TeacherProfile = ({ route }) => {
       })
       .finally(()=>{
         setLoading(false)
-        navigation.navigate("AdminDashboardScreen");
+        getTeachers()
+        navigation.goBack()
       })
   }
   const handleDelete = () => {
@@ -192,7 +197,7 @@ const TeacherProfile = ({ route }) => {
             selectedTextStyle={styles.selectedTextStyle}
             inputSearchStyle={styles.inputSearchStyle}
             iconStyle={styles.iconStyle}
-            data={data}
+            data={departmentDropdownData}
             labelField="label"
             valueField="value"
             search
@@ -286,8 +291,8 @@ const styles = StyleSheet.create({
   },
   dropdown: {
     height: 50,
-    borderColor: 'gray',
-    borderWidth: 0.5,
+    borderColor: Colors.PRIMARY,
+    borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 8,
     marginVertical: 10,

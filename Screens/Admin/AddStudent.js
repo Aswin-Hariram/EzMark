@@ -1,70 +1,115 @@
-import React, { useState } from 'react';
-import {
-    StyleSheet,
-    Text,
-    View,
-    ScrollView,
-    TouchableOpacity,
-    Platform,
-    Image,
-} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Platform, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { TextInput } from 'react-native-paper';
+import { ActivityIndicator, TextInput } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
-import DropDownPicker from 'react-native-dropdown-picker';
-import { useNavigation } from '@react-navigation/native';
+import { Dropdown } from 'react-native-element-dropdown';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Colors } from '../../assets/Colors';
+import PasswordTextInput from '../../Components/PasswordTextInput';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { firestore, auth } from '../../Config/FirebaseConfig';
 
 const AddStudent = () => {
+    const navigation = useNavigation();
+    const { getStudents } = useRoute().params;
     const [studentName, setStudentName] = useState('');
     const [studentEmail, setStudentEmail] = useState('');
     const [studentDepartment, setStudentDepartment] = useState(null);
+    const [studentPassword, setStudentPassword] = useState('');
     const [studentClass, setStudentClass] = useState(null);
     const [studentImage, setStudentImage] = useState(null);
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const [isClassDropdownOpen, setIsClassDropdownOpen] = useState(false);
-    const [selectedSubjects, setSelectedSubjects] = useState([]);
+    const [classes, setClasses] = useState([]);
+    const [processing, setProcessing] = useState(false);
 
-    const departments = [
-        { id: '1', label: 'CSE' },
-        { id: '2', label: 'IT' },
-        { id: '3', label: 'ECE' },
-        { id: '4', label: 'EEE' },
-        { id: '5', label: 'Mech' },
+    const departmentDropdownData = [
+        { label: 'Computer Science', value: 'Computer Science' },
+        { label: 'Mechanical Engineering', value: 'Mechanical Engineering' },
+        { label: 'Civil Engineering', value: 'Civil Engineering' },
+        { label: 'Electrical Engineering', value: 'Electrical Engineering' },
+        { label: 'Electronics & Communication', value: 'Electronics & Communication' },
+        { label: 'Information Technology', value: 'Information Technology' },
+        { label: 'Chemical Engineering', value: 'Chemical Engineering' },
+        { label: 'Biotechnology', value: 'Biotechnology' },
     ];
 
-    const classes = [
-        { id: '1', label: 'CSE A' },
-        { id: '2', label: 'IT A' },
-    ];
+    useEffect(() => {
+        const fetchBasicData = async () => {
+            try {
+                const docRef = doc(firestore, 'BasicData', 'Data');
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.Class) {
+                        setClasses(data.Class.map((cls) => ({ label: cls, value: cls })));
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching classes:', error);
+                Alert.alert('Error', 'Failed to load classes.');
+            }
+        };
+        fetchBasicData();
+    }, []);
 
-    const subjects = [
-        { id: '1', label: 'Mathematics' },
-        { id: '2', label: 'Science' },
-        { id: '3', label: 'History' },
-    ];
+    const validateInput = () => {
+        const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{5,}$/;
 
-    const navigation = useNavigation();
-
-    const handleSaveStudent = () => {
         if (!studentName || !studentEmail || !studentDepartment || !studentClass) {
-            alert('Please fill out all fields.');
-            return;
+            Alert.alert('Error', 'Please fill out all fields.');
+            return false;
         }
 
-        const newStudent = {
-            id: Date.now().toString(),
-            Name: studentName,
-            Email: studentEmail,
-            Department: studentDepartment,
-            Image: studentImage,
-            Subjects: selectedSubjects,
-            Class: studentClass,
-        };
+        if (!emailRegex.test(studentEmail)) {
+            Alert.alert('Invalid Email', 'Please enter a valid email address.');
+            return false;
+        }
 
-        console.log('New student added:', newStudent);
-        navigation.goBack();
+        if (!passwordRegex.test(studentPassword)) {
+            Alert.alert(
+                'Invalid Password',
+                'Password must contain at least 5 characters, 1 uppercase letter, 1 lowercase letter, and 1 number.'
+            );
+            return false;
+        }
+
+        return true;
+    };
+
+    const saveToFirestore = async (newStudent) => {
+        try {
+            await setDoc(doc(firestore, 'UserData', newStudent.id), newStudent);
+            await createUserWithEmailAndPassword(auth, studentEmail, studentPassword);
+            Alert.alert('Success', 'Student added successfully!');
+
+        } catch (error) {
+            console.error('Error saving student:', error.message);
+            Alert.alert('Error', 'Failed to add student.');
+        } finally {
+            setProcessing(false);
+            getStudents();
+            navigation.goBack();
+        }
+    };
+
+    const handleSaveStudent = () => {
+        if (validateInput()) {
+            setProcessing(true);
+            const newStudent = {
+                id: Date.now().toString(),
+                name: studentName,
+                email: studentEmail.toLowerCase(),
+                department: studentDepartment,
+                image: studentImage,
+                class: studentClass,
+                password: studentPassword,
+                type: "Student"
+            };
+            saveToFirestore(newStudent);
+        }
     };
 
     const pickImage = async () => {
@@ -75,15 +120,9 @@ const AddStudent = () => {
             quality: 1,
         });
 
-        if (!result.canceled) {
+        if (!result.canceled && result.assets) {
             setStudentImage(result.assets[0].uri);
         }
-    };
-
-    const toggleSubjectSelection = (id) => {
-        setSelectedSubjects((prev) =>
-            prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-        );
     };
 
     return (
@@ -112,89 +151,54 @@ const AddStudent = () => {
                         value={studentName}
                         onChangeText={setStudentName}
                         mode="outlined"
-                        outlineColor="#153448"
-                        activeOutlineColor="#153448"
+                        activeOutlineColor={Colors.PRIMARY}
+                        outlineColor={Colors.SECONDARY}
                         style={styles.inputField}
                     />
-
                     <TextInput
                         label="Student Email"
                         value={studentEmail}
                         onChangeText={setStudentEmail}
                         mode="outlined"
-                        outlineColor="#153448"
-                        activeOutlineColor="#153448"
+                        activeOutlineColor={Colors.PRIMARY}
+                        outlineColor={Colors.SECONDARY}
                         keyboardType="email-address"
                         style={styles.inputField}
                     />
-
-                    <View style={{ zIndex: isDropdownOpen ? 10 : 0 }}>
-                        <DropDownPicker
-                            open={isDropdownOpen}
-                            value={studentDepartment} // Ensure this matches the selected value
-                            items={departments.map((dept) => ({
-                                label: dept.label, // Display text
-                                value: dept.label, // Actual value stored
-                                key: dept.id, // Unique key
-                            }))}
-                            setOpen={setIsDropdownOpen}
-                            setValue={setStudentDepartment}
-                            placeholder="Select Department"
-                            style={styles.dropdown}
-                            dropDownContainerStyle={styles.dropdownContainer}
-                        />
-
-
-
-                    </View>
-
-                    <View style={{ zIndex: isClassDropdownOpen ? 9 : 0 }}>
-                        <DropDownPicker
-                            open={isClassDropdownOpen}
-                            value={studentClass} // Ensure this matches the selected value
-                            items={classes.map((cls) => ({
-                                label: cls.label, // Display text
-                                value: cls.label, // Actual value stored
-                                key: cls.id, // Unique key
-                            }))}
-                            setOpen={setIsClassDropdownOpen}
-                            setValue={setStudentClass}
-                            placeholder="Select Class"
-                            style={styles.dropdown}
-                            dropDownContainerStyle={styles.dropdownContainer}
-                        />
-                    </View>
+                    <Dropdown
+                        style={styles.dropdown}
+                        data={departmentDropdownData}
+                        labelField="label"
+                        valueField="value"
+                        
+                        activeColor={Colors.PRIMARY}
+                        placeholder="Select Department"
+                        value={studentDepartment}
+                        onChange={(item) => setStudentDepartment(item.value)}
+                    />
+                    <Dropdown
+                        style={styles.dropdown}
+                        data={classes}
+                        labelField="label"
+                        valueField="value"
+                        search
+                        placeholder="Select Class"
+                        value={studentClass}
+                        onChange={(item) => setStudentClass(item.value)}
+                    />
+                    <PasswordTextInput
+                        value={studentPassword}
+                        onChangeText={setStudentPassword}
+                        placeholder="Enter Password"
+                    />
                 </View>
 
-                <View style={styles.chipSection}>
-                    <Text style={styles.classTitle}>Subjects Enrolled</Text>
-                    <View style={styles.chipContainer}>
-                        {subjects.map((subject) => (
-                            <TouchableOpacity
-                                key={subject.id}
-                                style={
-                                    selectedSubjects.includes(subject.id)
-                                        ? styles.selectedChip
-                                        : styles.chip
-                                }
-                                onPress={() => toggleSubjectSelection(subject.id)}
-                            >
-                                <Text
-                                    style={
-                                        selectedSubjects.includes(subject.id)
-                                            ? styles.selectedChipText
-                                            : styles.chipText
-                                    }
-                                >
-                                    {subject.label}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                </View>
-
-                <TouchableOpacity style={styles.saveButton} onPress={handleSaveStudent}>
-                    <Text style={styles.saveButtonText}>Save Student</Text>
+                <TouchableOpacity style={styles.saveButton} onPress={handleSaveStudent} disabled={processing}>
+                    {processing ? (
+                        <ActivityIndicator size="small" color="white" />
+                    ) : (
+                        <Text style={styles.saveButtonText}>Save Student</Text>
+                    )}
                 </TouchableOpacity>
             </ScrollView>
         </SafeAreaView>
@@ -206,9 +210,9 @@ export default AddStudent;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: 'white',
+        backgroundColor: '#f8f9fa',
         paddingHorizontal: 20,
-        paddingTop: Platform.OS === 'android' ? 15 : 0,
+        paddingTop: Platform.OS === 'android' ? 20 : 0,
     },
     scrollView: {
         paddingBottom: 20,
@@ -216,12 +220,13 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginVertical: Platform.OS === 'android' ? 5 : 4,
+        marginBottom: 20,
     },
     headerText: {
         marginLeft: 10,
         fontWeight: 'bold',
-        fontSize: 18,
+        fontSize: 20,
+        color: '#153448',
     },
     imageSection: {
         alignItems: 'center',
@@ -231,11 +236,11 @@ const styles = StyleSheet.create({
         width: 120,
         height: 120,
         borderRadius: 60,
-        backgroundColor: '#f0f0f0',
+        backgroundColor: '#e9ecef',
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#ccc',
+        borderColor: '#dee2e6',
     },
     studentImage: {
         width: '100%',
@@ -243,7 +248,7 @@ const styles = StyleSheet.create({
         borderRadius: 60,
     },
     imagePlaceholder: {
-        color: '#888',
+        color: '#6c757d',
         fontSize: 16,
     },
     formSection: {
@@ -251,60 +256,28 @@ const styles = StyleSheet.create({
     },
     inputField: {
         backgroundColor: 'white',
+        borderColor:Colors.PRIMARY,
         marginBottom: 15,
+        borderRadius: 10,
     },
     dropdown: {
-        backgroundColor: 'white',
-        borderColor: '#153448',
+        height: 50,
+        borderColor: Colors.PRIMARY,
+        borderWidth: 1,
+        borderRadius: 8,
+        paddingHorizontal: 8,
         marginBottom: 15,
-    },
-    dropdownContainer: {
-        borderColor: '#153448',
-        zIndex: 10, // Ensure dropdown is on top
-    },
-    chipSection: {
-        marginVertical: 15,
-    },
-    chipContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-    },
-    chip: {
-        paddingVertical: 8,
-        paddingHorizontal: 15,
-        backgroundColor: '#EEEEEE',
-        borderRadius: 20,
-        margin: 5,
-    },
-    selectedChip: {
-        paddingVertical: 8,
-        paddingHorizontal: 15,
-        backgroundColor: Colors.PRIMARY,
-        borderRadius: 20,
-        margin: 5,
-    },
-    chipText: {
-        fontSize: 14,
-        color: 'black',
-    },
-    selectedChipText: {
-        fontSize: 14,
-        color: 'white',
+        backgroundColor: 'white',
     },
     saveButton: {
-        backgroundColor: Colors.PRIMARY,
+        backgroundColor: '#153448',
         paddingVertical: 15,
         borderRadius: 10,
         alignItems: 'center',
-        marginHorizontal: 20,
         marginTop: 20,
     },
     saveButtonText: {
         color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    classTitle: {
         fontSize: 16,
         fontWeight: 'bold',
     },

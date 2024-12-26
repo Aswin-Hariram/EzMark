@@ -1,39 +1,130 @@
-import { StyleSheet, Text, View, Image, TouchableOpacity, Platform, ScrollView } from 'react-native';
-import React, { useState } from 'react';
+import { StyleSheet, Text, View, Image, TouchableOpacity, Platform, ScrollView, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import dp from "../../assets/Teachers/profile.png";
-import { TextInput } from 'react-native-paper';
+import { ActivityIndicator, TextInput } from 'react-native-paper';
 import { Colors } from '../../assets/Colors';
+import { Dropdown } from 'react-native-element-dropdown';
+import { deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { firestore } from '../../Config/FirebaseConfig';
+
 const StudentProfile = ({ route }) => {
-  const { student } = route.params;
-
-  const [chips, setChips] = useState([
-    { id: 1, label: 'Teams' },
-    { id: 2, label: 'Tasks' },
-    { id: 3, label: 'Creators' },
-    { id: 4, label: 'Notes' },
-    { id: 5, label: 'Priority' },
-    { id: 6, label: 'Companies' },
-    { id: 7, label: 'Projects' },
-    { id: 8, label: 'Users' },
-    { id: 9, label: 'Goals' },
-    { id: 10, label: 'Status' },
-  ]);
-
-  const [selectedChip, setSelectedChip] = useState(null);
-  const [edit, setEdit] = useState(false);
+  const { student, getStudent } = route.params;
   const navigation = useNavigation();
 
-  const removeChip = (chipId) => {
-    setChips((prevChips) => prevChips.filter((chip) => chip.id !== chipId));
+  const [studentName, setStudentName] = useState(student.name);
+  const [studentEmail, setStudentEmail] = useState(student.email);
+  const [studentDepartment, setStudentDepartment] = useState(student.department);
+  const [classes, setClasses] = useState([]);
+  const [studentClass, setStudentClass] = useState(student.class);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+
+
+
+  const deleteFromFirestore = () => {
+    setIsUpdating(true);
+    deleteDoc(doc(firestore, "UserData", student.id))
+      .then(() => {
+        alert("Student deleted successfully")
+      })
+      .catch((error) => {
+        alert("Error", error.message)
+      })
+      .finally(() => {
+        setIsUpdating(false)
+        getStudent()
+        navigation.goBack()
+      })
+  }
+  const handleDelete = () => {
+    Alert.alert("Alert", "Do you want to delete student, Are you sure?", [
+      {
+        text: "Yes",
+        onPress: () => { deleteFromFirestore() }
+      },
+      {
+        text: "No",
+        onPress: () => { }
+      }
+    ])
+  }
+  const updateStudentInFirestore = async (updatedStudent) => {
+    try {
+      const studentRef = doc(firestore, 'UserData', student.id);
+      await updateDoc(studentRef, updatedStudent);
+      Alert.alert('Success', 'Student details updated successfully.');
+
+    } catch (error) {
+      console.error('Error updating student in Firestore:', error);
+      Alert.alert('Error', 'Failed to update student details.');
+    }
+    finally {
+      getStudent(); // Call getStudents to refresh list
+      navigation.goBack();
+    }
   };
+
+  const validateInput = () => {
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+
+    if (!studentName || !studentEmail || !studentDepartment || !studentClass) {
+      Alert.alert('Error', 'Please fill out all fields.');
+      return false;
+    }
+
+    if (!emailRegex.test(studentEmail)) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return false;
+    }
+    return true;
+  };
+
+  const handleUpdate = async () => {
+    if (!validateInput()) return;
+
+    setIsUpdating(true);
+  
+    const updatedStudent = {
+      name: studentName,
+      email: studentEmail,
+      department: studentDepartment,
+      class: studentClass,
+    };
+
+    try {
+      await updateStudentInFirestore(updatedStudent);
+    } catch (error) {
+      console.error('Error updating student:', error);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        const docRef = doc(firestore, 'BasicData', 'Data');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.Class) {
+            setClasses(data.Class.map((cls) => ({ label: cls, value: cls })));
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching classes:', error);
+        Alert.alert('Error', 'Failed to load classes.');
+      }
+    };
+    fetchClasses();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={28} color="black" />
@@ -41,106 +132,51 @@ const StudentProfile = ({ route }) => {
           <Text style={styles.headerText}>Edit Student</Text>
         </View>
 
-        {/* Profile Section */}
         <View style={styles.profileSection}>
-          <Image
-            style={styles.profileImage}
-            source={dp}
-            width={60}
-            height={60}
-          />
-
+          <Image style={styles.profileImage} source={dp} />
         </View>
-        <View style={{ ...styles.classesHeader, flexDirection: 'column' }}>
-          <Text style={styles.classTitle}>Personal details</Text>
+
+        <View style={styles.formSection}>
           <TextInput
             label="Student Name"
-            value={student.Name}
-
+            value={studentName}
+            onChangeText={setStudentName}
             mode="outlined"
-            outlineColor="#153448"
-            activeOutlineColor='#153448'
-            style={{
-              backgroundColor: 'white',
-              marginBottom: 10,
-              marginTop: 20,
-
-            }}
+            style={styles.input}
           />
-
 
           <TextInput
             label="Student Email"
+            value={studentEmail}
+            onChangeText={setStudentEmail}
             mode="outlined"
-            outlineColor="#153448"
-            activeOutlineColor='#153448'
-            style={{
-              backgroundColor: 'white',
-              marginBottom: 10,
-            }}
+            style={styles.input}
           />
 
-
-          <TextInput
-            label="Student Department"
-            mode="outlined"
-            outlineColor="#153448"
-            activeOutlineColor='#153448'
-            style={{
-              backgroundColor: 'white',
-              marginBottom: 10,
-            }}
+          <Dropdown
+            style={styles.dropdown}
+            data={classes}
+            labelField="label"
+            valueField="value"
+            placeholder="Select Class"
+            value={studentClass}
+            onChange={(item) => setStudentClass(item.value)}
           />
-
-
-        </View>
-        {/* Classes Handling */}
-        <View style={styles.classesHeader}>
-          <Text style={styles.classTitle}>Subjects Enrolled</Text>
-          <TouchableOpacity onPress={() => setEdit(!edit)}>
-            <View style={styles.editChip}>
-              <Text style={styles.editChipText}>{edit ? 'Done' : 'Edit'}</Text>
-            </View>
-          </TouchableOpacity>
         </View>
 
-
-        {/* Chips Section */}
-        <View style={styles.chipContainer}>
-          {chips.length > 0 ? (
-            chips.map((chip) => (
-              <View key={chip.id} style={styles.chipWrapper}>
-                <TouchableOpacity
-                  style={selectedChip === chip.id ? styles.selectedChip : styles.chip}
-                  onPress={() => setSelectedChip(chip.id)}
-                >
-                  <Text
-                    style={
-                      selectedChip === chip.id ? styles.selectedChipText : styles.chipText
-                    }
-                  >
-                    {chip.label}
-                  </Text>
-                </TouchableOpacity>
-                {edit && (
-                  <TouchableOpacity
-                    style={styles.removeChipButton}
-                    onPress={() => removeChip(chip.id)}
-                  >
-                    <Ionicons name="close" size={20} color="red" />
-                  </TouchableOpacity>
-                )}
-              </View>
-            ))
+        <TouchableOpacity
+          style={[styles.updateButton, isUpdating && { opacity: 0.7 }]}
+          onPress={handleUpdate}
+          onLongPress={handleDelete}
+          disabled={isUpdating}
+        >
+          {isUpdating ? (
+            <ActivityIndicator size="small" color="white" />
           ) : (
-            <Text style={styles.noChipsText}>No Classes Available</Text>
+            <Text style={styles.updateButtonText}>Update Student</Text>
           )}
-        </View>
-       
+        </TouchableOpacity>
       </ScrollView>
-
-
-       
     </SafeAreaView>
   );
 };
@@ -156,9 +192,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: Platform.OS === 'android' ? 20 : 0,
-    marginLeft: 5,
-
+    marginBottom: 20,
   },
   headerText: {
     marginLeft: 10,
@@ -174,82 +208,32 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
   },
-  userName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginTop: 10,
-  },
-  classesHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-
+  formSection: {
     marginHorizontal: 15,
-    marginTop: 20,
-  },
-  classTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  editChip: {
-    backgroundColor: '#F1F1F1',
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 5,
-  },
-  editChipText: {
-    fontSize: 15,
-    fontWeight: 'bold',
-  },
-  chipContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    marginVertical: 20,
-  },
-  chipWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    margin: 5,
-  },
-  chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    backgroundColor: '#EEEEEE',
-    opacity:0.8,
-    borderColor:Colors.SECONDARY,
-    borderWidth:0.5,
-    borderRadius: 20,
-  },
-  selectedChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'gray',
-  },
-  chipText: {
-    fontSize: 14,
-    color: 'black',
-  },
-  selectedChipText: {
-    fontSize: 14,
-    color: 'black',
-  },
-  removeChipButton: {
-    marginLeft: 5,
-  },
-  noChipsText: {
-    fontSize: 16,
-    color: 'gray',
-    textAlign: 'center',
-    marginTop: 20,
   },
   input: {
+    backgroundColor: 'white',
+    marginBottom: 15,
+  },
+  dropdown: {
+    height: 50,
+    borderColor: '#153448',
     borderWidth: 1,
-    borderColor: 'black',
-    borderRadius: 5,
-    marginBottom: 10,
-    padding: 10,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    marginBottom: 15,
+    backgroundColor: 'white',
+  },
+  updateButton: {
+    backgroundColor: Colors.PRIMARY,
+    height: 50,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  updateButtonText: {
+    fontSize: 18,
+    color: 'white',
   },
 });

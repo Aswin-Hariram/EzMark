@@ -1,28 +1,60 @@
-import { FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View, Platform, SafeAreaView } from 'react-native';
-import React, { useState } from 'react';
-import Feather from '@expo/vector-icons/Feather';
-import Entypo from '@expo/vector-icons/Entypo';
+import { FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View, Platform, SafeAreaView, } from 'react-native';
+import React, { useEffect, useState } from 'react';
 import { Colors } from '../../assets/Colors';
 import { useNavigation } from '@react-navigation/native';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { firestore } from '../../Config/FirebaseConfig';
+import Feather from '@expo/vector-icons/Feather';
+import Entypo from '@expo/vector-icons/Entypo';
+import profilePic from '../../assets/Teachers/profile.png';
+import { ActivityIndicator } from 'react-native-paper';
+
 
 const ManageStudents = () => {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [Students, setStudents] = useState([
-        { id: '1', profile: require('../../assets/Teachers/profile.png'), Name: 'Gowtham', Department: 'CSE' },
-        { id: '2', profile: require('../../assets/Teachers/woman.png'), Name: 'Jane', Department: 'ECE' },
-        { id: '3', profile: require('../../assets/Teachers/profile.png'), Name: 'John', Department: 'EEE' },
-        { id: '4', profile: require('../../assets/Teachers/woman.png'), Name: 'Doe', Department: 'MECH' },
-        { id: '5', profile: require('../../assets/Teachers/profile.png'), Name: 'Gowtham', Department: 'CSE' },
-        { id: '6', profile: require('../../assets/Teachers/woman.png'), Name: 'Jane', Department: 'ECE' },
-        { id: '7', profile: require('../../assets/Teachers/profile.png'), Name: 'John', Department: 'EEE' },
-        { id: '8', profile: require('../../assets/Teachers/woman.png'), Name: 'Doe', Department: 'MECH' },
-    ]);
     const navigation = useNavigation();
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isLoading, setisLoading] = useState(true)
+    const [Students, setStudents] = useState([]);
+
+    const getStudents = async () => {
+        console.log('Fetching teachers from database');
+
+        try {
+            setisLoading(true)
+
+            const q = query(collection(firestore, 'UserData'), where('type', '==', 'Student'));
+            const querySnapshot = await getDocs(q);
+            const stud = []; // Temporary array to hold fetched teachers
+            querySnapshot.forEach((doc) => {
+                console.log(doc.id, ' => ', doc.data());
+                stud.push(doc.data()); // Add Student data to the array
+            });
+            setStudents(stud); // Set state with all fetched teachers
+        } catch (error) {
+            console.log('Error getting documents: ', error);
+        } finally {
+            setisLoading(false)
+        }
+    };
+
+    useEffect(() => {
+
+        getStudents();
+    }, []);
+
     const filteredStudents = Students.filter(
         (teacher) =>
-            teacher.Name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            teacher.Department.toLowerCase().includes(searchQuery.toLowerCase())
+            teacher.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            teacher.department.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+
+    if (isLoading) {
+        return (<View style={{ flex: 1, justifyContent: 'center', alignContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size={'small'} color={Colors.PRIMARY} />
+        </View>)
+    }
+
 
     return (
         <SafeAreaView style={styles.container}>
@@ -43,15 +75,17 @@ const ManageStudents = () => {
                 <FlatList
                     style={{ marginTop: 13 }}
                     data={filteredStudents}
+                    refreshing={isLoading}
+                    onRefresh={getStudents}
                     renderItem={({ item }) => (
                         <TouchableOpacity style={styles.teacherCard}
-                        onPress={() => navigation.navigate('StudentProfile', { student: item })}>
+                            onPress={() => navigation.navigate('StudentProfile', { student: item ,getStudent:getStudents})}>
                             <View style={styles.image}>
-                                <Image style={styles.profile_img} source={item.profile} />
+                                <Image style={styles.profile_img} source={item.image?item.image:profilePic} />
                             </View>
                             <View style={styles.info}>
-                                <Text style={styles.teacherName}>{item.Name}</Text>
-                                <Text style={styles.teacherDept}>Department: {item.Department}</Text>
+                                <Text style={styles.teacherName}>{item.name}</Text>
+                                <Text style={styles.teacherDept}>Department: {item.department}</Text>
                             </View>
                             <TouchableOpacity style={styles.btn} activeOpacity={0.7}>
                                 <Entypo name="chevron-right" size={24} color={Colors.PRIMARY} />
@@ -71,7 +105,8 @@ const ManageStudents = () => {
                 style={styles.floating_btn}
                 activeOpacity={0.7}
                 accessibilityLabel="Add Teacher"
-                    onPress={()=>{navigation.navigate("AddStudent")
+                onPress={() => {
+                    navigation.navigate("AddStudent",{getStudents:getStudents})
                 }}
             >
                 <Entypo name="plus" size={24} color="white" />

@@ -70,7 +70,7 @@ const LoginScreen = () => {
           await signInWithEmailAndPassword(auth, email, password);
           if (type === 'Admin') navigation.navigate('AdminDashboardScreen');
           else if (type === 'Teacher') navigation.navigate('TeacherDashBoard');
-          else if (type === 'Student') navigation.navigate('StudentDashboard');
+          else if (type === 'Student') navigation.navigate('StudentDashBoard');
           else return;
           return;
         }
