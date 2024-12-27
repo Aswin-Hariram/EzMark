@@ -12,7 +12,7 @@ import React, { useEffect, useState } from 'react';
 import { Dropdown } from 'react-native-element-dropdown';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import dp from "../../assets/Teachers/profile.png";
 import { ActivityIndicator, TextInput } from 'react-native-paper';
 import { Colors } from '../../assets/Colors';
@@ -20,8 +20,9 @@ import { deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, firestore } from '../../Config/FirebaseConfig';
 import { getFunctions, httpsCallable } from "firebase/functions";
 
-const TeacherProfile = ({ route }) => {
-  const { teacher,getTeachers } = route.params;
+const TeacherProfile = ({ teacher1,getTeachers1 }) => {
+  const route = useRoute();
+  const { teacher = teacher1, getTeachers = getTeachers1 } = route.params || {};
   const navigation = useNavigation();
   const [selectedSubjects, setSelectedClasses] = useState([]);
   const [teacherName, setTeacherName] = useState(teacher.name);

@@ -23,6 +23,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import StudentDashBoard from './Screens/Student/StudentDashBoard';
 import TeacherDashBoard from './Screens/Teacher/TeacherDashBoard';
 import AddClass from './Screens/Admin/AddClass';
+import CreateRequest from './Screens/Teacher/CreateRequest';
 
 export default function App() {
   const [loaded, error] = useFonts({
@@ -53,6 +54,9 @@ export default function App() {
             console.log("userType",userType);
             if (userType === 'Admin') {
               setinitialRoute('AdminDashboardScreen');
+            }
+            else if (userType === 'Teacher') {
+              setinitialRoute('TeacherDashBoard');
             }
           } catch (error) {
             console.error('Error fetching user type from AsyncStorage:', error);
@@ -86,6 +90,7 @@ export default function App() {
         <Stack.Screen name='StudentDashBoard' component={StudentDashBoard} />
         <Stack.Screen name='TeacherDashBoard' component={TeacherDashBoard} />
         <Stack.Screen name='AddClass' component={AddClass} />
+        <Stack.Screen name='CreateRequest' component={CreateRequest} />
       </Stack.Navigator>
     );
   }
