@@ -63,8 +63,10 @@ const CreateRequest = () => {
 
         try {
             const time = new Date().toISOString()
+            const id= Date.now().toString()
             setisProcessing(true)
             const requestData = {
+                id:id,
                 class: requestedClass,
                 subjectName: subjectName.trim(),
                 createdBy: teacherDetail.name,
@@ -91,7 +93,7 @@ const CreateRequest = () => {
             const temp = []
             for (const userDoc of querySnapshot.docs) {
                 const userId = userDoc.id;
-                temp.push({ Email: userDoc.get("email"), status: "Requested" })
+                temp.push({ Email: userDoc.get("email"), status: "Requested",id:userId })
                 const nestedDocRef = doc(collection(firestore, `UserData/${userId}/AttendanceRequests`));
                 await setDoc(nestedDocRef, requestData);
 

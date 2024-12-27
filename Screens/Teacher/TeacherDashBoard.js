@@ -12,10 +12,10 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 
 const Dashboard = ({ teacherDetail }) => {
   const navigation = useNavigation();
-  
+
   return (
     <SafeAreaView style={styles.container}>
-    <Text>{teacherDetail.name}</Text>
+      <Text>{teacherDetail.name}</Text>
       <FAB
         icon="plus"
         color="white"
@@ -102,7 +102,7 @@ const TeacherDashBoard = () => {
       <Tab.Screen name="Dashboard">
         {() => <Dashboard teacherDetail={teacherDetail[0]} />}
       </Tab.Screen>
-      <Tab.Screen name="TeacherHistory" component={TeacherHistory} />
+      <Tab.Screen name="TeacherHistory" children={() =>  <TeacherHistory teacherDetail={teacherDetail[0]} /> } />
       <Tab.Screen name="TeacherProfile">
         {() => <TeacherProfile teacher1={teacherDetail[0]} getTeachers1={getTeacher} />}
       </Tab.Screen>

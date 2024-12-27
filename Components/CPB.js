@@ -1,8 +1,15 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Circle, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle } from 'react-native-svg';
 
-const CPB = ({ percentage, size = 150, strokeWidth = 10, color = '#3498db', backgroundColor = '#e0e0e0' }) => {
+const CPB = ({
+  tsize = 20, // Default value set for tsize
+  percentage = 0,
+  size = 150,
+  strokeWidth = 10,
+  color = '#3498db',
+  backgroundColor = '#e0e0e0',
+}) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
@@ -34,7 +41,9 @@ const CPB = ({ percentage, size = 150, strokeWidth = 10, color = '#3498db', back
       </Svg>
       {/* Percentage Text */}
       <View style={styles.textContainer}>
-        <Text style={styles.percentageText}>{`${percentage}%`}</Text>
+        <Text style={[styles.percentageText, { fontSize: tsize }]}>
+          {`${percentage.toFixed(1)}%`}
+        </Text>
       </View>
     </View>
   );
@@ -51,7 +60,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   percentageText: {
-    fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
   },

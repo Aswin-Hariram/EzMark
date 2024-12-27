@@ -24,6 +24,7 @@ import StudentDashBoard from './Screens/Student/StudentDashBoard';
 import TeacherDashBoard from './Screens/Teacher/TeacherDashBoard';
 import AddClass from './Screens/Admin/AddClass';
 import CreateRequest from './Screens/Teacher/CreateRequest';
+import RequestDetails from './Screens/Teacher/RequestDetails';
 
 export default function App() {
   const [loaded, error] = useFonts({
@@ -91,6 +92,7 @@ export default function App() {
         <Stack.Screen name='TeacherDashBoard' component={TeacherDashBoard} />
         <Stack.Screen name='AddClass' component={AddClass} />
         <Stack.Screen name='CreateRequest' component={CreateRequest} />
+        <Stack.Screen name='RequestDetails' component={RequestDetails} />
       </Stack.Navigator>
     );
   }

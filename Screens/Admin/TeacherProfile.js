@@ -19,8 +19,9 @@ import { Colors } from '../../assets/Colors';
 import { deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, firestore } from '../../Config/FirebaseConfig';
 import { getFunctions, httpsCallable } from "firebase/functions";
+import LottieView from 'lottie-react-native';
 
-const TeacherProfile = ({ teacher1,getTeachers1 }) => {
+const TeacherProfile = ({ teacher1, getTeachers1 }) => {
   const route = useRoute();
   const { teacher = teacher1, getTeachers = getTeachers1 } = route.params || {};
   const navigation = useNavigation();
@@ -66,12 +67,12 @@ const TeacherProfile = ({ teacher1,getTeachers1 }) => {
     try {
       const teacherRef = doc(firestore, 'UserData', teacher.id); // Assuming email as unique identifier
       await updateDoc(teacherRef, updatedTeacher);
-     
+
     } catch (error) {
       console.error('Error updating teacher in Firestore:', error);
       alert('Failed to update teacher details.');
     }
-    finally{
+    finally {
       alert('Teacher details updated successfully.');
       getTeachers()
       navigation.goBack()
@@ -85,9 +86,9 @@ const TeacherProfile = ({ teacher1,getTeachers1 }) => {
         alert("Teacher deleted successfully")
       })
       .catch((error) => {
-        alert("Error",error.message)
+        alert("Error", error.message)
       })
-      .finally(()=>{
+      .finally(() => {
         setLoading(false)
         getTeachers()
         navigation.goBack()
@@ -160,14 +161,21 @@ const TeacherProfile = ({ teacher1,getTeachers1 }) => {
     <SafeAreaView style={styles.container}>
       <ScrollView>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={28} color="black" />
+        <TouchableOpacity style={styles.leftIcon} onPress={()=>{navigation.goBack()}}>
+            <Ionicons name="chevron-back-outline" size={24} color={Colors.PRIMARY} />
+            <Text style={styles.backText}>Edit Profile</Text>
           </TouchableOpacity>
-          <Text style={styles.headerText}>Edit Teacher</Text>
+          <View style={styles.rightIcons}>
+            <TouchableOpacity style={styles.icon}>
+              <Ionicons name="ellipsis-vertical" size={22} color={Colors.PRIMARY} />
+            </TouchableOpacity>
+            
+          </View>
         </View>
 
         <View style={styles.profileSection}>
-          <Image style={styles.profileImage} source={dp} />
+          {/* <Image style={styles.profileImage} source={dp} /> */}
+          <LottieView source={require("../../assets/avatar.json")} autoPlay loop style={styles.profileImage} />
         </View>
 
         <View style={styles.formSection}>
@@ -257,12 +265,31 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-    padding: 10,
+    paddingTop: Platform.OS==='android'?10:0,
+    paddingHorizontal:10
   },
   header: {
+    height: 60,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 5,
+  },
+  leftIcon: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: Platform.OS === 'android' ? 20 : 0,
+  },
+  rightIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backText: {
+    marginLeft: 4,
+    color: "black",
+    fontSize: 16,
+  },
+  icon: {
+    marginLeft: 16,
   },
   headerText: {
     marginLeft: 10,
@@ -271,12 +298,13 @@ const styles = StyleSheet.create({
   },
   profileSection: {
     alignItems: 'center',
-    marginVertical: 20,
+    marginVertical: 5,
   },
   profileImage: {
-    width: 100,
-    height: 100,
+    width: 250,
+    height: 150,
     borderRadius: 50,
+    objectFit:'scale-down'
   },
   formSection: {
     marginVertical: 20,
