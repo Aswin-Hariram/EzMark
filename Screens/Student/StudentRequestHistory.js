@@ -7,8 +7,9 @@ import { collection, doc, getDocs, onSnapshot, query, updateDoc, where } from 'f
 import { firestore } from '../../Config/FirebaseConfig';
 import { format } from 'date-fns';
 import { useNavigation } from '@react-navigation/native';
+import StudentRequest from './StudentRequest';
 
-const TeacherHistory = ({ teacherDetail }) => {
+const StudentRequestHistory = ({ studentDetail }) => {
   const [requestedData, setRequestedData] = useState([]);
   const [loadingId, setLoadingId] = useState(null); // Track loading for specific item
   const [historyData, setHistoryData] = useState([]);
@@ -60,7 +61,7 @@ const TeacherHistory = ({ teacherDetail }) => {
         }
       });
       console.log(enrolledstudents)
-      await updateDoc(doc(firestore, `UserData/${teacherDetail.id}/AttendanceRequests`, item.id), {
+      await updateDoc(doc(firestore, `UserData/${studentDetail.id}/AttendanceRequests`, item.id), {
         status: "Closed",
         enrolledStudents:enrolledstudents,
 
@@ -77,15 +78,16 @@ const TeacherHistory = ({ teacherDetail }) => {
   };
 
   useEffect(() => {
-    if (!teacherDetail?.id) return;
+    if (!studentDetail?.id) return;
+    console.log(studentDetail.id)
 
     const q = query(
-      collection(firestore, `UserData/${teacherDetail.id}/AttendanceRequests`),
+      collection(firestore, `UserData/${studentDetail.id}/AttendanceRequests`),
       where("status", "==", "Requested")
     );
 
     const historyQuery = query(
-      collection(firestore, `UserData/${teacherDetail.id}/AttendanceRequests`),
+      collection(firestore, `UserData/${studentDetail.id}/AttendanceRequests`),
       where("status", "!=", "Requested")
     );
 
@@ -94,7 +96,6 @@ const TeacherHistory = ({ teacherDetail }) => {
         id: doc.id,
         ...doc.data(),
         time: formatDate(doc.get("createdAt")),
-        percentage: ((doc.get("totalNumberOfStudents") - doc.get("pendingNumberOfStudents")) / doc.get("totalNumberOfStudents")) * 100
       }));
       setRequestedData(temp);
     });
@@ -104,7 +105,7 @@ const TeacherHistory = ({ teacherDetail }) => {
         id: doc.id,
         ...doc.data(),
         time: formatDate(doc.get("createdAt")),
-        percentage: ((doc.get("totalNumberOfStudents") - doc.get("pendingNumberOfStudents")) / doc.get("totalNumberOfStudents")) * 100
+       
       }));
       setHistoryData(temp);
     });
@@ -113,7 +114,7 @@ const TeacherHistory = ({ teacherDetail }) => {
       unsubscribeRequested();
       unsubscribeHistory();
     };
-  }, [teacherDetail]);
+  }, [studentDetail]);
 
   const renderPendingRequest = ({ item }) => (
     <TouchableOpacity key={item.id} style={styles.requestCardContainer} onPress={() => {
@@ -130,7 +131,8 @@ const TeacherHistory = ({ teacherDetail }) => {
           </View>
           <Text style={styles.dateText}>{item.time || 'Unknown Date'}</Text>
         </View>
-        <CPB percentage={item.percentage || 0} size={80} strokeWidth={6} color={Colors.SECONDARY} />
+      
+
       </View>
       <View style={styles.requestActionsRow}>
         <TouchableOpacity style={styles.cancelButton}>
@@ -164,7 +166,7 @@ const TeacherHistory = ({ teacherDetail }) => {
           </View>
           <Text style={styles.dateText}>{item.time || 'Unknown Date'}</Text>
         </View>
-        <CPB percentage={item.percentage || 0} size={65} strokeWidth={4} tsize={14} color={Colors.SECONDARY} />
+       
       </View>
     </TouchableOpacity>
   );
@@ -344,4 +346,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default TeacherHistory;
+export default StudentRequestHistory;

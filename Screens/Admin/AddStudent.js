@@ -8,7 +8,7 @@ import { Dropdown } from 'react-native-element-dropdown';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Colors } from '../../assets/Colors';
 import PasswordTextInput from '../../Components/PasswordTextInput';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { firestore, auth } from '../../Config/FirebaseConfig';
 
@@ -17,6 +17,7 @@ const AddStudent = () => {
     const { getStudents } = useRoute().params;
     const [studentName, setStudentName] = useState('');
     const [studentEmail, setStudentEmail] = useState('');
+    const [studentRollno, setStudentRollno] = useState('');
     const [studentDepartment, setStudentDepartment] = useState(null);
     const [studentPassword, setStudentPassword] = useState('');
     const [studentClass, setStudentClass] = useState(null);
@@ -56,18 +57,25 @@ const AddStudent = () => {
 
     const validateInput = () => {
         const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{5,}$/;
+         // Example regex for roll number (6-12 characters)
 
-        if (!studentName || !studentEmail || !studentDepartment || !studentClass) {
+        // Check if any field is empty
+        if (!studentName || !studentEmail || !studentDepartment || !studentClass || !studentRollno) {
             Alert.alert('Error', 'Please fill out all fields.');
             return false;
         }
 
+        // Validate email
         if (!emailRegex.test(studentEmail)) {
             Alert.alert('Invalid Email', 'Please enter a valid email address.');
             return false;
         }
 
+        // Validate roll number
+        
+
+        // Validate password
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{5,}$/;
         if (!passwordRegex.test(studentPassword)) {
             Alert.alert(
                 'Invalid Password',
@@ -79,12 +87,17 @@ const AddStudent = () => {
         return true;
     };
 
+    const checkIfRollnoExists = async () => {
+        const q = query(collection(firestore, 'UserData'), where("rollno", "==", studentRollno));
+        const querySnapshot = await getDocs(q);
+        return !querySnapshot.empty;
+    };
+
     const saveToFirestore = async (newStudent) => {
         try {
             await setDoc(doc(firestore, 'UserData', newStudent.id), newStudent);
             await createUserWithEmailAndPassword(auth, studentEmail, studentPassword);
             Alert.alert('Success', 'Student added successfully!');
-
         } catch (error) {
             console.error('Error saving student:', error.message);
             Alert.alert('Error', 'Failed to add student.');
@@ -95,9 +108,17 @@ const AddStudent = () => {
         }
     };
 
-    const handleSaveStudent = () => {
+    const handleSaveStudent = async () => {
         if (validateInput()) {
             setProcessing(true);
+
+            const rollnoExists = await checkIfRollnoExists();
+            if (rollnoExists) {
+                setProcessing(false);
+                Alert.alert('Error', 'This roll number is already taken.');
+                return;
+            }
+
             const newStudent = {
                 id: Date.now().toString(),
                 name: studentName,
@@ -105,9 +126,11 @@ const AddStudent = () => {
                 department: studentDepartment,
                 image: studentImage,
                 class: studentClass,
+                rollno: studentRollno,
                 password: studentPassword,
                 type: "Student"
             };
+
             saveToFirestore(newStudent);
         }
     };
@@ -165,12 +188,20 @@ const AddStudent = () => {
                         keyboardType="email-address"
                         style={styles.inputField}
                     />
+                    <TextInput
+                        label="Roll Number"
+                        value={studentRollno}
+                        onChangeText={setStudentRollno}
+                        mode="outlined"
+                        activeOutlineColor={Colors.PRIMARY}
+                        outlineColor={Colors.SECONDARY}
+                        style={styles.inputField}
+                    />
                     <Dropdown
                         style={styles.dropdown}
                         data={departmentDropdownData}
                         labelField="label"
                         valueField="value"
-                        
                         activeColor={Colors.PRIMARY}
                         placeholder="Select Department"
                         value={studentDepartment}

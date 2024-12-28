@@ -14,22 +14,23 @@ const ManageStudents = () => {
     const navigation = useNavigation();
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setisLoading] = useState(true)
+
     const [Students, setStudents] = useState([]);
 
     const getStudents = async () => {
-        console.log('Fetching teachers from database');
+        console.log('Fetching students from database');
 
         try {
             setisLoading(true)
 
             const q = query(collection(firestore, 'UserData'), where('type', '==', 'Student'));
             const querySnapshot = await getDocs(q);
-            const stud = []; // Temporary array to hold fetched teachers
+            const stud = []; // Temporary array to hold fetched students
             querySnapshot.forEach((doc) => {
                 console.log(doc.id, ' => ', doc.data());
                 stud.push(doc.data()); // Add Student data to the array
             });
-            setStudents(stud); // Set state with all fetched teachers
+            setStudents(stud); // Set state with all fetched students
         } catch (error) {
             console.log('Error getting documents: ', error);
         } finally {
@@ -38,14 +39,14 @@ const ManageStudents = () => {
     };
 
     useEffect(() => {
-
         getStudents();
     }, []);
 
     const filteredStudents = Students.filter(
-        (teacher) =>
-            teacher.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            teacher.department.toLowerCase().includes(searchQuery.toLowerCase())
+        (student) =>
+            student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            student.department.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            student.rollno.toLowerCase().includes(searchQuery.toLowerCase()) // Filter by roll number as well
     );
 
 
@@ -79,13 +80,15 @@ const ManageStudents = () => {
                     onRefresh={getStudents}
                     renderItem={({ item }) => (
                         <TouchableOpacity style={styles.teacherCard}
-                            onPress={() => navigation.navigate('StudentProfile', { student: item ,getStudent:getStudents})}>
+                            onPress={() => navigation.navigate('StudentProfile', { student: item, getStudent: getStudents })}>
                             <View style={styles.image}>
-                                <Image style={styles.profile_img} source={item.image?item.image:profilePic} />
+                                <Image style={styles.profile_img} source={item.image ? item.image : profilePic} />
                             </View>
                             <View style={styles.info}>
                                 <Text style={styles.teacherName}>{item.name}</Text>
                                 <Text style={styles.teacherDept}>Department: {item.department}</Text>
+                                {/* Wrap rollno in a <Text> component */}
+                                <Text style={styles.teacherDept}>Roll No: {item.rollno}</Text>
                             </View>
                             <TouchableOpacity style={styles.btn} activeOpacity={0.7}>
                                 <Entypo name="chevron-right" size={24} color={Colors.PRIMARY} />
@@ -94,6 +97,7 @@ const ManageStudents = () => {
                     )}
                     keyExtractor={(item) => item.id}
                 />
+
             ) : (
                 <View style={{ alignItems: 'center', marginTop: 20 }}>
                     <Text style={{ color: Colors.SECONDARY, fontSize: 16 }}>No Students found</Text>
@@ -104,9 +108,9 @@ const ManageStudents = () => {
             <TouchableOpacity
                 style={styles.floating_btn}
                 activeOpacity={0.7}
-                accessibilityLabel="Add Teacher"
+                accessibilityLabel="Add Student"
                 onPress={() => {
-                    navigation.navigate("AddStudent",{getStudents:getStudents})
+                    navigation.navigate("AddStudent", { getStudents: getStudents })
                 }}
             >
                 <Entypo name="plus" size={24} color="white" />

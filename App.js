@@ -59,6 +59,9 @@ export default function App() {
             else if (userType === 'Teacher') {
               setinitialRoute('TeacherDashBoard');
             }
+            else if (userType === 'Student') {
+              setinitialRoute('StudentDashBoard');
+            }
           } catch (error) {
             console.error('Error fetching user type from AsyncStorage:', error);
           }

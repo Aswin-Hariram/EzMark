@@ -9,13 +9,15 @@ import { auth, firestore } from '../../Config/FirebaseConfig';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { ActivityIndicator, FAB } from 'react-native-paper';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import MainDashboard from './MainDashboard';
 
 const Dashboard = ({ teacherDetail }) => {
   const navigation = useNavigation();
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text>{teacherDetail.name}</Text>
+   
+      <MainDashboard />
       <FAB
         icon="plus"
         color="white"

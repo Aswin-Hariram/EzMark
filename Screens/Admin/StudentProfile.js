@@ -17,28 +17,27 @@ const StudentProfile = ({ route }) => {
   const [studentName, setStudentName] = useState(student.name);
   const [studentEmail, setStudentEmail] = useState(student.email);
   const [studentDepartment, setStudentDepartment] = useState(student.department);
+  const [studentRollNo, setStudentRollNo] = useState(student.rollno); // Added roll number state
   const [classes, setClasses] = useState([]);
   const [studentClass, setStudentClass] = useState(student.class);
   const [isUpdating, setIsUpdating] = useState(false);
-
-
-
 
   const deleteFromFirestore = () => {
     setIsUpdating(true);
     deleteDoc(doc(firestore, "UserData", student.id))
       .then(() => {
-        alert("Student deleted successfully")
+        alert("Student deleted successfully");
       })
       .catch((error) => {
-        alert("Error", error.message)
+        alert("Error", error.message);
       })
       .finally(() => {
-        setIsUpdating(false)
-        getStudent()
-        navigation.goBack()
-      })
-  }
+        setIsUpdating(false);
+        getStudent();
+        navigation.goBack();
+      });
+  };
+
   const handleDelete = () => {
     Alert.alert("Alert", "Do you want to delete student, Are you sure?", [
       {
@@ -49,28 +48,27 @@ const StudentProfile = ({ route }) => {
         text: "No",
         onPress: () => { }
       }
-    ])
-  }
+    ]);
+  };
+
   const updateStudentInFirestore = async (updatedStudent) => {
     try {
       const studentRef = doc(firestore, 'UserData', student.id);
       await updateDoc(studentRef, updatedStudent);
       Alert.alert('Success', 'Student details updated successfully.');
-
     } catch (error) {
       console.error('Error updating student in Firestore:', error);
       Alert.alert('Error', 'Failed to update student details.');
-    }
-    finally {
+    } finally {
       getStudent(); // Call getStudents to refresh list
       navigation.goBack();
     }
   };
 
   const validateInput = () => {
-    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zAZ]{2,6}$/;
 
-    if (!studentName || !studentEmail || !studentDepartment || !studentClass) {
+    if (!studentName || !studentEmail || !studentDepartment || !studentClass || !studentRollNo) {
       Alert.alert('Error', 'Please fill out all fields.');
       return false;
     }
@@ -86,11 +84,12 @@ const StudentProfile = ({ route }) => {
     if (!validateInput()) return;
 
     setIsUpdating(true);
-  
+
     const updatedStudent = {
       name: studentName,
       email: studentEmail,
       department: studentDepartment,
+      rollno: studentRollNo, // Include rollno in the update
       class: studentClass,
     };
 
@@ -149,6 +148,14 @@ const StudentProfile = ({ route }) => {
             label="Student Email"
             value={studentEmail}
             onChangeText={setStudentEmail}
+            mode="outlined"
+            style={styles.input}
+          />
+
+          <TextInput
+            label="Roll No"
+            value={studentRollNo}
+            onChangeText={setStudentRollNo}
             mode="outlined"
             style={styles.input}
           />

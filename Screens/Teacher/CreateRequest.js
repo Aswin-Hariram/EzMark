@@ -93,7 +93,7 @@ const CreateRequest = () => {
             const temp = []
             for (const userDoc of querySnapshot.docs) {
                 const userId = userDoc.id;
-                temp.push({ Email: userDoc.get("email"), status: "Requested",id:userId })
+                temp.push({ email: userDoc.get("email"), status: "Requested",id:userId,rollno:userDoc.get("rollno") })
                 const nestedDocRef = doc(collection(firestore, `UserData/${userId}/AttendanceRequests`));
                 await setDoc(nestedDocRef, requestData);
 
