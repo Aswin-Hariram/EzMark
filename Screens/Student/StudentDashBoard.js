@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import StudentMainDashboard from './StudentMainDashboard';
 import StudentRequestHistory from './StudentRequestHistory';
-import StudentProfile from './StudentProfile';
+import StudentProfile from './SProfile';
 import { Colors } from '../../assets/Colors';
 import Icon from 'react-native-vector-icons/MaterialIcons'; 
 import { auth, firestore } from '../../Config/FirebaseConfig';
@@ -85,7 +85,7 @@ const StudentDashBoard = () => {
             />
             <Tab.Screen
                 name="StudentProfile"
-                component={StudentProfile}
+                children={()=>(<StudentProfile student={studentData}/>)}
                 options={{ tabBarLabel: 'Profile' }}
             />
         </Tab.Navigator>

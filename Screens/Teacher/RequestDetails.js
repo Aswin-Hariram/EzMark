@@ -1,11 +1,14 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, FlatList, Alert, Platform, } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, FlatList, Alert, Platform, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CPB from '../../Components/CPB';
 import { Colors } from '../../assets/Colors';
 import { collection, doc, getDocs, query, updateDoc, where, } from 'firebase/firestore';
 import { firestore } from '../../Config/FirebaseConfig';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import MapView, { Marker } from 'react-native-maps';
+import dp from "../../assets/Teachers/profile.png"
+import { TextInput } from 'react-native-paper';
 
 const RequestDetails = () => {
     const { requestDetails = {}, type = '' } = useRoute()?.params || {};
@@ -19,64 +22,64 @@ const RequestDetails = () => {
 
     const handleComplete = async (item) => {
         try {
-          setLoadingId(item.id); // Start loading for specific item
-    
-          const studentQuery = query(
-            collection(firestore, "UserData"),
-            where("class", "==", item.class || ""),
-            where("type", "==", "Student")
-          );
-    
-          const querySnapshot = await getDocs(studentQuery);
-    
-          if (querySnapshot.empty) {
-            Alert.alert('No Students Found', `No students enrolled in class: ${item.class}`);
-            setLoadingId(null); // Stop loading if no students found
-            return;
-          }
-    
-          for (const userDoc of querySnapshot.docs) {
-            const reqQuery = query(
-              collection(firestore, `UserData/${userDoc.id}/AttendanceRequests`),
-              where("status", "==", "Requested"),
-              where("createdAt", "==", item.createdAt),
-              where("class", "==", item.class),
-              where("createdBy", "==", item.createdBy),
-              where("subjectName", "==", item.subjectName)
+            setLoadingId(item.id); // Start loading for specific item
+
+            const studentQuery = query(
+                collection(firestore, "UserData"),
+                where("class", "==", item.class || ""),
+                where("type", "==", "Student")
             );
-    
-            const snap = await getDocs(reqQuery);
-    
-            for (const req of snap.docs) {
-              await updateDoc(doc(firestore, `UserData/${userDoc.id}/AttendanceRequests`, req.id), {
-                status: "Closed"
-              });
+
+            const querySnapshot = await getDocs(studentQuery);
+
+            if (querySnapshot.empty) {
+                Alert.alert('No Students Found', `No students enrolled in class: ${item.class}`);
+                setLoadingId(null); // Stop loading if no students found
+                return;
             }
-          }
-          const enrolledstudents = item.enrolledStudents
-          enrolledstudents.forEach(student => {
-            console.log(student.status)
-            if (student.status === "Requested") {
-              student.status = "Closed";
-    
+
+            for (const userDoc of querySnapshot.docs) {
+                const reqQuery = query(
+                    collection(firestore, `UserData/${userDoc.id}/AttendanceRequests`),
+                    where("status", "==", "Requested"),
+                    where("createdAt", "==", item.createdAt),
+                    where("class", "==", item.class),
+                    where("createdBy", "==", item.createdBy),
+                    where("subjectName", "==", item.subjectName)
+                );
+
+                const snap = await getDocs(reqQuery);
+
+                for (const req of snap.docs) {
+                    await updateDoc(doc(firestore, `UserData/${userDoc.id}/AttendanceRequests`, req.id), {
+                        status: "Closed"
+                    });
+                }
             }
-          });
-          console.log(enrolledstudents)
-          await updateDoc(doc(firestore, `UserData/${teacherDetail.id}/AttendanceRequests`, item.id), {
-            status: "Closed",
-            enrolledStudents:enrolledstudents,
-    
-          });
-    
-          setLoadingId(null);
-          Alert.alert('Completed', 'The attendance request has been successfully completed.');
+            const enrolledstudents = item.enrolledStudents
+            enrolledstudents.forEach(student => {
+                console.log(student.status)
+                if (student.status === "Requested") {
+                    student.status = "Closed";
+
+                }
+            });
+            console.log(enrolledstudents)
+            await updateDoc(doc(firestore, `UserData/${teacherDetail.id}/AttendanceRequests`, item.id), {
+                status: "Closed",
+                enrolledStudents: enrolledstudents,
+
+            });
+
+            setLoadingId(null);
+            Alert.alert('Completed', 'The attendance request has been successfully completed.');
         } catch (error) {
-          console.error(error.message);
-          setLoadingId(null); // Stop loading on error
+            console.error(error.message);
+            setLoadingId(null); // Stop loading on error
         }
-    
-    
-      };
+
+
+    };
 
     const renderPendingRequest = useCallback(({ item }) => (
         <View style={styles.requestCardContainer}>
@@ -115,6 +118,9 @@ const RequestDetails = () => {
     const renderSummary = useCallback(({ item }) => (
         <TouchableOpacity
             style={styles.requestCardContainer}
+            onPress={() => {
+
+            }}
         >
             <View style={styles.requestCard}>
                 <View style={styles.requestDetailsSummary}>
@@ -132,7 +138,75 @@ const RequestDetails = () => {
             </View>
         </TouchableOpacity>
     ), []);
+    const renderMap = (enrolledStudents) => {
+        // Debug enrolled students
+        console.log('Enrolled Students:', enrolledStudents);
 
+        // Filter students with "Completed" status
+        const completedStudents = enrolledStudents.filter((s) => s.status === "Completed");
+
+        // Default region if no students have been enrolled
+        const defaultRegion = {
+            latitude: 8.7934369,
+            longitude: 78.1329182,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+        };
+
+        // Set initial region dynamically based on the first completed student's location
+        const initialRegion =
+            completedStudents.length > 0
+                ? {
+                    latitude: completedStudents[0].locationLat,
+                    longitude: completedStudents[0].locationLong,
+                    latitudeDelta: 0.003,
+                    longitudeDelta: 0.003,
+                }
+                : defaultRegion;
+
+        return (
+            <View style={{ flex: 1 }}>
+                <Text
+                    style={{
+                        fontSize: 18,
+                        fontWeight: 'bold',
+                        marginVertical: 10,
+                        textAlign: 'center',
+                    }}
+                >
+                    Map
+                </Text>
+                <MapView
+                    style={{
+                        flex: 1,
+                        width: '100%',
+                        height: 400,
+                    }}
+                    initialRegion={initialRegion} // Use initialRegion instead of region
+                >
+                    {enrolledStudents.map((student, index) => {
+                        // Debug individual student coordinates
+                        console.log(`Student ${student.rollno}:`, student.locationLat, student.locationLong);
+
+                        if (student.locationLat && student.locationLong) {
+                            return (
+                                <Marker
+                                    key={student.id || index}
+                                    coordinate={{
+                                        latitude: student.locationLat,
+                                        longitude: student.locationLong,
+                                    }}
+                                    title={`Roll No: ${student.rollno}`}
+                                    description={`Status: ${student.status}`}
+                                >
+                                </Marker>
+                            );
+                        }
+                    })}
+                </MapView>
+            </View>
+        );
+    };
     return (
         <SafeAreaView style={styles.container}>
             <FlatList
@@ -141,31 +215,39 @@ const RequestDetails = () => {
                 renderItem={renderPendingRequest}
                 keyExtractor={(item) => `pending-${item.id}`}
                 ListHeaderComponent={
-                    <View style={styles.header}>
-                        <TouchableOpacity style={styles.leftIcon} onPress={() => navigation.goBack()}>
-                            <Ionicons name="chevron-back-outline" size={24} color={Colors.PRIMARY} />
-                            <Text style={styles.backText}>Back</Text>
-                        </TouchableOpacity>
-                        <View style={styles.rightIcons}>
-                            <TouchableOpacity style={styles.icon}>
-                                <Ionicons name="search-outline" size={24} color={Colors.PRIMARY} />
+                    <>
+                        <View style={styles.header}>
+                            <TouchableOpacity style={styles.leftIcon} onPress={() => navigation.goBack()}>
+                                <Ionicons name="chevron-back-outline" size={24} color={Colors.PRIMARY} />
+                                <Text style={styles.backText}>Back</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.icon}>
-                                <Ionicons name="ellipsis-vertical" size={24} color={Colors.PRIMARY} />
-                            </TouchableOpacity>
+                            <View style={styles.rightIcons}>
+                                <TouchableOpacity style={styles.icon}>
+                                    <Ionicons name="search-outline" size={24} color={Colors.PRIMARY} />
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.icon}>
+                                    <Ionicons name="ellipsis-vertical" size={24} color={Colors.PRIMARY} />
+                                </TouchableOpacity>
+                            </View>
                         </View>
-                    </View>
+                    </>
                 }
                 ListEmptyComponent={<Text style={styles.noDataText}>No Pending Requests</Text>}
                 ListFooterComponent={
                     <View style={styles.historyContainer}>
-                        <Text style={styles.sectionHeader}>Summary</Text>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignContent: 'center', alignItems: 'c' }}>
+                            <Text style={styles.sectionHeader}>Summary</Text>
+                            <TouchableOpacity style={{ ...styles.icon, alignSelf: 'flex-end' }}>
+                                <Ionicons name="filter-outline" size={24} color={Colors.PRIMARY} />
+                            </TouchableOpacity>
+                        </View>
                         <FlatList
                             data={requestDetails.enrolledStudents}
                             renderItem={renderSummary}
                             keyExtractor={(item) => `history-${item.id}`}
                             ListEmptyComponent={<Text style={styles.noDataText}>No Data Available</Text>}
                         />
+                        {renderMap(requestDetails.enrolledStudents)}
                     </View>
                 }
             />
@@ -292,12 +374,7 @@ const styles = StyleSheet.create({
     historyContainer: {
         paddingHorizontal: 5,
     },
-    sectionHeader: {
-        fontSize: 18,
-        color: '#333',
-        marginVertical: 16,
-        fontWeight: 'bold',
-    },
+
     requestDetailsSummary: {
         flex: 1, // Ensures the content stretches across the available space
         flexDirection: 'row',
@@ -325,6 +402,43 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '400', // Regular weight for status text
         color: Colors.WHITE, // White text on colored background
+    },
+    sectionHeader: {
+        fontSize: 18,
+        fontWeight: "bold",
+        margin: 10,
+
+    },
+    locationPin: {
+        alignItems: 'center',
+    },
+    pinTop: {
+        width: 50,
+        height: 50,
+        borderRadius: 25, // Makes it circular
+        backgroundColor: '#FFFFFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderColor: '#FF5722',
+        borderWidth: 2,
+    },
+    markerImage: {
+        width: 30,
+        height: 30,
+    },
+    pinBottom: {
+        width: 10,
+        height: 20,
+        backgroundColor: '#FF5722',
+        borderTopLeftRadius: 5,
+        borderTopRightRadius: 5,
+        marginTop: -2, // To slightly overlap with the top
+    },
+    markerLabel: {
+        fontSize: 12,
+        color: '#333',
+        marginTop: 5,
+        textAlign: 'center',
     },
 });
 export default RequestDetails;

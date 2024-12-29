@@ -62,7 +62,7 @@ const TeacherHistory = ({ teacherDetail }) => {
       console.log(enrolledstudents)
       await updateDoc(doc(firestore, `UserData/${teacherDetail.id}/AttendanceRequests`, item.id), {
         status: "Closed",
-        enrolledStudents:enrolledstudents,
+        enrolledStudents: enrolledstudents,
 
       });
 
@@ -115,10 +115,13 @@ const TeacherHistory = ({ teacherDetail }) => {
     };
   }, [teacherDetail]);
 
+
   const renderPendingRequest = ({ item }) => (
+
     <TouchableOpacity key={item.id} style={styles.requestCardContainer} onPress={() => {
       navigation.navigate("RequestDetails", { requestDetails: item, type: "Pending" })
     }}>
+    
       <View style={styles.requestCard}>
         <View style={styles.requestDetails}>
           <View style={styles.requestedContainer}>
@@ -130,7 +133,7 @@ const TeacherHistory = ({ teacherDetail }) => {
           </View>
           <Text style={styles.dateText}>{item.time || 'Unknown Date'}</Text>
         </View>
-        <CPB percentage={item.percentage || 0} size={80} strokeWidth={6} color={Colors.SECONDARY} />
+        <CPB percentage={item.percentage || 0} size={80} strokeWidth={6} color={Colors.SECONDARY} tsize={item.percentage>=100?16:18} />
       </View>
       <View style={styles.requestActionsRow}>
         <TouchableOpacity style={styles.cancelButton}>

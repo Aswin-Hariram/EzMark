@@ -82,7 +82,7 @@ const ManageStudents = () => {
                         <TouchableOpacity style={styles.teacherCard}
                             onPress={() => navigation.navigate('StudentProfile', { student: item, getStudent: getStudents })}>
                             <View style={styles.image}>
-                                <Image style={styles.profile_img} source={item.image ? item.image : profilePic} />
+                                <Image style={styles.profile_img} source={item.image ? {uri:item.image }: profilePic} />
                             </View>
                             <View style={styles.info}>
                                 <Text style={styles.teacherName}>{item.name}</Text>

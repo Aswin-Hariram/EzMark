@@ -25,6 +25,7 @@ import TeacherDashBoard from './Screens/Teacher/TeacherDashBoard';
 import AddClass from './Screens/Admin/AddClass';
 import CreateRequest from './Screens/Teacher/CreateRequest';
 import RequestDetails from './Screens/Teacher/RequestDetails';
+import VerificationScreen from './Screens/Student/VerificationScreen';
 
 export default function App() {
   const [loaded, error] = useFonts({
@@ -96,6 +97,7 @@ export default function App() {
         <Stack.Screen name='AddClass' component={AddClass} />
         <Stack.Screen name='CreateRequest' component={CreateRequest} />
         <Stack.Screen name='RequestDetails' component={RequestDetails} />
+        <Stack.Screen name='VerificationScreen' component={VerificationScreen} />
       </Stack.Navigator>
     );
   }

@@ -1,14 +1,18 @@
-import { StyleSheet, Text, View, Image, TouchableOpacity, Platform, ScrollView, Alert } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import dp from "../../assets/Teachers/profile.png";
+import * as ImagePicker from 'expo-image-picker';
 import { ActivityIndicator, TextInput } from 'react-native-paper';
 import { Colors } from '../../assets/Colors';
 import { Dropdown } from 'react-native-element-dropdown';
 import { deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { firestore } from '../../Config/FirebaseConfig';
+import AWS from 'aws-sdk';
+import { Buffer } from 'buffer';
+import { s3 } from '../../Config/awsConfig';
 
 const StudentProfile = ({ route }) => {
   const { student, getStudent } = route.params;
@@ -17,10 +21,15 @@ const StudentProfile = ({ route }) => {
   const [studentName, setStudentName] = useState(student.name);
   const [studentEmail, setStudentEmail] = useState(student.email);
   const [studentDepartment, setStudentDepartment] = useState(student.department);
-  const [studentRollNo, setStudentRollNo] = useState(student.rollno); // Added roll number state
+  const [studentRollNo, setStudentRollNo] = useState(student.rollno);
   const [classes, setClasses] = useState([]);
   const [studentClass, setStudentClass] = useState(student.class);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [studentProfile, setStudentProfile] = useState(student.image);
+  const [imageLoading, setImageLoading] = useState(false);
+
+ 
+  const s3BucketName = 'ezmarkbucket'; // Replace with your S3 bucket name
 
   const deleteFromFirestore = () => {
     setIsUpdating(true);
@@ -60,7 +69,7 @@ const StudentProfile = ({ route }) => {
       console.error('Error updating student in Firestore:', error);
       Alert.alert('Error', 'Failed to update student details.');
     } finally {
-      getStudent(); // Call getStudents to refresh list
+      getStudent();
       navigation.goBack();
     }
   };
@@ -89,8 +98,9 @@ const StudentProfile = ({ route }) => {
       name: studentName,
       email: studentEmail,
       department: studentDepartment,
-      rollno: studentRollNo, // Include rollno in the update
+      rollno: studentRollNo,
       class: studentClass,
+      image: studentProfile, // Update the image URL
     };
 
     try {
@@ -99,6 +109,56 @@ const StudentProfile = ({ route }) => {
       console.error('Error updating student:', error);
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handlePickImage = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permissionResult.granted) {
+      Alert.alert('Permission required', 'You need to allow access to your media library.');
+      return;
+    }
+
+    const pickerResult = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!pickerResult.canceled) {
+      const uri = pickerResult.assets[0].uri;
+      setImageLoading(true);
+      try {
+        const fileName = `${studentEmail}.jpg`; // Save with email as filename
+        const response = await fetch(uri);
+        const blob = await response.blob();
+
+        const params = {
+          Bucket: s3BucketName,
+          Key: `students/${fileName}`, // Store the image under the 'students' folder
+          Body: blob,
+          ContentType: 'image/jpeg', 
+        };
+
+        // Upload the file to S3
+        s3.upload(params, (err, data) => {
+          if (err) {
+            console.error('Error uploading image to S3:', err);
+            Alert.alert('Error', 'Failed to upload image.');
+            setImageLoading(false);
+            return;
+          }
+
+          // Get the URL of the uploaded file and update studentProfile
+          const fileUrl = data.Location;
+          setStudentProfile(fileUrl); // Set new profile URL
+          setImageLoading(false);
+        });
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        Alert.alert('Error', 'Failed to upload image.');
+        setImageLoading(false);
+      }
     }
   };
 
@@ -132,7 +192,14 @@ const StudentProfile = ({ route }) => {
         </View>
 
         <View style={styles.profileSection}>
-          <Image style={styles.profileImage} source={dp} />
+          {imageLoading ? (
+            <ActivityIndicator size="large" color={Colors.PRIMARY} />
+          ) : (
+            <Image style={styles.profileImage} source={studentProfile ? { uri: studentProfile } : dp} />
+          )}
+          <TouchableOpacity style={styles.imageButton} onPress={handlePickImage}>
+            <Text style={styles.imageButtonText}>Change Image</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.formSection}>
@@ -174,7 +241,6 @@ const StudentProfile = ({ route }) => {
         <TouchableOpacity
           style={[styles.updateButton, isUpdating && { opacity: 0.7 }]}
           onPress={handleUpdate}
-          onLongPress={handleDelete}
           disabled={isUpdating}
         >
           {isUpdating ? (
@@ -214,6 +280,17 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
+  },
+  imageButton: {
+    marginTop: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: Colors.PRIMARY,
+    borderRadius: 5,
+  },
+  imageButtonText: {
+    color: 'white',
+    fontSize: 16,
   },
   formSection: {
     marginHorizontal: 15,

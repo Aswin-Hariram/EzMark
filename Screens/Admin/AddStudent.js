@@ -11,6 +11,8 @@ import PasswordTextInput from '../../Components/PasswordTextInput';
 import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { firestore, auth } from '../../Config/FirebaseConfig';
+import { Buffer } from 'buffer';
+import { s3 } from '../../Config/awsConfig';
 
 const AddStudent = () => {
     const navigation = useNavigation();
@@ -24,6 +26,7 @@ const AddStudent = () => {
     const [studentImage, setStudentImage] = useState(null);
     const [classes, setClasses] = useState([]);
     const [processing, setProcessing] = useState(false);
+    const [imgUrl, setImageUrl] = useState('');
 
     const departmentDropdownData = [
         { label: 'Computer Science', value: 'Computer Science' },
@@ -57,24 +60,17 @@ const AddStudent = () => {
 
     const validateInput = () => {
         const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
-         // Example regex for roll number (6-12 characters)
 
-        // Check if any field is empty
         if (!studentName || !studentEmail || !studentDepartment || !studentClass || !studentRollno) {
             Alert.alert('Error', 'Please fill out all fields.');
             return false;
         }
 
-        // Validate email
         if (!emailRegex.test(studentEmail)) {
             Alert.alert('Invalid Email', 'Please enter a valid email address.');
             return false;
         }
 
-        // Validate roll number
-        
-
-        // Validate password
         const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{5,}$/;
         if (!passwordRegex.test(studentPassword)) {
             Alert.alert(
@@ -88,7 +84,7 @@ const AddStudent = () => {
     };
 
     const checkIfRollnoExists = async () => {
-        const q = query(collection(firestore, 'UserData'), where("rollno", "==", studentRollno));
+        const q = query(collection(firestore, 'UserData'), where('rollno', '==', studentRollno));
         const querySnapshot = await getDocs(q);
         return !querySnapshot.empty;
     };
@@ -108,6 +104,56 @@ const AddStudent = () => {
         }
     };
 
+    const uploadImageToS3 = async (uri) => {
+        try {
+            const fileName = uri.split('/').pop();
+            const fileType = fileName.split('.').pop();
+
+            const file = {
+                uri,
+                name: studentEmail,
+                type: `image/${fileType}`,
+            };
+
+            const buffer = await fetch(file.uri).then((res) => res.arrayBuffer());
+            const bufferData = Buffer.from(buffer);
+
+            const params = {
+                Bucket: 'ezmarkbucket',
+                Key: `students/${fileName}`,
+                Body: bufferData,
+                ContentType: file.type,
+            };
+
+            const data = await s3.upload(params).promise();
+            const imageUrl = data.Location;
+            setImageUrl(imageUrl);
+            return imageUrl;
+        } catch (error) {
+            console.error('Error uploading image:', error.message);
+            Alert.alert('Error', 'Failed to upload image.');
+            return null;
+        }
+    };
+
+    const pickImage = async () => {
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 1,
+            });
+
+            if (!result.canceled && result.assets) {
+                setStudentImage(result.assets[0].uri);
+            }
+        } catch (error) {
+            console.error('Error picking image:', error.message);
+            Alert.alert('Error', 'Failed to pick an image.');
+        }
+    };
+
     const handleSaveStudent = async () => {
         if (validateInput()) {
             setProcessing(true);
@@ -119,32 +165,25 @@ const AddStudent = () => {
                 return;
             }
 
+            const imageUrl = await uploadImageToS3(studentImage);
+            if (!imageUrl) {
+                setProcessing(false);
+                return;
+            }
+
             const newStudent = {
                 id: Date.now().toString(),
                 name: studentName,
                 email: studentEmail.toLowerCase(),
                 department: studentDepartment,
-                image: studentImage,
+                image: imageUrl,
                 class: studentClass,
                 rollno: studentRollno,
                 password: studentPassword,
-                type: "Student"
+                type: 'Student',
             };
 
             saveToFirestore(newStudent);
-        }
-    };
-
-    const pickImage = async () => {
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 1,
-        });
-
-        if (!result.canceled && result.assets) {
-            setStudentImage(result.assets[0].uri);
         }
     };
 
@@ -224,7 +263,11 @@ const AddStudent = () => {
                     />
                 </View>
 
-                <TouchableOpacity style={styles.saveButton} onPress={handleSaveStudent} disabled={processing}>
+                <TouchableOpacity
+                    style={styles.saveButton}
+                    onPress={handleSaveStudent}
+                    disabled={processing}
+                >
                     {processing ? (
                         <ActivityIndicator size="small" color="white" />
                     ) : (
@@ -287,7 +330,7 @@ const styles = StyleSheet.create({
     },
     inputField: {
         backgroundColor: 'white',
-        borderColor:Colors.PRIMARY,
+        borderColor: Colors.PRIMARY,
         marginBottom: 15,
         borderRadius: 10,
     },

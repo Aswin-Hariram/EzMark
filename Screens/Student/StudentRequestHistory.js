@@ -1,87 +1,52 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, FlatList, Alert, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  SafeAreaView,
+  FlatList,
+  Alert,
+  Platform,
+} from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
-import CPB from '../../Components/CPB';
 import { Colors } from '../../assets/Colors';
-import { collection, doc, getDocs, onSnapshot, query, updateDoc, where } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  getDocs,
+  onSnapshot,
+  query,
+  updateDoc,
+  where,
+} from 'firebase/firestore';
 import { firestore } from '../../Config/FirebaseConfig';
 import { format } from 'date-fns';
 import { useNavigation } from '@react-navigation/native';
-import StudentRequest from './StudentRequest';
+
 
 const StudentRequestHistory = ({ studentDetail }) => {
   const [requestedData, setRequestedData] = useState([]);
-  const [loadingId, setLoadingId] = useState(null); // Track loading for specific item
   const [historyData, setHistoryData] = useState([]);
+  const [loadingId, setLoadingId] = useState(null);
   const navigation = useNavigation();
+
   const formatDate = (isoString) => format(new Date(isoString), "dd MMM yyyy EEE");
 
   const handleComplete = async (item) => {
     try {
-      setLoadingId(item.id); // Start loading for specific item
-
-      const studentQuery = query(
-        collection(firestore, "UserData"),
-        where("class", "==", item.class || ""),
-        where("type", "==", "Student")
-      );
-
-      const querySnapshot = await getDocs(studentQuery);
-
-      if (querySnapshot.empty) {
-        Alert.alert('No Students Found', `No students enrolled in class: ${item.class}`);
-        setLoadingId(null); // Stop loading if no students found
-        return;
-      }
-
-      for (const userDoc of querySnapshot.docs) {
-        const reqQuery = query(
-          collection(firestore, `UserData/${userDoc.id}/AttendanceRequests`),
-          where("status", "==", "Requested"),
-          where("createdAt", "==", item.createdAt),
-          where("class", "==", item.class),
-          where("createdBy", "==", item.createdBy),
-          where("subjectName", "==", item.subjectName)
-        );
-
-        const snap = await getDocs(reqQuery);
-
-        for (const req of snap.docs) {
-          await updateDoc(doc(firestore, `UserData/${userDoc.id}/AttendanceRequests`, req.id), {
-            status: "Closed"
-          });
-        }
-      }
-      const enrolledstudents = item.enrolledStudents
-      enrolledstudents.forEach(student => {
-        console.log(student.status)
-        if (student.status === "Requested") {
-          student.status = "Closed";
-
-        }
-      });
-      console.log(enrolledstudents)
-      await updateDoc(doc(firestore, `UserData/${studentDetail.id}/AttendanceRequests`, item.id), {
-        status: "Closed",
-        enrolledStudents:enrolledstudents,
-
-      });
-
-      setLoadingId(null);
-      Alert.alert('Completed', 'The attendance request has been successfully completed.');
+      navigation.navigate("VerificationScreen",{requestDetails:item,studentDetail:studentDetail})
     } catch (error) {
-      console.error(error.message);
-      setLoadingId(null); // Stop loading on error
+      console.error("Error completing request: ", error);
+      Alert.alert('Error', 'An error occurred while completing the request.');
+      setLoadingId(null);
     }
-
-
   };
 
   useEffect(() => {
     if (!studentDetail?.id) return;
-    console.log(studentDetail.id)
 
-    const q = query(
+    const requestedQuery = query(
       collection(firestore, `UserData/${studentDetail.id}/AttendanceRequests`),
       where("status", "==", "Requested")
     );
@@ -91,23 +56,20 @@ const StudentRequestHistory = ({ studentDetail }) => {
       where("status", "!=", "Requested")
     );
 
-    const unsubscribeRequested = onSnapshot(q, (querySnapshot) => {
-      const temp = querySnapshot.docs.map(doc => ({
+    const unsubscribeRequested = onSnapshot(requestedQuery, (querySnapshot) => {
+      setRequestedData(querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
         time: formatDate(doc.get("createdAt")),
-      }));
-      setRequestedData(temp);
+      })));
     });
 
     const unsubscribeHistory = onSnapshot(historyQuery, (querySnapshot) => {
-      const temp = querySnapshot.docs.map(doc => ({
+      setHistoryData(querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
         time: formatDate(doc.get("createdAt")),
-       
-      }));
-      setHistoryData(temp);
+      })));
     });
 
     return () => {
@@ -116,23 +78,27 @@ const StudentRequestHistory = ({ studentDetail }) => {
     };
   }, [studentDetail]);
 
+
   const renderPendingRequest = ({ item }) => (
-    <TouchableOpacity key={item.id} style={styles.requestCardContainer} onPress={() => {
-      navigation.navigate("RequestDetails", { requestDetails: item, type: "Pending" })
-    }}>
+    <TouchableOpacity
+      key={item.id}
+      style={styles.requestCardContainer}
+      onPress={() => {
+
+      }}
+    >
       <View style={styles.requestCard}>
         <View style={styles.requestDetails}>
-          <View style={styles.requestedContainer}>
-            <Text style={styles.label}>Requested</Text>
-          </View>
           <View style={styles.classContainer}>
-            <Text style={{ ...styles.classText, marginRight: 5 }}>{item.class || 'N/A'}</Text>
-            <Text style={{ ...styles.classText, fontSize: 15 }}>{` ( ${item.subjectName} )`}</Text>
+            <Text style={styles.classText}>{item.subjectName || 'N/A'}</Text>
           </View>
+          <Text style={styles.createdBy}>Requested By: {item.createdBy || 'Unknown'}</Text>
           <Text style={styles.dateText}>{item.time || 'Unknown Date'}</Text>
         </View>
-      
 
+        <View style={styles.requestedContainer}>
+          <Text style={styles.label}>New Request</Text>
+        </View>
       </View>
       <View style={styles.requestActionsRow}>
         <TouchableOpacity style={styles.cancelButton}>
@@ -144,7 +110,7 @@ const StudentRequestHistory = ({ studentDetail }) => {
           disabled={loadingId === item.id}
         >
           <Text style={styles.buttonText}>
-            {loadingId === item.id ? 'Completing...' : 'Complete'}
+            Verify
           </Text>
         </TouchableOpacity>
       </View>
@@ -152,21 +118,27 @@ const StudentRequestHistory = ({ studentDetail }) => {
   );
 
   const renderHistory = ({ item }) => (
-    <TouchableOpacity key={item.id} style={styles.requestCardContainer} onPress={() => {
-      navigation.navigate("RequestDetails", { requestDetails: item, type: "History" })
-    }}>
+    <TouchableOpacity
+      key={item.id}
+      style={styles.requestCardContainer}
+      onPress={() => {
+
+      }}
+    >
       <View style={styles.requestCard}>
         <View style={styles.requestDetails}>
-          <View style={styles.requestedContainer}>
-            <Text style={styles.label}>{item.status}</Text>
-          </View>
-          <View style={styles.classContainer}>
-            <Text style={{ ...styles.classText, marginRight: 5, fontSize: 18 }}>{item.class || 'N/A'}</Text>
-            <Text style={{ ...styles.classText, fontSize: 14 }}>{` ( ${item.subjectName} )`}</Text>
-          </View>
+          <Text style={styles.classText}>{item.subjectName || 'N/A'}</Text>
+          <Text style={styles.createdBy}>Requested By: <Text style={{
+            fontSize: 17,
+            fontWeight: 'condensedBold',
+            color: Colors.PRIMARY,
+            fontFamily: "Metro-regular",
+          }}>{item.createdBy || 'Unknown'}</Text></Text>
           <Text style={styles.dateText}>{item.time || 'Unknown Date'}</Text>
         </View>
-       
+        <View style={styles.requestedContainer}>
+          <Text style={styles.label}>{item.status}</Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -174,12 +146,11 @@ const StudentRequestHistory = ({ studentDetail }) => {
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
-        style={{ paddingHorizontal: 13 }}
         data={requestedData}
         renderItem={renderPendingRequest}
         keyExtractor={(item) => `pending-${item.id}`}
         ListHeaderComponent={
-          <>
+          <View>
             <View style={styles.header}>
               <TouchableOpacity style={styles.leftIcon} onPress={() => navigation.goBack()}>
                 <Ionicons name="chevron-back-outline" size={24} color={Colors.PRIMARY} />
@@ -194,28 +165,24 @@ const StudentRequestHistory = ({ studentDetail }) => {
                 </TouchableOpacity>
               </View>
             </View>
-            <View style={styles.contentContainer}>
+            <View style={styles.historyContainer}>
               <Text style={styles.sectionHeader}>Pending Request</Text>
             </View>
-          </>
+          </View>
         }
         ListEmptyComponent={<Text style={styles.noDataText}>No Pending Requests</Text>}
         ListFooterComponent={
-          <>
+          <View>
             <View style={styles.historyContainer}>
               <Text style={styles.sectionHeader}>History</Text>
             </View>
-            {historyData.length > 0 ? (
-              <FlatList
-                data={historyData}
-                renderItem={renderHistory}
-                keyExtractor={(item) => `history-${item.id}`}
-                ListEmptyComponent={<Text style={styles.noDataText}>No History Available</Text>}
-              />
-            ) : (
-              <Text style={styles.noDataText}>No History Available</Text>
-            )}
-          </>
+            <FlatList
+              data={historyData}
+              renderItem={renderHistory}
+              keyExtractor={(item) => `history-${item.id}`}
+              ListEmptyComponent={<Text style={styles.noDataText}>No History Available</Text>}
+            />
+          </View>
         }
       />
     </SafeAreaView>
@@ -226,29 +193,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
-    marginTop: Platform.OS === 'ios' ? 0 : 25,
-  },
-  noDataText: {
-    fontSize: 14,
-    color: '#888',
-    textAlign: 'center',
-    marginVertical: Platform.OS === 'ios' ? 0 : 0,
+    paddingTop: Platform.OS === 'ios' ? 0 : 25,
   },
   header: {
-    height: 60,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   leftIcon: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   backText: {
-    marginLeft: 4,
-    color: "black",
+    marginLeft: 8,
+    color: Colors.PRIMARY,
     fontSize: 16,
+    fontWeight: 'bold',
   },
   rightIcons: {
     flexDirection: 'row',
@@ -257,24 +219,25 @@ const styles = StyleSheet.create({
   icon: {
     marginLeft: 16,
   },
-  contentContainer: {
+  historyContainer: {
     paddingHorizontal: 16,
   },
   sectionHeader: {
     fontSize: 18,
-    color: '#333',
-    marginVertical: 16,
+    color: Colors.PRIMARY,
     fontWeight: 'bold',
+    marginVertical: 16,
   },
   requestCardContainer: {
     backgroundColor: '#FFFFFF',
     padding: 16,
     borderRadius: 10,
-    marginBottom: 16,
+    marginVertical: 8,
+    marginHorizontal: 10,
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    shadowOffset: { width: 0.5, height: 2 },
+    shadowOffset: { width: 0, height: 2 },
   },
   requestCard: {
     flexDirection: 'row',
@@ -284,30 +247,33 @@ const styles = StyleSheet.create({
   requestDetails: {
     flex: 1,
   },
+  classContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  classText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    fontFamily: "Metro-regular",
+  },
+  createdBy: {
+    fontSize: 16,
+    color: "black",
+    marginVertical: 4,
+  },
+  dateText: {
+    fontSize: 12,
+    color: '#888',
+  },
   requestedContainer: {
     backgroundColor: Colors.lightBg,
     padding: 4,
     borderRadius: 4,
-    alignSelf: 'flex-start',
   },
   label: {
     fontSize: 14,
-    color: 'black',
-  },
-  classContainer: {
-    flexDirection: 'row',
-    paddingVertical: 8,
-    alignItems: 'center',
-  },
-  classText: {
-    fontSize: 22,
-    fontWeight: 'condensedBold',
-    fontFamily: 'Signika',
     color: '#333',
-  },
-  dateText: {
-    fontSize: 14,
-    color: '#888',
   },
   requestActionsRow: {
     flexDirection: 'row',
@@ -341,8 +307,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  historyContainer: {
-    paddingHorizontal: 16,
+  noDataText: {
+    textAlign: 'center',
+    color: '#888',
+    marginVertical: 16,
+    fontSize: 14,
   },
 });
 
