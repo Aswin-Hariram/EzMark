@@ -94,7 +94,7 @@ const RequestDetails = () => {
                     </View>
                     <Text style={styles.dateText}>{item.time || 'Unknown Date'}</Text>
                 </View>
-                <CPB percentage={item.percentage || 0} size={80} strokeWidth={6} color={Colors.SECONDARY} />
+                <CPB percentage={item.percentage || 0} size={80} tsize={item.percentage >= 100 ? 16 : 18} strokeWidth={6} color={Colors.SECONDARY} />
             </View>
             {type !== 'History' && (
                 <View style={styles.requestActionsRow}>

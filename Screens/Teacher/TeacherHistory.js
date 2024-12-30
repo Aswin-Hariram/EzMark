@@ -106,6 +106,7 @@ const TeacherHistory = ({ teacherDetail }) => {
         time: formatDate(doc.get("createdAt")),
         percentage: ((doc.get("totalNumberOfStudents") - doc.get("pendingNumberOfStudents")) / doc.get("totalNumberOfStudents")) * 100
       }));
+     
       setHistoryData(temp);
     });
 
