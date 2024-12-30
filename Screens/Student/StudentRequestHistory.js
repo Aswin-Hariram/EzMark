@@ -192,8 +192,9 @@ const StudentRequestHistory = ({ studentDetail }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+  
     paddingTop: Platform.OS === 'ios' ? 0 : 25,
+    marginTop: Platform.OS === 'ios' ? 0 : 25,
   },
   header: {
     flexDirection: 'row',
@@ -253,9 +254,8 @@ const styles = StyleSheet.create({
   },
   classText: {
     fontSize: 18,
-    fontWeight: 'bold',
     color: '#333',
-    fontFamily: "Metro-regular",
+    fontFamily: 'Signika-regular',
   },
   createdBy: {
     fontSize: 16,

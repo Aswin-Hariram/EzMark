@@ -29,6 +29,8 @@ const CreateRequest = () => {
     const inputRefs = useRef([]);
     const [subjectName, setSubjectName] = useState('');
     const [classes, setClasses] = useState([]);
+    const [subjects, setSubjects] = useState([]);
+
     const [requestedClass, setRequestedClass] = useState('');
     const [loading, setLoading] = useState(true);
     const [isProcessing, setisProcessing] = useState(false)
@@ -63,17 +65,17 @@ const CreateRequest = () => {
 
         try {
             const time = new Date().toISOString()
-            const id= Date.now().toString()
+            const id = Date.now().toString()
             setisProcessing(true)
             const requestData = {
-                id:id,
+                id: id,
                 class: requestedClass,
                 subjectName: subjectName.trim(),
                 createdBy: teacherDetail.name,
                 otp: otpValue,
                 createdAt: time,
                 status: "Requested",
-                teacherId:teacherDetail.id
+                teacherId: teacherDetail.id
             };
 
 
@@ -93,7 +95,7 @@ const CreateRequest = () => {
             const temp = []
             for (const userDoc of querySnapshot.docs) {
                 const userId = userDoc.id;
-                temp.push({ email: userDoc.get("email"), status: "Requested",id:userId,rollno:userDoc.get("rollno"),locationLat:"",locationLong:"",ctime:"" })
+                temp.push({ email: userDoc.get("email"), status: "Requested", id: userId, rollno: userDoc.get("rollno"), locationLat: "", locationLong: "", ctime: "" })
                 const nestedDocRef = doc(collection(firestore, `UserData/${userId}/AttendanceRequests`));
                 await setDoc(nestedDocRef, requestData);
 
@@ -108,8 +110,8 @@ const CreateRequest = () => {
                 createdAt: time,
                 status: "Requested",
                 enrolledStudents: temp,
-                totalNumberOfStudents:temp.length,
-                pendingNumberOfStudents:temp.length,
+                totalNumberOfStudents: temp.length,
+                pendingNumberOfStudents: temp.length,
             };
 
             await addDoc(collection(firestore, `UserData/${teacherDetail.id}/AttendanceRequests`), requestDataTeacher)
@@ -144,6 +146,9 @@ const CreateRequest = () => {
                     if (data.Class) {
                         setClasses(data.Class.map((cls) => ({ label: cls, value: cls })));
                     }
+                    if (data.Subjects) {
+                        setSubjects(data.Subjects.map((sub) => ({ label: sub, value: sub })));
+                    }
                 } else {
                     Alert.alert('Error', 'No class data found.');
                 }
@@ -170,30 +175,33 @@ const CreateRequest = () => {
 
                 <View style={styles.formSection}>
                     <Image style={styles.icon} source={require('../../assets/createImage.png')} />
-                    <TextInput
-                        label="Subject Name"
-                        value={subjectName}
-                        onChangeText={setSubjectName}
-                        mode="outlined"
-                        outlineColor="#153448"
-                        activeOutlineColor="#153448"
-                        style={styles.inputField}
-                    />
 
                     {loading ? (
                         <ActivityIndicator size="small" color="#153448" />
                     ) : (
-                        <Dropdown
-                            style={styles.dropdown}
-                            data={classes}
-                            labelField="label"
-                            valueField="value"
-                            placeholder="Select Class"
-                            value={requestedClass}
-                            onChange={(item) => setRequestedClass(item.value)}
-                            placeholderStyle={styles.placeholderStyle}
-                            selectedTextStyle={styles.selectedTextStyle}
-                        />
+                        <>
+                            <Dropdown
+                                style={styles.dropdown}
+                                data={subjects}
+                                labelField="label"
+                                valueField="value"
+                                placeholder="Select Subject"
+                                search
+                                value={subjectName}
+                                onChange={(item) => setSubjectName(item.value)}
+                            />
+                            <Dropdown
+                                style={styles.dropdown}
+                                data={classes}
+                                labelField="label"
+                                valueField="value"
+                                placeholder="Select Class"
+                                value={requestedClass}
+                                onChange={(item) => setRequestedClass(item.value)}
+                                placeholderStyle={styles.placeholderStyle}
+                                selectedTextStyle={styles.selectedTextStyle}
+                            />
+                        </>
                     )}
 
                     <TouchableOpacity
@@ -273,6 +281,7 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: 'white',
         padding: 20,
+        marginVertical:Platform.OS==='android'?20:0,
     },
     header: {
         flexDirection: 'row',
@@ -365,5 +374,6 @@ const styles = StyleSheet.create({
         marginTop: 0,
         resizeMode: 'contain',
         alignSelf: 'center',
+        marginBottom:20,
     },
 });

@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
-  ActivityIndicator,
+ 
   Alert,
   Image,
   KeyboardAvoidingView,
@@ -9,9 +9,11 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Keyboard,
+  TouchableWithoutFeedback,
   Platform,
 } from 'react-native';
-import { Divider } from 'react-native-paper';
+import { ActivityIndicator, Divider } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import RadioGroup from 'react-native-radio-buttons-group';
 import Entypo from '@expo/vector-icons/Entypo';
@@ -40,7 +42,7 @@ const LoginScreen = () => {
   );
 
   const validateInput = (email, password) => {
-    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{5,}$/;
 
     if (!emailRegex.test(email)) {
@@ -71,15 +73,14 @@ const LoginScreen = () => {
           if (type === 'Admin') navigation.navigate('AdminDashboardScreen');
           else if (type === 'Teacher') navigation.navigate('TeacherDashBoard');
           else if (type === 'Student') navigation.navigate('StudentDashBoard');
-          else return;
           return;
         }
       }
 
       Alert.alert('Access Denied', 'You do not have the required permissions.');
     } catch (error) {
-      console.log(error)
-      Alert.alert("Invalid Credentials", "Please enter correct password");
+      console.log(error);
+      Alert.alert('Invalid Credentials', 'Please enter correct credentials.');
     } finally {
       setLoading(false);
     }
@@ -100,80 +101,84 @@ const LoginScreen = () => {
     }
   };
 
-  if (loading) {
-    return <ActivityIndicator size="large" color={Colors.PRIMARY} style={{ marginTop: 500 }} />;
-  }
-
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <SafeAreaView>
-        <Image style={styles.image} source={require('../assets/Login/signinImage.png')} />
-        <Text style={styles.loginText}>Login</Text>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <SafeAreaView>
+          <Image style={styles.image} source={require('../assets/Login/signinImage.png')} />
+          <Text style={styles.loginText}>Login</Text>
 
-        <View style={styles.inputContainer}>
-          <View style={styles.inputWrapper}>
-            <Image style={styles.icon} source={require('../assets/Login/email.png')} />
-            <TextInput
-              style={styles.textInput}
-              placeholder="Email ID"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            {email.length > 0 && (
-              <TouchableOpacity onPress={() => setEmail('')}>
-                <Entypo name="cross" size={24} color="black" />
-              </TouchableOpacity>
-            )}
-          </View>
-          <Divider />
-
-          <View style={styles.inputWrapper}>
-            <Image style={styles.icon} source={require('../assets/Login/lock.png')} />
-            <TextInput
-              style={styles.textInput}
-              placeholder="Password"
-              secureTextEntry={!showPassword}
-              value={password}
-              onChangeText={setPassword}
-            />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-              <Entypo
-                name={showPassword ? 'eye-with-line' : 'eye'}
-                size={20}
-                color="gray"
+          <View style={styles.inputContainer}>
+            <View style={styles.inputWrapper}>
+              <Image style={styles.icon} source={require('../assets/Login/email.png')} />
+              <TextInput
+                style={styles.textInput}
+                placeholder="Email ID"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
               />
-            </TouchableOpacity>
+              {email.length > 0 && (
+                <TouchableOpacity onPress={() => setEmail('')}>
+                  <Entypo name="cross" size={24} color="black" />
+                </TouchableOpacity>
+              )}
+            </View>
+            <Divider />
+
+            <View style={styles.inputWrapper}>
+              <Image style={styles.icon} source={require('../assets/Login/lock.png')} />
+              <TextInput
+                style={styles.textInput}
+                placeholder="Password"
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Entypo
+                  name={showPassword ? 'eye-with-line' : 'eye'}
+                  size={20}
+                  color="gray"
+                />
+              </TouchableOpacity>
+            </View>
+            <Divider />
           </View>
-          <Divider />
-        </View>
 
-        <View style={styles.radioButtonContainer}>
-          <RadioGroup
-            layout="row"
-            radioButtons={radioButtons}
-            onPress={setSelectedId}
-            selectedId={selectedId}
-          />
-        </View>
+          <View style={styles.radioButtonContainer}>
+            <RadioGroup
+              layout="row"
+              radioButtons={radioButtons}
+              onPress={setSelectedId}
+              selectedId={selectedId}
+            />
+          </View>
 
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-          <Text style={styles.loginButtonText}>Login</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+            {loading ? (
+              <ActivityIndicator size="small" color={"white"} />
+            ) : (
+              <Text style={styles.loginButtonText}>Login</Text>
+            )}
+          </TouchableOpacity>
 
-        <Text style={styles.signup}>
-          New to EzMark App? <Text style={{ color: Colors.SECONDARY }}>Need Help?</Text>
-        </Text>
-      </SafeAreaView>
-    </KeyboardAvoidingView>
+          <Text style={styles.signup}>
+            New to EzMark App?{' '}
+            <Text style={{ color: Colors.SECONDARY }}>Need Help?</Text>
+          </Text>
+        </SafeAreaView>
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 };
 
 export default LoginScreen;
+
 
 
 

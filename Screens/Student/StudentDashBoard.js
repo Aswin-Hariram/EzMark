@@ -1,25 +1,31 @@
-import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
+import { StyleSheet, ActivityIndicator } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import StudentMainDashboard from './StudentMainDashboard';
 import StudentRequestHistory from './StudentRequestHistory';
 import StudentProfile from './SProfile';
 import { Colors } from '../../assets/Colors';
-import Icon from 'react-native-vector-icons/MaterialIcons'; 
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import { auth, firestore } from '../../Config/FirebaseConfig';
 import { collection, getDocs, query, where } from 'firebase/firestore';
+import { useNavigation } from '@react-navigation/native';
 
 const StudentDashBoard = () => {
-
     const Tab = createBottomTabNavigator();
     const [studentDetail, setStudentDetail] = useState([]);
-    const [loading, setLoading] = useState(true); // Added loading state
+    const [loading, setLoading] = useState(true);
+    const navigation = useNavigation();
 
     const getStudent = async () => {
         try {
             const user = auth.currentUser?.email;
             if (!user) {
-                throw new Error('User is not authenticated.');
+                // Navigate to Login screen if user is not authenticated
+                navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'Login' }], // Replace 'Login' with your actual login screen route name
+                });
+                return;
             }
 
             const q = query(
@@ -34,19 +40,18 @@ const StudentDashBoard = () => {
             setStudentDetail(temp);
         } catch (error) {
             console.error('Error fetching student data:', error);
-            setStudentDetail([]); // Clear data on error
+            setStudentDetail([]);
         } finally {
-            setLoading(false); // Stop loading when data is fetched
+            setLoading(false);
         }
     };
 
     useEffect(() => {
         getStudent();
-    }, []); // Empty dependency array to call it once on mount
+    }, []);
 
-    // Check if student detail is available before passing to child
     const studentData = studentDetail[0];
-    console.log(studentData)
+
     return (
         <Tab.Navigator
             screenOptions={({ route }) => ({
@@ -69,15 +74,20 @@ const StudentDashBoard = () => {
         >
             <Tab.Screen
                 name="StudentMainDashboard"
-                component={StudentMainDashboard}
+
+                children={() => {
+                    if (loading&&!studentData) {
+                        return <ActivityIndicator size="large" color={Colors.SECONDARY} />;
+                    }
+                    return <StudentMainDashboard studentDetail={studentData} />;
+                }}
                 options={{ tabBarLabel: 'Dashboard' }}
             />
             <Tab.Screen
                 name="StudentRequestHistory"
-                // Pass student data as params to the StudentRequestHistory screen
                 children={() => {
-                    if (loading) {
-                        return <ActivityIndicator size="large" color={Colors.SECONDARY} />; // Show loading spinner while fetching data
+                    if (loading&&studentData) {
+                        return <ActivityIndicator size="large" color={Colors.SECONDARY} />;
                     }
                     return <StudentRequestHistory studentDetail={studentData} />;
                 }}
@@ -85,7 +95,7 @@ const StudentDashBoard = () => {
             />
             <Tab.Screen
                 name="StudentProfile"
-                children={()=>(<StudentProfile student={studentData}/>)}
+                children={() => (<StudentProfile student={studentData} />)}
                 options={{ tabBarLabel: 'Profile' }}
             />
         </Tab.Navigator>

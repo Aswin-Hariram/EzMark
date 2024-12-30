@@ -1,17 +1,23 @@
-import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import React, { useState, useEffect } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  Image,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
-import dp from "../../assets/Teachers/profile.png";
+import dp from '../../assets/Teachers/profile.png';
 import * as ImagePicker from 'expo-image-picker';
 import { ActivityIndicator, TextInput } from 'react-native-paper';
 import { Colors } from '../../assets/Colors';
 import { Dropdown } from 'react-native-element-dropdown';
 import { deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { firestore } from '../../Config/FirebaseConfig';
-import AWS from 'aws-sdk';
-import { Buffer } from 'buffer';
 import { s3 } from '../../Config/awsConfig';
 
 const StudentProfile = ({ route }) => {
@@ -25,38 +31,32 @@ const StudentProfile = ({ route }) => {
   const [classes, setClasses] = useState([]);
   const [studentClass, setStudentClass] = useState(student.class);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [subjects, setSubjects] = useState([]);
+  const [subjectsSelected, setSubjectsSelected] = useState(student.subjects || []);
   const [studentProfile, setStudentProfile] = useState(student.image);
   const [imageLoading, setImageLoading] = useState(false);
 
- 
   const s3BucketName = 'ezmarkbucket'; // Replace with your S3 bucket name
 
-  const deleteFromFirestore = () => {
+  const deleteFromFirestore = async () => {
     setIsUpdating(true);
-    deleteDoc(doc(firestore, "UserData", student.id))
-      .then(() => {
-        alert("Student deleted successfully");
-      })
-      .catch((error) => {
-        alert("Error", error.message);
-      })
-      .finally(() => {
-        setIsUpdating(false);
-        getStudent();
-        navigation.goBack();
-      });
+    try {
+      await deleteDoc(doc(firestore, 'UserData', student.id));
+      Alert.alert('Success', 'Student deleted successfully.');
+      getStudent();
+      navigation.goBack();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to delete student.');
+      console.error('Error deleting student:', error);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const handleDelete = () => {
-    Alert.alert("Alert", "Do you want to delete student, Are you sure?", [
-      {
-        text: "Yes",
-        onPress: () => { deleteFromFirestore() }
-      },
-      {
-        text: "No",
-        onPress: () => { }
-      }
+    Alert.alert('Confirm', 'Do you want to delete this student?', [
+      { text: 'Yes', onPress: deleteFromFirestore },
+      { text: 'No' },
     ]);
   };
 
@@ -65,25 +65,22 @@ const StudentProfile = ({ route }) => {
       const studentRef = doc(firestore, 'UserData', student.id);
       await updateDoc(studentRef, updatedStudent);
       Alert.alert('Success', 'Student details updated successfully.');
-    } catch (error) {
-      console.error('Error updating student in Firestore:', error);
-      Alert.alert('Error', 'Failed to update student details.');
-    } finally {
       getStudent();
       navigation.goBack();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update student details.');
+      console.error('Error updating student:', error);
     }
   };
 
   const validateInput = () => {
-    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zAZ]{2,6}$/;
-
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
     if (!studentName || !studentEmail || !studentDepartment || !studentClass || !studentRollNo) {
       Alert.alert('Error', 'Please fill out all fields.');
       return false;
     }
-
     if (!emailRegex.test(studentEmail)) {
-      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      Alert.alert('Error', 'Please enter a valid email address.');
       return false;
     }
     return true;
@@ -91,25 +88,18 @@ const StudentProfile = ({ route }) => {
 
   const handleUpdate = async () => {
     if (!validateInput()) return;
-
     setIsUpdating(true);
-
     const updatedStudent = {
       name: studentName,
       email: studentEmail,
       department: studentDepartment,
       rollno: studentRollNo,
       class: studentClass,
-      image: studentProfile, // Update the image URL
+      image: studentProfile,
+      subjects: subjectsSelected,
     };
-
-    try {
-      await updateStudentInFirestore(updatedStudent);
-    } catch (error) {
-      console.error('Error updating student:', error);
-    } finally {
-      setIsUpdating(false);
-    }
+    await updateStudentInFirestore(updatedStudent);
+    setIsUpdating(false);
   };
 
   const handlePickImage = async () => {
@@ -129,29 +119,25 @@ const StudentProfile = ({ route }) => {
       const uri = pickerResult.assets[0].uri;
       setImageLoading(true);
       try {
-        const fileName = `${studentEmail}.jpg`; // Save with email as filename
+        const fileName = `${studentEmail}.jpg`;
         const response = await fetch(uri);
         const blob = await response.blob();
 
         const params = {
           Bucket: s3BucketName,
-          Key: `students/${fileName}`, // Store the image under the 'students' folder
+          Key: `students/${fileName}`,
           Body: blob,
-          ContentType: 'image/jpeg', 
+          ContentType: 'image/jpeg',
         };
 
-        // Upload the file to S3
         s3.upload(params, (err, data) => {
           if (err) {
-            console.error('Error uploading image to S3:', err);
+            console.error('Error uploading image:', err);
             Alert.alert('Error', 'Failed to upload image.');
             setImageLoading(false);
             return;
           }
-
-          // Get the URL of the uploaded file and update studentProfile
-          const fileUrl = data.Location;
-          setStudentProfile(fileUrl); // Set new profile URL
+          setStudentProfile(data.Location);
           setImageLoading(false);
         });
       } catch (error) {
@@ -163,22 +149,21 @@ const StudentProfile = ({ route }) => {
   };
 
   useEffect(() => {
-    const fetchClasses = async () => {
+    const fetchClassesAndSubjects = async () => {
       try {
         const docRef = doc(firestore, 'BasicData', 'Data');
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
-          if (data.Class) {
-            setClasses(data.Class.map((cls) => ({ label: cls, value: cls })));
-          }
+          setClasses(data.Class?.map((cls) => ({ label: cls, value: cls })) || []);
+          setSubjects(data.Subjects?.map((subj) => ({ label: subj, value: subj })) || []);
         }
       } catch (error) {
-        console.error('Error fetching classes:', error);
-        Alert.alert('Error', 'Failed to load classes.');
+        Alert.alert('Error', 'Failed to load classes or subjects.');
+        console.error('Error fetching data:', error);
       }
     };
-    fetchClasses();
+    fetchClassesAndSubjects();
   }, []);
 
   return (
@@ -210,7 +195,6 @@ const StudentProfile = ({ route }) => {
             mode="outlined"
             style={styles.input}
           />
-
           <TextInput
             label="Student Email"
             value={studentEmail}
@@ -218,7 +202,6 @@ const StudentProfile = ({ route }) => {
             mode="outlined"
             style={styles.input}
           />
-
           <TextInput
             label="Roll No"
             value={studentRollNo}
@@ -226,7 +209,6 @@ const StudentProfile = ({ route }) => {
             mode="outlined"
             style={styles.input}
           />
-
           <Dropdown
             style={styles.dropdown}
             data={classes}
@@ -236,11 +218,64 @@ const StudentProfile = ({ route }) => {
             value={studentClass}
             onChange={(item) => setStudentClass(item.value)}
           />
+          <Dropdown
+            style={styles.dropdown}
+            data={subjects}
+            labelField="label"
+            valueField="value"
+            search
+            placeholder="Select Subjects"
+            onChange={(item) => {
+              if (!subjectsSelected.includes(item.value)) {
+                setSubjectsSelected([...subjectsSelected, item.value]);
+              }
+              else{
+                alert(`${item.value} already selected`)
+                
+              }
+            }}
+          />
+          <View style={styles.classesSection}>
+            <Text style={styles.classTitle}>Enrolled Subjects</Text>
+            <View style={styles.chipContainer}>
+              {subjectsSelected.length > 0 ? (
+                subjectsSelected.map((chip) => (
+                  <View key={chip} style={styles.chipWrapper}>
+                    <TouchableOpacity
+                      style={styles.chip}
+                      onPress={() => {
+                        Alert.alert("Alert", `Do you want to remove ${chip}`, [
+                          {
+                            text: "Yes",
+                            onPress: () => {
+                              setSubjectsSelected((prev) =>
+                                prev.includes(chip) ? prev.filter((subject) => subject !== chip) : [...prev, chip]
+                              );
+                            }
+                          },
+                          {
+                            text: "No",
+                          }
+                        ])
+                      }}
+                    >
+                      <Text style={styles.chipText}>
+                        {chip}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.noChipsText}>No Classes Available</Text>
+              )}
+            </View>
+          </View>
         </View>
 
         <TouchableOpacity
           style={[styles.updateButton, isUpdating && { opacity: 0.7 }]}
           onPress={handleUpdate}
+          onLongPress={handleDelete}
           disabled={isUpdating}
         >
           {isUpdating ? (
@@ -249,6 +284,8 @@ const StudentProfile = ({ route }) => {
             <Text style={styles.updateButtonText}>Update Student</Text>
           )}
         </TouchableOpacity>
+
+       
       </ScrollView>
     </SafeAreaView>
   );
@@ -319,5 +356,80 @@ const styles = StyleSheet.create({
   updateButtonText: {
     fontSize: 18,
     color: 'white',
+  },
+  classesSection: {
+    marginBottom: 20,
+  },
+  classTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#153448',
+    marginBottom: 10,
+  },
+  chipContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  chipWrapper: {
+    marginBottom: 10,
+    marginRight: 10,
+  },
+  chip: {
+    backgroundColor: '#e9ecef',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+  },
+  selectedChip: {
+    backgroundColor: Colors.PRIMARY,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+  },
+  chipText: {
+    color: '#6c757d',
+    fontSize: 14,
+  },
+  selectedChipText: {
+    color: 'white',
+    fontSize: 14,
+  },
+  noChipsText: {
+    color: '#6c757d',
+    fontSize: 14,
+    marginTop: 10,
+  },
+  chipWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    margin: 5,
+  },
+  chip: {
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    backgroundColor: '#EEEEEE',
+    borderColor: Colors.SECONDARY,
+    borderWidth: 0.5,
+    borderRadius: 20,
+  },
+  selectedChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    backgroundColor: Colors.SECONDARY,
+    borderRadius: 20,
+  },
+  chipText: {
+    fontSize: 14,
+    color: 'black',
+  },
+  selectedChipText: {
+    fontSize: 14,
+    color: 'white',
+  },
+  noChipsText: {
+    fontSize: 16,
+    color: 'gray',
+    textAlign: 'center',
+    marginTop: 20,
   },
 });

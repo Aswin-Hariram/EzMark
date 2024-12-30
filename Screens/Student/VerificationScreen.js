@@ -164,7 +164,9 @@ const VerificationScreen = () => {
     const updateFirestore = async (otpValue) => {
         try {
             console.log("Starting updateFirestore...");
-
+            let currentLocation = await Location.getCurrentPositionAsync({});
+            if (!currentLocation)
+                throw new Error("Missing location permission");
             if (!studentDetail || !studentDetail.id || !requestDetails) {
                 throw new Error("Missing studentDetail or requestDetails.");
             }
@@ -203,8 +205,8 @@ const VerificationScreen = () => {
                 await updateDoc(docRef, {
                     status: "Completed",
                     ctime: new Date().toISOString(),
-                    locationLat: locationLat,
-                    locationLong: locationLong,
+                    locationLat: currentLocation.coords.latitude,
+                    locationLong: currentLocation.coords.longitude
                 });
             }));
 
@@ -232,13 +234,11 @@ const VerificationScreen = () => {
                     console.warn("Invalid enrolledStudents format.");
                     return;
                 }
-                let { status } = await Location.requestForegroundPermissionsAsync();
-                if (status !== 'granted') {
-                    setErrorMsg('Permission to access location was denied');
-                    return;
-                }
-                let currentLocation = await Location.getCurrentPositionAsync({});
-               
+
+
+
+
+
 
                 const updatedStudents = enrolledStudents.map((student) => {
                     if (
@@ -299,6 +299,11 @@ const VerificationScreen = () => {
             console.log("RequestDetails: ", requestDetails)
             if (otpValue === requestDetails.otp) {
 
+                let { status } = await Location.requestForegroundPermissionsAsync();
+                if (status !== 'granted') {
+                    setErrorMsg('Permission to access location was denied');
+                    return;
+                }
                 updateFirestore(otpValue)
 
             }

@@ -104,7 +104,7 @@ const AdminDashboardScreen = () => {
                 <Tab.Screen name="Dashboard" component={Dashboard} />
                 <Tab.Screen name="Teachers" component={ManageTeachers} />
                 <Tab.Screen name="Students" component={ManageStudents} />
-                <Tab.Screen name="Classes" component={ManageClasses} />
+                {/* <Tab.Screen name="Classes" component={ManageClasses} /> */}
             </Tab.Navigator>
       
     );

@@ -18,6 +18,8 @@ const SProfile = ({ student }) => {
   const [studentDepartment, setStudentDepartment] = useState(student?.department || '');
   const [studentRollNo, setStudentRollNo] = useState(student?.rollno || '');
   const [classes, setClasses] = useState([]);
+  const [subjects, setSubjects] = useState([])
+  const [subjectsSelected, setSubjectsSelected] = useState(student.subjects || []);
   const [studentClass, setStudentClass] = useState(student?.class || '');
   const [isUpdating, setIsUpdating] = useState(false);
   const [studentImage, setStudentImage] = useState(student?.image || dp);
@@ -108,13 +110,14 @@ const SProfile = ({ student }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back-outline" size={24} color={Colors.PRIMARY} />
+        </TouchableOpacity>
+        <Text style={styles.headerText}>Profile</Text>
+      </View>
       <ScrollView>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back-outline" size={24} color={Colors.PRIMARY} />
-          </TouchableOpacity>
-          <Text style={styles.headerText}>Profile</Text>
-        </View>
+
 
         <View style={styles.profileSection}>
           <Image style={styles.profileImage} source={{ uri: studentImage }} defaultSource={dp} />
@@ -154,6 +157,52 @@ const SProfile = ({ student }) => {
             value={studentClass}
             disable={true}
           />
+
+          {/* <Dropdown
+            style={styles.dropdown}
+            data={subjects}
+            labelField="label"
+            valueField="value"
+            search
+            placeholder="Select Subjects"
+            onChange={(item) => setSubjectsSelected([...subjectsSelected, item.value])}
+          /> */}
+          <View style={styles.classesSection}>
+            <Text style={styles.classTitle}>Enrolled Subjects</Text>
+            <View style={styles.chipContainer}>
+              {subjectsSelected.length > 0 ? (
+                subjectsSelected.map((chip) => (
+                  <View key={chip} style={styles.chipWrapper}>
+                    <TouchableOpacity
+
+                      style={styles.chip}
+                    // onPress={() => {
+                    //   Alert.alert("Alert", `Do you want to remove ${chip}`, [
+                    //     {
+                    //       text: "Yes",
+                    //       onPress: () => {
+                    //         setSubjectsSelected((prev) =>
+                    //           prev.includes(chip) ? prev.filter((subject) => subject !== chip) : [...prev, chip]
+                    //         );
+                    //       }
+                    //     },
+                    //     {
+                    //       text: "No",
+                    //     }
+                    //   ])
+                    // }}
+                    >
+                      <Text style={styles.chipText}>
+                        {chip}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.noChipsText}>No Classes Available</Text>
+              )}
+            </View>
+          </View>
         </View>
 
         <TouchableOpacity
@@ -224,10 +273,95 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 5,
   },
   updateButtonText: {
     fontSize: 18,
     color: 'white',
+  },
+  classesSection: {
+    marginBottom: 15,
+  },
+  classTitle: {
+    fontSize: 19,
+    fontWeight: '600',
+    color: '#153448',
+    marginBottom: 10,
+  },
+  chipContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap', // Ensures chips wrap to the next line only when necessary
+    justifyContent: 'flex-start', // Aligns chips at the start
+    alignItems: 'center', // Aligns chips vertically
+  },
+
+  chipWrapper: {
+    marginBottom: 10,
+    marginRight: 10,
+    flexShrink: 0,  // Prevents individual chips from shrinking
+  },
+  chip: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#EEEEEE',
+    borderColor: Colors.SECONDARY,
+    borderWidth: 0.5,
+    borderRadius: 20,
+    maxWidth: '48%', // Prevents chips from being too wide, ensuring even distribution
+  },
+  selectedChip: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: Colors.SECONDARY,
+    borderRadius: 20,
+    maxWidth: '48%',
+  },
+  chipText: {
+    fontSize: 14,
+    color: 'black',
+    textAlign: 'center', // Ensures text alignment is consistent
+  },
+  selectedChipText: {
+    fontSize: 14,
+    color: 'white',
+    textAlign: 'center',
+  },
+  noChipsText: {
+    color: '#6c757d',
+    fontSize: 14,
+    marginTop: 10,
+  },
+  chipWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    margin: 5,
+  },
+  chip: {
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    backgroundColor: '#EEEEEE',
+    borderColor: Colors.SECONDARY,
+    borderWidth: 0.5,
+    borderRadius: 20,
+  },
+  selectedChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    backgroundColor: Colors.SECONDARY,
+    borderRadius: 20,
+  },
+  chipText: {
+    fontSize: 14,
+    color: 'black',
+  },
+  selectedChipText: {
+    fontSize: 14,
+    color: 'white',
+  },
+  noChipsText: {
+    fontSize: 16,
+    color: 'gray',
+    textAlign: 'center',
+    marginTop: 20,
   },
 });

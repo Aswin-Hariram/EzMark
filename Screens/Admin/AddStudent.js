@@ -25,6 +25,8 @@ const AddStudent = () => {
     const [studentClass, setStudentClass] = useState(null);
     const [studentImage, setStudentImage] = useState(null);
     const [classes, setClasses] = useState([]);
+    const [subjects, setSubjects] = useState([])
+    const [subjectsSelected, setSubjectsSelected] = useState([])
     const [processing, setProcessing] = useState(false);
     const [imgUrl, setImageUrl] = useState('');
 
@@ -48,6 +50,10 @@ const AddStudent = () => {
                     const data = docSnap.data();
                     if (data.Class) {
                         setClasses(data.Class.map((cls) => ({ label: cls, value: cls })));
+
+                    }
+                    if (data.Subjects) {
+                        setSubjects(data.Subjects.map((Subject) => ({ label: Subject, value: Subject })));
                     }
                 }
             } catch (error) {
@@ -181,6 +187,7 @@ const AddStudent = () => {
                 rollno: studentRollno,
                 password: studentPassword,
                 type: 'Student',
+                subjects:subjectsSelected
             };
 
             saveToFirestore(newStudent);
@@ -256,11 +263,57 @@ const AddStudent = () => {
                         value={studentClass}
                         onChange={(item) => setStudentClass(item.value)}
                     />
-                    <PasswordTextInput
-                        value={studentPassword}
-                        onChangeText={setStudentPassword}
-                        placeholder="Enter Password"
+                    <View style={{ marginBottom: 15 }}>
+                        <PasswordTextInput
+                            value={studentPassword}
+                            onChangeText={setStudentPassword}
+                            placeholder="Enter Password"
+                        />
+                    </View>
+                    <Dropdown
+                        style={styles.dropdown}
+                        data={subjects}
+                        labelField="label"
+                        valueField="value"
+                        search
+                        placeholder="Select Subjects"
+                        onChange={(item) => setSubjectsSelected([...subjectsSelected, item.value])}
                     />
+                    <View style={styles.classesSection}>
+                        <Text style={styles.classTitle}>Enrolled Subjects</Text>
+                        <View style={styles.chipContainer}>
+                            {subjectsSelected.length > 0 ? (
+                                subjectsSelected.map((chip) => (
+                                    <View key={chip} style={styles.chipWrapper}>
+                                        <TouchableOpacity
+                                            style={styles.chip}
+                                            onPress={() => {
+                                                Alert.alert("Alert", `Do you want to remove ${chip}`, [
+                                                    {
+                                                        text: "Yes",
+                                                        onPress: () => {
+                                                            setSubjectsSelected((prev) =>
+                                                                prev.includes(chip) ? prev.filter((subject) => subject !== chip) : [...prev, chip]
+                                                            );
+                                                        }
+                                                    },
+                                                    {
+                                                        text:"No",
+                                                    }
+                                                ])
+                                            }}
+                                        >
+                                            <Text style={styles.chipText}>
+                                                {chip}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                ))
+                            ) : (
+                                <Text style={styles.noChipsText}>No Classes Available</Text>
+                            )}
+                        </View>
+                    </View>
                 </View>
 
                 <TouchableOpacity
@@ -299,7 +352,7 @@ const styles = StyleSheet.create({
     headerText: {
         marginLeft: 10,
         fontWeight: 'bold',
-        fontSize: 20,
+        fontSize: 22,
         color: '#153448',
     },
     imageSection: {
@@ -324,6 +377,7 @@ const styles = StyleSheet.create({
     imagePlaceholder: {
         color: '#6c757d',
         fontSize: 16,
+        textAlign: 'center',
     },
     formSection: {
         marginBottom: 20,
@@ -333,6 +387,8 @@ const styles = StyleSheet.create({
         borderColor: Colors.PRIMARY,
         marginBottom: 15,
         borderRadius: 10,
+        fontSize: 16,
+        paddingLeft: 10,
     },
     dropdown: {
         height: 50,
@@ -342,17 +398,94 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
         marginBottom: 15,
         backgroundColor: 'white',
+        fontSize: 16,
     },
     saveButton: {
         backgroundColor: '#153448',
         paddingVertical: 15,
         borderRadius: 10,
         alignItems: 'center',
-        marginTop: 20,
+        marginTop: 10,
     },
     saveButtonText: {
         color: 'white',
         fontSize: 16,
         fontWeight: 'bold',
     },
+    classesSection: {
+        marginBottom: 20,
+    },
+    classTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#153448',
+        marginBottom: 10,
+    },
+    chipContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+    },
+    chipWrapper: {
+        marginBottom: 10,
+        marginRight: 10,
+    },
+    chip: {
+        backgroundColor: '#e9ecef',
+        paddingVertical: 5,
+        paddingHorizontal: 10,
+        borderRadius: 20,
+    },
+    selectedChip: {
+        backgroundColor: Colors.PRIMARY,
+        paddingVertical: 5,
+        paddingHorizontal: 10,
+        borderRadius: 20,
+    },
+    chipText: {
+        color: '#6c757d',
+        fontSize: 14,
+    },
+    selectedChipText: {
+        color: 'white',
+        fontSize: 14,
+    },
+    noChipsText: {
+        color: '#6c757d',
+        fontSize: 14,
+        marginTop: 10,
+    },
+    chipWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        margin: 5,
+    },
+    chip: {
+        paddingVertical: 8,
+        paddingHorizontal: 15,
+        backgroundColor: '#EEEEEE',
+        borderColor: Colors.SECONDARY,
+        borderWidth: 0.5,
+        borderRadius: 20,
+    },
+    selectedChip: {
+        paddingVertical: 8,
+        paddingHorizontal: 15,
+        backgroundColor: Colors.SECONDARY,
+        borderRadius: 20,
+    },
+    chipText: {
+        fontSize: 14,
+        color: 'black',
+    },
+    selectedChipText: {
+        fontSize: 14,
+        color: 'white',
+    },
+    noChipsText: {
+        fontSize: 16,
+        color: 'gray',
+        textAlign: 'center',
+        marginTop: 20,
+    },
 });
+
