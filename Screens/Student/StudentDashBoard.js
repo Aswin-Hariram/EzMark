@@ -91,7 +91,7 @@ const StudentDashBoard = () => {
                     }
                     return <StudentRequestHistory studentDetail={studentData} />;
                 }}
-                options={{ tabBarLabel: 'History' }}
+                options={{ tabBarLabel: 'Requests' }}
             />
             <Tab.Screen
                 name="StudentProfile"

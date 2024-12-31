@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,14 @@ import {
   FlatList,
   Alert,
   Platform,
+  TextInput as RNTextInput,
+  Modal,
+  TouchableWithoutFeedback,
+  Pressable
 } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from '../../assets/Colors';
+import AntDesign from '@expo/vector-icons/AntDesign';
 import {
   collection,
   doc,
@@ -23,6 +28,8 @@ import {
 import { firestore } from '../../Config/FirebaseConfig';
 import { format } from 'date-fns';
 import { useNavigation } from '@react-navigation/native';
+import { RadioButton, TextInput } from 'react-native-paper';
+
 
 
 const StudentRequestHistory = ({ studentDetail }) => {
@@ -30,12 +37,22 @@ const StudentRequestHistory = ({ studentDetail }) => {
   const [historyData, setHistoryData] = useState([]);
   const [loadingId, setLoadingId] = useState(null);
   const navigation = useNavigation();
+  const [modalVisible, setModalVisible] = useState(false)
+  const [sortOption, setSortOption] = useState("date");
+  const [searchVisible, setSearchVisible] = useState(false)
 
-  const formatDate = (isoString) => format(new Date(isoString), "dd MMM yyyy EEE");
+  const [serchInp, setSearchInp] = useState('')
+
+  const formatDate = (isoString) => {
+    const date = new Date(isoString);
+    if (isNaN(date)) return 'Invalid Date'; // Return a fallback if the date is invalid
+    return format(date, "dd MMM yyyy EEE");
+  };
+
 
   const handleComplete = async (item) => {
     try {
-      navigation.navigate("VerificationScreen",{requestDetails:item,studentDetail:studentDetail})
+      navigation.navigate("VerificationScreen", { requestDetails: item, studentDetail: studentDetail })
     } catch (error) {
       console.error("Error completing request: ", error);
       Alert.alert('Error', 'An error occurred while completing the request.');
@@ -78,6 +95,43 @@ const StudentRequestHistory = ({ studentDetail }) => {
     };
   }, [studentDetail]);
 
+  useEffect(() => {
+
+    if (!studentDetail?.id) return; // Early return to avoid query execution
+
+    if (serchInp === "") {
+      // Reset to original data when search input is cleared
+      const requestedQuery = query(
+        collection(firestore, `UserData/${studentDetail.id}/AttendanceRequests`),
+        where("status", "==", "Requested")
+      );
+
+      const historyQuery = query(
+        collection(firestore, `UserData/${studentDetail.id}/AttendanceRequests`),
+        where("status", "!=", "Requested")
+      );
+
+      getDocs(requestedQuery).then((querySnapshot) => {
+        setRequestedData(
+          querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+            time: formatDate(doc.get("createdAt")),
+          }))
+        );
+      });
+
+      getDocs(historyQuery).then((querySnapshot) => {
+        setHistoryData(
+          querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+            time: formatDate(doc.get("createdAt")),
+          }))
+        );
+      });
+    }
+  }, [serchInp]);
 
   const renderPendingRequest = ({ item }) => (
     <TouchableOpacity
@@ -143,6 +197,133 @@ const StudentRequestHistory = ({ studentDetail }) => {
     </TouchableOpacity>
   );
 
+  const applySort = (option) => {
+    setSortOption(option);
+
+    if (option === "date") {
+      setRequestedData((prev) =>
+        [...prev].sort((a, b) => new Date(b.time) - new Date(a.time))
+      );
+      setHistoryData((prev) =>
+        [...prev].sort((a, b) => new Date(b.time) - new Date(a.time))
+      );
+    } else if (option === "Subject Name (ASC)") {
+      setRequestedData((prev) =>
+        [...prev].sort((a, b) => a.subjectName.localeCompare(b.subjectName))
+      );
+      setHistoryData((prev) =>
+        [...prev].sort((a, b) => a.subjectName.localeCompare(b.subjectName))
+      );
+    } else if (option === "Subject Name (DESC)") {
+      setRequestedData((prev) =>
+        [...prev].sort((a, b) => b.subjectName.localeCompare(a.subjectName))
+      );
+      setHistoryData((prev) =>
+        [...prev].sort((a, b) => b.subjectName.localeCompare(a.subjectName))
+      );
+    }
+    else if (option === "status") {
+      setHistoryData((prev) =>
+        [...prev].sort((a, b) => a.status.localeCompare(b.status))
+      );
+    }
+    setModalVisible(false);
+  };
+  const renderModal = () => {
+    const options = [
+      { label: "Date", value: "date" },
+      { label: "Subject Name (ASC)", value: "Subject Name (ASC)" },
+      { label: "Subject Name (DESC)", value: "Subject Name (DESC)" },
+      { label: "Status", value: "status" },
+    ];
+
+    return (
+      <Modal
+        visible={modalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+          <View style={styles.modalContainer}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Sort By</Text>
+                {options.map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={styles.radioOption}
+                    onPress={() => applySort(option.value)}
+                  >
+                    <Text style={styles.optionText}>{option.label}</Text>
+                    <RadioButton
+                      color={Colors.SECONDARY}
+                      value={option.value}
+                      status={sortOption === option.value ? "checked" : "unchecked"}
+                      onPress={() => applySort(option.value)}
+                    />
+                  </TouchableOpacity>
+                ))}
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={styles.cancelText}>Close</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+    );
+  };
+
+  const handleSort = () => {
+    setModalVisible(true)
+  }
+  const handleSearchByDate = () => {
+    setModalVisible(true)
+  }
+
+  const handleSearch = () => {
+    const lowercasedSearch = serchInp.toLowerCase();
+
+    // Filter requestedData
+    const filteredRequestedData = requestedData.filter(
+      (item) =>
+        item.subjectName?.toLowerCase().includes(lowercasedSearch) ||
+        item.createdBy?.toLowerCase().includes(lowercasedSearch)
+    );
+
+    // Filter historyData
+    const filteredHistoryData = historyData.filter(
+      (item) =>
+        item.subjectName?.toLowerCase().includes(lowercasedSearch) ||
+        item.createdBy?.toLowerCase().includes(lowercasedSearch) ||
+        item.status?.toLowerCase().includes(lowercasedSearch)
+    );
+
+    setRequestedData(filteredRequestedData);
+    setHistoryData(filteredHistoryData);
+  };
+
+  // Debounced search handler using useRef
+  const searchTimeout = useRef(null);
+
+  const handleSearchInputChange = (text) => {
+    setSearchInp(text);
+    clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(handleSearch, 500); // Debounce search by 500ms
+  };
+
+  <RNTextInput
+    style={styles.input}
+    placeholder="Type here to search"
+    onChange={(e) => handleSearchInputChange(e.nativeEvent.text)} // Updated to debounced handler
+    value={serchInp}
+  />
+
+
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
@@ -157,14 +338,36 @@ const StudentRequestHistory = ({ studentDetail }) => {
                 <Text style={styles.backText}>Back</Text>
               </TouchableOpacity>
               <View style={styles.rightIcons}>
-                <TouchableOpacity style={styles.icon}>
+                <TouchableOpacity style={styles.icon} onPress={() => { setSearchVisible(true) }} >
                   <Ionicons name="search-outline" size={24} color={Colors.PRIMARY} />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.icon}>
+                <TouchableOpacity style={styles.icon} onPress={handleSearchByDate}>
+                  <AntDesign name="calendar" size={24} color="black" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.icon} onPress={handleSort}>
                   <Ionicons name="filter-outline" size={24} color={Colors.PRIMARY} />
                 </TouchableOpacity>
               </View>
             </View>
+            {
+              searchVisible && (
+                <View style={styles.searchBox}>
+                  <RNTextInput
+                    style={styles.input}
+                    placeholder="Type here to search"
+                    onChange={(e) => {
+                      setSearchInp(e.nativeEvent.text); // Update state with the text from the input
+                      handleSearch(); // Perform search filtering
+                    }}
+                    value={serchInp}
+
+                  />
+                  <TouchableOpacity onPress={() => { setSearchVisible(false) }}>
+                    <Text style={styles.text}>Close</Text>
+                  </TouchableOpacity>
+                </View>
+              )
+            }
             <View style={styles.historyContainer}>
               <Text style={styles.sectionHeader}>Pending Request</Text>
             </View>
@@ -182,6 +385,7 @@ const StudentRequestHistory = ({ studentDetail }) => {
               keyExtractor={(item) => `history-${item.id}`}
               ListEmptyComponent={<Text style={styles.noDataText}>No History Available</Text>}
             />
+            {renderModal()}
           </View>
         }
       />
@@ -190,9 +394,39 @@ const StudentRequestHistory = ({ studentDetail }) => {
 };
 
 const styles = StyleSheet.create({
+  Bcontainer: {
+    flex: 1,
+    padding: 24,
+    justifyContent: 'center',
+    backgroundColor: 'grey',
+  },
+  BcontentContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    margin: 10,
+    borderWidth: 1,
+    borderColor: Colors.SECONDARY,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: '#ffff'
+  },
+  input: {
+    padding: 8,
+    flex: 1,  // Allow the TextInput to take the remaining space
+    marginRight: 10,
+    fontSize: 16,
+  },
+  text: {
+    fontSize: 16,
+    color: '#333',
+  },
   container: {
     flex: 1,
-  
+
     paddingTop: Platform.OS === 'ios' ? 0 : 25,
     marginTop: Platform.OS === 'ios' ? 0 : 25,
   },
@@ -216,6 +450,8 @@ const styles = StyleSheet.create({
   rightIcons: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 1
   },
   icon: {
     marginLeft: 16,
@@ -312,6 +548,62 @@ const styles = StyleSheet.create({
     color: '#888',
     marginVertical: 16,
     fontSize: 14,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    alignSelf: 'center',
+    marginBottom: 15,
+  },
+  radioOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 10,
+    justifyContent: 'space-between',
+  },
+  radioButton: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: Colors.PRIMARY,
+    marginRight: 10,
+  },
+  radioButtonSelected: {
+    backgroundColor: Colors.PRIMARY,
+  },
+  optionText: {
+    fontSize: 16,
+  },
+  applyButton: {
+    backgroundColor: Colors.SECONDARY,
+    padding: 15,
+    borderRadius: 8,
+    marginTop: 20,
+  },
+  applyButtonText: {
+    color: "#fff",
+    textAlign: "center",
+    fontWeight: "bold",
+  },
+  cancelButton: {
+    marginTop: 10,
+    alignItems: "center",
+  },
+  cancelText: {
+    color: Colors.SECONDARY,
+    fontSize: 16,
   },
 });
 

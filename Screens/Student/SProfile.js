@@ -45,68 +45,68 @@ const SProfile = ({ student }) => {
     fetchClasses();
   }, []);
 
-  const validateInput = () => {
-    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
-    if (!studentName || !studentEmail || !studentDepartment || !studentClass || !studentRollNo) {
-      Alert.alert('Error', 'Please fill out all fields.');
-      return false;
-    }
-    if (!emailRegex.test(studentEmail)) {
-      Alert.alert('Invalid Email', 'Please enter a valid email address.');
-      return false;
-    }
-    return true;
-  };
+  // const validateInput = () => {
+  //   const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+  //   if (!studentName || !studentEmail || !studentDepartment || !studentClass || !studentRollNo) {
+  //     Alert.alert('Error', 'Please fill out all fields.');
+  //     return false;
+  //   }
+  //   if (!emailRegex.test(studentEmail)) {
+  //     Alert.alert('Invalid Email', 'Please enter a valid email address.');
+  //     return false;
+  //   }
+  //   return true;
+  // };
 
-  const handleUpdate = async () => {
-    if (!validateInput() || !student?.id) return;
+  // const handleUpdate = async () => {
+  //   if (!validateInput() || !student?.id) return;
 
-    setIsUpdating(true);
-    const updatedStudent = {
-      name: studentName,
-      email: studentEmail,
-      department: studentDepartment,
-      rollno: studentRollNo,
-      class: studentClass,
-    };
+  //   setIsUpdating(true);
+  //   const updatedStudent = {
+  //     name: studentName,
+  //     email: studentEmail,
+  //     department: studentDepartment,
+  //     rollno: studentRollNo,
+  //     class: studentClass,
+  //   };
 
-    try {
-      const studentRef = doc(firestore, 'UserData', student.id);
-      await updateDoc(studentRef, updatedStudent);
-      Alert.alert('Success', 'Student details updated successfully.');
-      navigation.goBack();
-    } catch (error) {
-      console.error('Error updating student:', error);
-      Alert.alert('Error', 'Failed to update student details.');
-    } finally {
-      setIsUpdating(false);
-    }
-  };
+  //   try {
+  //     const studentRef = doc(firestore, 'UserData', student.id);
+  //     await updateDoc(studentRef, updatedStudent);
+  //     Alert.alert('Success', 'Student details updated successfully.');
+  //     navigation.goBack();
+  //   } catch (error) {
+  //     console.error('Error updating student:', error);
+  //     Alert.alert('Error', 'Failed to update student details.');
+  //   } finally {
+  //     setIsUpdating(false);
+  //   }
+  // };
 
-  const handleDelete = () => {
-    if (!student?.id) return;
-    Alert.alert("Alert", "Do you want to delete student? Are you sure?", [
-      {
-        text: "Yes",
-        onPress: async () => {
-          setIsUpdating(true);
-          try {
-            await deleteDoc(doc(firestore, "UserData", student.id));
-            Alert.alert("Success", "Student deleted successfully");
-            navigation.goBack();
-          } catch (error) {
-            console.error('Error deleting student:', error);
-            Alert.alert("Error", "Failed to delete student.");
-          } finally {
-            setIsUpdating(false);
-          }
-        },
-      },
-      {
-        text: "No",
-      },
-    ]);
-  };
+  // const handleDelete = () => {
+  //   if (!student?.id) return;
+  //   Alert.alert("Alert", "Do you want to delete student? Are you sure?", [
+  //     {
+  //       text: "Yes",
+  //       onPress: async () => {
+  //         setIsUpdating(true);
+  //         try {
+  //           await deleteDoc(doc(firestore, "UserData", student.id));
+  //           Alert.alert("Success", "Student deleted successfully");
+  //           navigation.goBack();
+  //         } catch (error) {
+  //           console.error('Error deleting student:', error);
+  //           Alert.alert("Error", "Failed to delete student.");
+  //         } finally {
+  //           setIsUpdating(false);
+  //         }
+  //       },
+  //     },
+  //     {
+  //       text: "No",
+  //     },
+  //   ]);
+  // };
 
   return (
     <SafeAreaView style={styles.container}>

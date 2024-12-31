@@ -14,9 +14,11 @@ const StudentMainDashboard = ({ studentDetail }) => {
   const [enrolledSubjects, setEnrolledSubjects] = useState([]);
   const [overAll, setOverAll] = useState([]);
   const [sub, setSub] = useState(overAll[0] || {});
+  const [isrefreshing,setIsRefreshing] = useState(false)
 
   const fetchSubjects = async () => {
     try {
+      setIsRefreshing(true)
       console.log("Fetching student details...");
       if (!studentDetail || !studentDetail.id) {
         console.error("Student details are missing!");
@@ -94,6 +96,7 @@ const StudentMainDashboard = ({ studentDetail }) => {
       setSub({ id: 0, name: "Overall", percentage: parseFloat(averagePercentage) })
       setOverAll(overallResult);
     }
+    setIsRefreshing(false)
   }, [enrolledSubjects]); // Recalculate overall when `enrolledSubjects` changes
 
   const handleSubjectPress = (item) => {
@@ -203,6 +206,8 @@ const StudentMainDashboard = ({ studentDetail }) => {
               keyExtractor={(item) => item.id.toString()}
             />
           )}
+          refreshing={isrefreshing}
+          onRefresh={fetchSubjects}
       />
     </SafeAreaView>
   );
