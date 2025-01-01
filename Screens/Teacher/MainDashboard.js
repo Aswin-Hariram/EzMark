@@ -1,10 +1,13 @@
-import { Dimensions, FlatList, SafeAreaView, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { Dimensions, FlatList, SafeAreaView, StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native';
 import React from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { ProgressChart } from "react-native-chart-kit";
 import { Colors } from '../../assets/Colors';
+import { useNavigation } from '@react-navigation/native';
+import AttendanceScreen from './AttendanceScreen';
 
 const MainDashboard = () => {
+    const navi=useNavigation();
     const data = {
         labels: ["CSE I", "CSE II", "CSE III", "CSE IV", "CSE V"],
         data: [0.4, 0.6, 0.8, 0.2, 0.9],
@@ -37,7 +40,7 @@ const MainDashboard = () => {
                 </TouchableOpacity>
                 <View style={styles.rightIcons}>
                     <TouchableOpacity style={styles.icon}>
-                        <Ionicons name="search-outline" size={24} color={Colors.PRIMARY} />
+                        <Ionicons name="search-outline" size={2} color={Colors.PRIMARY} />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -62,7 +65,7 @@ const MainDashboard = () => {
             <View style={styles.progressChartContainer}>
                 <ProgressChart
                     data={data}
-                    width={Dimensions.get("window").width - 40}
+                    width={Dimensions.get("window").width - 75}
                     height={220}
                     strokeWidth={10}
                     radius={32}
@@ -83,7 +86,11 @@ const MainDashboard = () => {
                 data={present}
                 ListHeaderComponent={renderHeader}
                 renderItem={({ item }) => (
+                    <TouchableOpacity>
                     <View style={styles.classContainer}>
+                        <TouchableOpacity onPress={()=>navi.navigate("AttendanceScreen",{clasName:item.class})}>
+                            <Image style={styles.rightarrow} source={require('../asset Student/right-chevron.png')}/>
+                        </TouchableOpacity>
                         <Text style={styles.className}>{item.class}</Text>
                         <Text style={styles.detailsText}>
                             Present: {item.present} | Absent: {item.total - item.present}
@@ -97,6 +104,7 @@ const MainDashboard = () => {
                             />
                         </View>
                     </View>
+                    </TouchableOpacity>
                 )}
                 keyExtractor={(item) => item.id.toString()}
             />
@@ -198,6 +206,7 @@ const styles = StyleSheet.create({
         padding: 15,
         marginVertical: 10,
         marginHorizontal: 10,
+        position:'relative',
         backgroundColor: 'white',
         borderRadius: 8,
         shadowColor: '#000',
@@ -229,4 +238,11 @@ const styles = StyleSheet.create({
         height: '100%',
         backgroundColor: Colors.SECONDARY,
     },
+    rightarrow:{
+        width:40,
+        height:40,
+        position:'absolute',
+        right:5,
+        top:10
+    }
 });
