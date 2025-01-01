@@ -95,7 +95,7 @@ const TeacherHistory = ({ teacherDetail }) => {
   const handleCancel = async (item) => {
     try {
       setLoadingDId(item.id); // Start loading for specific item
-      console.log("Item=>",item)
+      console.log("Item=>", item)
       const studentQuery = query(
         collection(firestore, "UserData"),
         where("class", "==", item.class || ""),
@@ -183,6 +183,7 @@ const TeacherHistory = ({ teacherDetail }) => {
     return () => {
       unsubscribeRequested();
       unsubscribeHistory();
+      applySort(sortOption);
     };
   }, [teacherDetail]);
   useEffect(() => {
@@ -226,6 +227,7 @@ const TeacherHistory = ({ teacherDetail }) => {
       return () => {
         unsubscribeRequested();
         unsubscribeHistory();
+        applySort(sortOption);
       };
     }
   }, [serchInp]);
@@ -252,11 +254,11 @@ const TeacherHistory = ({ teacherDetail }) => {
       </View>
       <View style={styles.requestActionsRow}>
         <TouchableOpacity style={styles.cancelButton}
-          onPress={()=>{handleCancel(item)}}
+          onPress={() => { handleCancel(item) }}
           disabled={loadingDId === item.id}
         >
           <Text style={styles.buttonTextSecondary}>{loadingDId === item.id ? 'Deleting...' : 'Delete'}</Text>
-          
+
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.closeButton}
@@ -300,13 +302,23 @@ const TeacherHistory = ({ teacherDetail }) => {
       setHistoryData((prev) =>
         [...prev].sort((a, b) => new Date(b.time) - new Date(a.time))
       );
-    } else if (option === "Subject Name (ASC)") {
+    } else if (option === "Class") {
+      setRequestedData((prev) =>
+        [...prev].sort((a, b) => a.class.localeCompare(b.class))
+      );
+      setHistoryData((prev) =>
+        [...prev].sort((a, b) => a.class.localeCompare(b.class))
+      );
+
+    }
+    else if (option === "Subject Name (ASC)") {
       setRequestedData((prev) =>
         [...prev].sort((a, b) => a.subjectName.localeCompare(b.subjectName))
       );
       setHistoryData((prev) =>
         [...prev].sort((a, b) => a.subjectName.localeCompare(b.subjectName))
       );
+
     } else if (option === "Subject Name (DESC)") {
       setRequestedData((prev) =>
         [...prev].sort((a, b) => b.subjectName.localeCompare(a.subjectName))
@@ -325,6 +337,7 @@ const TeacherHistory = ({ teacherDetail }) => {
   const renderModal = () => {
     const options = [
       { label: "Date", value: "date" },
+      { label: "Class", value: "Class" },
       { label: "Subject Name (ASC)", value: "Subject Name (ASC)" },
       { label: "Subject Name (DESC)", value: "Subject Name (DESC)" },
       { label: "Status", value: "status" },
@@ -513,7 +526,6 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
     marginTop: Platform.OS === 'ios' ? 0 : 25,
   },
   noDataText: {

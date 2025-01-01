@@ -17,8 +17,8 @@ const Dashboard = ({ teacherDetail }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-   
-      <MainDashboard />
+
+      <MainDashboard teacherDetail ={teacherDetail} />
       <FAB
         icon="plus"
         color="white"
@@ -55,7 +55,7 @@ const TeacherDashBoard = () => {
       documents.forEach((doc) => temp.push({ id: doc.id, ...doc.data() }));
       setTeacherDetail(temp);
     } catch (error) {
-      console.error('Error fetching teacher data:', error);
+      console.log('Error fetching teacher data:', error);
       setTeacherDetail([]); // Clear data on error
     } finally {
       setLoading(false); // Ensure loading is stopped
@@ -104,7 +104,7 @@ const TeacherDashBoard = () => {
       <Tab.Screen name="Dashboard">
         {() => <Dashboard teacherDetail={teacherDetail[0]} />}
       </Tab.Screen>
-      <Tab.Screen name="Requests" children={() =>  <TeacherHistory teacherDetail={teacherDetail[0]} /> } />
+      <Tab.Screen name="Requests" children={() => <TeacherHistory teacherDetail={teacherDetail[0]} />} />
       <Tab.Screen name="Profile">
         {() => <TProfile teacher1={teacherDetail[0]} getTeachers1={getTeacher} />}
       </Tab.Screen>

@@ -1,114 +1,160 @@
-import { Dimensions, FlatList, SafeAreaView, StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native';
-import React from 'react';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { ProgressChart } from "react-native-chart-kit";
-import { Colors } from '../../assets/Colors';
-import { useNavigation } from '@react-navigation/native';
-import AttendanceScreen from './AttendanceScreen';
+import {
+    Dimensions,
+    FlatList,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    View,
+    TouchableOpacity,
+    Platform,
+} from "react-native";
+import React, { useEffect, useState } from "react";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { PieChart } from "react-native-chart-kit";
+import { Colors } from "../../assets/Colors";
+import { useNavigation } from "@react-navigation/native";
+import { collection, getDocs } from "firebase/firestore";
+import Feather from '@expo/vector-icons/Feather';
+import { firestore } from "../../Config/FirebaseConfig";
+import { se } from "date-fns/locale";
 
-const MainDashboard = () => {
-    const navi=useNavigation();
-    const data = {
-        labels: ["CSE I", "CSE II", "CSE III", "CSE IV", "CSE V"],
-        data: [0.4, 0.6, 0.8, 0.2, 0.9],
-    };
-
-    const present = [
-        { id: 1, class: "CSE I", total: 64, present: 30 },
-        { id: 2, class: "CSE II", total: 74, present: 54 },
-        { id: 3, class: "CSE III", total: 50, present: 30 },
-        { id: 4, class: "CSE IV", total: 59, present: 55 },
-        { id: 5, class: "CSE V", total: 70, present: 60 },
-    ];
-
+const MainDashboard = ({ teacherDetail }) => {
+    const navi = useNavigation();
+    const [classes, setClasses] = useState(teacherDetail?.classes || []);
+    const [allRequests, setAllRequests] = useState([]);
+    const [data, setData] = useState([]);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const chartConfig = {
         backgroundGradientFrom: "#ffffff",
-        backgroundGradientFromOpacity: 0,
         backgroundGradientTo: "#ffffff",
-        backgroundGradientToOpacity: 0.5,
-        color: (opacity = 1) => `rgba(21, 52, 72, ${opacity})`,
-        strokeWidth: 2,
+        color: (opacity = 1) => `rgba(15, 32, 48, ${opacity})`,
+        strokeWidth: 1,
         barPercentage: 0.5,
-        useShadowColorFromDataset: false,
+        propsForLabels: {
+            fontSize: 14,
+            fontWeight: "bold",
+            color: "blue",
+        },
     };
+
+    // Generate shades of the primary color
+    const generateShades = (baseColor, count) => {
+        const shades = [];
+        for (let i = 0; i < count; i++) {
+            const shadeFactor = 0.5 + i * 0.2; // Adjust shade factor
+            const r = parseInt(baseColor.slice(1, 3), 16);
+            const g = parseInt(baseColor.slice(3, 5), 16);
+            const b = parseInt(baseColor.slice(5, 7), 16);
+            shades.push(`rgba(${r}, ${g}, ${b}, ${shadeFactor})`);
+        }
+        return shades;
+    };
+
+    const countClassOccurrences = (requests) => {
+        const shades = generateShades(Colors.PRIMARY, classes.length);
+
+        const newData = classes.map((clas, index) => {
+            const classCount = requests.filter((request) => request.class === clas).length;
+
+            return {
+                name: clas,
+                population: classCount,
+                color: shades[index],
+                legendFontColor: "#333333",
+                legendFontSize: 14,
+            };
+        });
+
+        setData(newData);
+    };
+
+    const fetchClassAndSubject = async () => {
+        try {
+            if (!teacherDetail) throw new Error("Teacher not found");
+
+            setIsRefreshing(true);
+            const ref = collection(
+                firestore,
+                `UserData/${teacherDetail.id}/AttendanceRequests`
+            );
+
+            const docsSnap = await getDocs(ref);
+
+            if (docsSnap.empty) throw new Error("No data found");
+
+            const requests = docsSnap.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            }));
+
+            setAllRequests(requests);
+            countClassOccurrences(requests);
+        } catch (e) {
+            console.error(e.message);
+        }
+        finally {
+            setIsRefreshing(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchClassAndSubject();
+    }, [teacherDetail]);
 
     const renderHeader = () => (
         <View>
             <View style={styles.header}>
-                <TouchableOpacity style={styles.leftIcon} onPress={() => navigation.goBack()}>
-                    <Text style={styles.backText}>Dashboard</Text>
-                </TouchableOpacity>
-                <View style={styles.rightIcons}>
-                    <TouchableOpacity style={styles.icon}>
-                        <Ionicons name="search-outline" size={2} color={Colors.PRIMARY} />
-                    </TouchableOpacity>
-                </View>
+                <Feather name="menu" size={28} color="black" />
+                <Text style={styles.headerText}>EzMark</Text>
+                <Feather name="share" size={25} color="black" />
             </View>
 
             <View style={styles.grid}>
                 <View style={styles.row}>
                     <View style={styles.column}>
-                        <Text style={styles.gridValue}>10</Text>
+                        <Text style={styles.gridValue}>{teacherDetail.classes.length}</Text>
                         <Text style={styles.gridLabel}>Classes</Text>
                     </View>
                     <View style={styles.column}>
-                        <Text style={styles.gridValue}>12</Text>
-                        <Text style={styles.gridLabel}>Subjects</Text>
+                        <Text style={styles.gridValue}>{allRequests.length}</Text>
+                        <Text style={styles.gridLabel}>Hours</Text>
                     </View>
                 </View>
             </View>
 
-
-
-            {/* Progress Chart */}
-            <Text style={styles.sectionTitle}>The Overview</Text>
+            <Text style={styles.sectionTitle}>Overview</Text>
             <View style={styles.progressChartContainer}>
-                <ProgressChart
+                <PieChart
                     data={data}
-                    width={Dimensions.get("window").width - 75}
+                    width={Dimensions.get("window").width - 80}
                     height={220}
-                    strokeWidth={10}
-                    radius={32}
                     chartConfig={chartConfig}
-                    hideLegend={false}
+                    accessor="population"
+                    backgroundColor="transparent"
+                    paddingLeft="15"
+                    absolute
                 />
             </View>
 
-
-            {/* Classes Section Title */}
             <Text style={styles.sectionTitle}>Classes</Text>
         </View>
     );
 
+    const renderClassItem = ({ item }) => (
+        <TouchableOpacity>
+            <View style={styles.classContainer}>
+                <Text style={styles.className}>{item.class}</Text>
+                <Text style={styles.className}>Enrolled Subject</Text>
+                {console.log("item=>", item)}
+            </View>
+
+        </TouchableOpacity>
+    );
+
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#f4f4f4'}}>
-            <FlatList
-                data={present}
-              
-                ListHeaderComponent={renderHeader}
-                renderItem={({ item }) => (
-                    <TouchableOpacity>
-                    <View style={styles.classContainer}>
-                        <TouchableOpacity onPress={()=>navi.navigate("AttendanceScreen",{clasName:item.class})}>
-                            <Image style={styles.rightarrow} source={require('../asset Student/right-chevron.png')}/>
-                        </TouchableOpacity>
-                        <Text style={styles.className}>{item.class}</Text>
-                        <Text style={styles.detailsText}>
-                            Present: {item.present} | Absent: {item.total - item.present}
-                        </Text>
-                        <View style={styles.progressBar}>
-                            <View
-                                style={[
-                                    styles.progress,
-                                    { width: `${(item.present / item.total) * 100}%` },
-                                ]}
-                            />
-                        </View>
-                    </View>
-                    </TouchableOpacity>
-                )}
-                keyExtractor={(item) => item.id.toString()}
-            />
+        <SafeAreaView style={{ flex: 1, }}>
+            {renderHeader()}
+            
         </SafeAreaView>
     );
 };
@@ -117,21 +163,24 @@ export default MainDashboard;
 
 const styles = StyleSheet.create({
     header: {
-        height: 60,
         flexDirection: 'row',
+        marginTop: Platform.OS === 'android' ? 20 : 0,
+        padding: 8,
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 10,
-        borderBottomWidth: 0.5,
-        borderColor: Colors.lightBg,
+    },
+    headerText: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        textAlign: 'center',
     },
     leftIcon: {
-        flexDirection: 'row',
-        alignItems: 'center',
+        flexDirection: "row",
+        alignItems: "center",
     },
     rightIcons: {
-        flexDirection: 'row',
-        alignItems: 'center',
+        flexDirection: "row",
+        alignItems: "center",
     },
     icon: {
         marginLeft: 16,
@@ -141,64 +190,56 @@ const styles = StyleSheet.create({
         color: "black",
         fontSize: 18,
         fontFamily: "Metro-regular",
-        fontWeight: 'bold',
-    },
-    title: {
-        textAlign: 'center',
-        marginVertical: 20,
-        fontSize: 25,
-        fontWeight: 'bold',
-        color: '#003300',
+        fontWeight: "bold",
     },
     grid: {
-        marginTop: 5,
-        marginHorizontal: 10,
+        marginTop: 10,
+        marginHorizontal: 8,
     },
     row: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+        flexDirection: "row",
+        justifyContent: "space-between",
         paddingVertical: 10,
-        paddingHorizontal: 5, // Add padding for spacing
-        width: '100%',
+        paddingHorizontal: 0,
+        width: "100%",
     },
     column: {
         flex: 1,
-        backgroundColor: '#ffffff',
+        backgroundColor: "#ffffff",
         height: 70,
-        justifyContent: 'center',
-        alignItems: 'center',
+        justifyContent: "center",
+        alignItems: "center",
         borderRadius: 8,
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOpacity: 0.1,
         shadowRadius: 5,
         elevation: 5,
-        borderColor: '#e0e0e0',
+        borderColor: "#e0e0e0",
         borderWidth: 1,
-        marginHorizontal: 5, // Add margin for spacing
+        marginHorizontal: 5,
     },
     gridValue: {
         fontSize: 18,
-        fontWeight: 'bold',
-        color: '#333333',
+        fontWeight: "bold",
+        color: "#333333",
     },
     gridLabel: {
         fontSize: 14,
-        color: '#888888',
+        color: "#77777",
     },
     sectionTitle: {
         fontSize: 20,
-        fontWeight: 'bold',
-        marginVertical: 15,
+        fontWeight: "bold",
+        marginVertical: 8,
         marginHorizontal: 10,
-        color: '#003300',
+        color: "#003300",
     },
     progressChartContainer: {
-        backgroundColor: '#ffffff',
+        backgroundColor: "#ffffff",
         marginVertical: 10,
         marginHorizontal: 10,
         borderRadius: 10,
-        padding: 15,
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOpacity: 0.1,
         shadowRadius: 5,
         elevation: 5,
@@ -207,43 +248,34 @@ const styles = StyleSheet.create({
         padding: 15,
         marginVertical: 10,
         marginHorizontal: 10,
-        position:'relative',
-        backgroundColor: 'white',
+        position: "relative",
+        backgroundColor: "white",
         borderRadius: 8,
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOpacity: 0.1,
         shadowRadius: 5,
         elevation: 3,
     },
     className: {
-        fontSize: 18,
-        fontWeight: 'bold',
+        fontSize: 15,
         marginBottom: 5,
-        color: 'black',
-        fontWeight: 'condensedBold',
-        fontFamily: "Metro-regular"
+        color: "black",
+        fontFamily: "Metro-regular",
     },
     detailsText: {
         fontSize: 14,
-        color: '#555555',
+        color: "#555555",
         marginBottom: 10,
     },
     progressBar: {
         height: 10,
         backgroundColor: Colors.lightBg,
         borderRadius: 5,
-        overflow: 'hidden',
+        overflow: "hidden",
         marginVertical: 5,
     },
     progress: {
-        height: '100%',
+        height: "100%",
         backgroundColor: Colors.SECONDARY,
     },
-    rightarrow:{
-        width:40,
-        height:40,
-        position:'absolute',
-        right:5,
-        top:10
-    }
 });
