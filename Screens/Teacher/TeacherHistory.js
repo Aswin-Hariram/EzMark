@@ -1,19 +1,36 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, FlatList, Alert, Platform } from 'react-native';
+import {
+  View, Text, StyleSheet, TouchableOpacity, SafeAreaView, FlatList, Alert, Platform, Modal, TextInput as RNTextInput,
+  TouchableWithoutFeedback,
+  Pressable
+} from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import CPB from '../../Components/CPB';
 import { Colors } from '../../assets/Colors';
-import { collection, doc, getDocs, onSnapshot, query, updateDoc, where } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, onSnapshot, query, updateDoc, where } from 'firebase/firestore';
 import { firestore } from '../../Config/FirebaseConfig';
 import { format } from 'date-fns';
+import AntDesign from '@expo/vector-icons/AntDesign';
 import { useNavigation } from '@react-navigation/native';
+import { RadioButton, TextInput } from 'react-native-paper';
 
 const TeacherHistory = ({ teacherDetail }) => {
   const [requestedData, setRequestedData] = useState([]);
-  const [loadingId, setLoadingId] = useState(null); // Track loading for specific item
+  const [loadingId, setLoadingId] = useState(null);
+  const [loadingDId, setLoadingDId] = useState(null); // Track loading for specific item
   const [historyData, setHistoryData] = useState([]);
   const navigation = useNavigation();
-  const formatDate = (isoString) => format(new Date(isoString), "dd MMM yyyy EEE");
+  const [modalVisible, setModalVisible] = useState(false)
+  const [sortOption, setSortOption] = useState("date");
+  const [searchVisible, setSearchVisible] = useState(false)
+
+  const [serchInp, setSearchInp] = useState('')
+
+  const formatDate = (isoString) => {
+    const date = new Date(isoString);
+    if (isNaN(date)) return 'Invalid Date'; // Return a fallback if the date is invalid
+    return format(date, "dd MMM yyyy EEE");
+  };
 
   const handleComplete = async (item) => {
     try {
@@ -75,6 +92,59 @@ const TeacherHistory = ({ teacherDetail }) => {
 
 
   };
+  const handleCancel = async (item) => {
+    try {
+      setLoadingDId(item.id); // Start loading for specific item
+      console.log("Item=>",item)
+      const studentQuery = query(
+        collection(firestore, "UserData"),
+        where("class", "==", item.class || ""),
+        where("type", "==", "Student")
+      );
+
+      const querySnapshot = await getDocs(studentQuery);
+
+      if (querySnapshot.empty) {
+        Alert.alert('No Students Found', `No students enrolled in class: ${item.class}`);
+        setLoadingId(null); // Stop loading if no students found
+        return;
+      }
+
+      for (const userDoc of querySnapshot.docs) {
+        const reqQuery = query(
+          collection(firestore, `UserData/${userDoc.id}/AttendanceRequests`),
+          where("status", "==", "Requested"),
+          where("createdAt", "==", item.createdAt),
+          where("class", "==", item.class),
+          where("createdBy", "==", item.createdBy),
+          where("subjectName", "==", item.subjectName)
+        );
+
+        const snap = await getDocs(reqQuery);
+
+        for (const req of snap.docs) {
+          await deleteDoc(doc(firestore, `UserData/${userDoc.id}/AttendanceRequests`, req.id));
+        }
+      }
+      const enrolledstudents = item.enrolledStudents
+      enrolledstudents.forEach(student => {
+        console.log(student.status)
+        if (student.status === "Requested") {
+          student.status = "Closed";
+        }
+      });
+      console.log(enrolledstudents)
+      await deleteDoc(doc(firestore, `UserData/${teacherDetail.id}/AttendanceRequests`, item.id));
+
+      setLoadingDId(null);
+      Alert.alert('Completed', 'The attendance request has been successfully completed.');
+    } catch (error) {
+      console.error(error.message);
+      setLoadingDId(null); // Stop loading on error
+    }
+
+
+  };
 
   useEffect(() => {
     if (!teacherDetail?.id) return;
@@ -106,7 +176,7 @@ const TeacherHistory = ({ teacherDetail }) => {
         time: formatDate(doc.get("createdAt")),
         percentage: ((doc.get("totalNumberOfStudents") - doc.get("pendingNumberOfStudents")) / doc.get("totalNumberOfStudents")) * 100
       }));
-     
+
       setHistoryData(temp);
     });
 
@@ -115,14 +185,58 @@ const TeacherHistory = ({ teacherDetail }) => {
       unsubscribeHistory();
     };
   }, [teacherDetail]);
+  useEffect(() => {
+
+    if (!teacherDetail?.id) return; // Early return to avoid query execution
+
+    if (serchInp === "") {
+
+
+      const q = query(
+        collection(firestore, `UserData/${teacherDetail.id}/AttendanceRequests`),
+        where("status", "==", "Requested")
+      );
+
+      const historyQuery = query(
+        collection(firestore, `UserData/${teacherDetail.id}/AttendanceRequests`),
+        where("status", "!=", "Requested")
+      );
+
+      const unsubscribeRequested = onSnapshot(q, (querySnapshot) => {
+        const temp = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          time: formatDate(doc.get("createdAt")),
+          percentage: ((doc.get("totalNumberOfStudents") - doc.get("pendingNumberOfStudents")) / doc.get("totalNumberOfStudents")) * 100
+        }));
+        setRequestedData(temp);
+      });
+
+      const unsubscribeHistory = onSnapshot(historyQuery, (querySnapshot) => {
+        const temp = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          time: formatDate(doc.get("createdAt")),
+          percentage: ((doc.get("totalNumberOfStudents") - doc.get("pendingNumberOfStudents")) / doc.get("totalNumberOfStudents")) * 100
+        }));
+
+        setHistoryData(temp);
+      });
+
+      return () => {
+        unsubscribeRequested();
+        unsubscribeHistory();
+      };
+    }
+  }, [serchInp]);
 
 
   const renderPendingRequest = ({ item }) => (
 
     <TouchableOpacity key={item.id} style={styles.requestCardContainer} onPress={() => {
-      navigation.navigate("RequestDetails", { requestDetails: item, type: "Pending" })
+      navigation.navigate("RequestDetails", { requestDetails: item, type: "Pending", teacherDetail: teacherDetail })
     }}>
-    
+
       <View style={styles.requestCard}>
         <View style={styles.requestDetails}>
           <View style={styles.requestedContainer}>
@@ -134,11 +248,15 @@ const TeacherHistory = ({ teacherDetail }) => {
           </View>
           <Text style={styles.dateText}>{item.time || 'Unknown Date'}</Text>
         </View>
-        <CPB percentage={item.percentage || 0} size={80} strokeWidth={6} color={Colors.SECONDARY} tsize={item.percentage>=100?16:18} />
+        <CPB percentage={item.percentage || 0} size={80} strokeWidth={6} color={Colors.SECONDARY} tsize={item.percentage >= 100 ? 16 : 18} />
       </View>
       <View style={styles.requestActionsRow}>
-        <TouchableOpacity style={styles.cancelButton}>
-          <Text style={styles.buttonTextSecondary}>Cancel</Text>
+        <TouchableOpacity style={styles.cancelButton}
+          onPress={()=>{handleCancel(item)}}
+          disabled={loadingDId === item.id}
+        >
+          <Text style={styles.buttonTextSecondary}>{loadingDId === item.id ? 'Deleting...' : 'Delete'}</Text>
+          
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.closeButton}
@@ -172,6 +290,120 @@ const TeacherHistory = ({ teacherDetail }) => {
       </View>
     </TouchableOpacity>
   );
+  const applySort = (option) => {
+    setSortOption(option);
+
+    if (option === "date") {
+      setRequestedData((prev) =>
+        [...prev].sort((a, b) => new Date(b.time) - new Date(a.time))
+      );
+      setHistoryData((prev) =>
+        [...prev].sort((a, b) => new Date(b.time) - new Date(a.time))
+      );
+    } else if (option === "Subject Name (ASC)") {
+      setRequestedData((prev) =>
+        [...prev].sort((a, b) => a.subjectName.localeCompare(b.subjectName))
+      );
+      setHistoryData((prev) =>
+        [...prev].sort((a, b) => a.subjectName.localeCompare(b.subjectName))
+      );
+    } else if (option === "Subject Name (DESC)") {
+      setRequestedData((prev) =>
+        [...prev].sort((a, b) => b.subjectName.localeCompare(a.subjectName))
+      );
+      setHistoryData((prev) =>
+        [...prev].sort((a, b) => b.subjectName.localeCompare(a.subjectName))
+      );
+    }
+    else if (option === "status") {
+      setHistoryData((prev) =>
+        [...prev].sort((a, b) => a.status.localeCompare(b.status))
+      );
+    }
+    setModalVisible(false);
+  };
+  const renderModal = () => {
+    const options = [
+      { label: "Date", value: "date" },
+      { label: "Subject Name (ASC)", value: "Subject Name (ASC)" },
+      { label: "Subject Name (DESC)", value: "Subject Name (DESC)" },
+      { label: "Status", value: "status" },
+    ];
+
+    return (
+      <Modal
+        visible={modalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+          <View style={styles.modalContainer}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Sort By</Text>
+                {options.map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={styles.radioOption}
+                    onPress={() => applySort(option.value)}
+                  >
+                    <Text style={styles.optionText}>{option.label}</Text>
+                    <RadioButton
+                      color={Colors.SECONDARY}
+                      value={option.value}
+                      status={sortOption === option.value ? "checked" : "unchecked"}
+                      onPress={() => applySort(option.value)}
+                    />
+                  </TouchableOpacity>
+                ))}
+                <TouchableOpacity
+                  style={styles.cancelButtonModal}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={styles.cancelTextModal}>Close</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+    );
+  };
+
+  const handleSort = () => {
+    setModalVisible(true)
+  }
+  const handleSearchByDate = () => {
+
+  }
+
+  const handleSearch = () => {
+    const lowercasedSearch = serchInp.toLowerCase();
+
+    // Filter requestedData
+    const filteredRequestedData = requestedData.filter(
+      (item) =>
+        item.subjectName?.toLowerCase().includes(lowercasedSearch) ||
+        item.createdBy?.toLowerCase().includes(lowercasedSearch)
+    );
+
+    // Filter historyData
+    const filteredHistoryData = historyData.filter(
+      (item) =>
+        item.subjectName?.toLowerCase().includes(lowercasedSearch) ||
+        item.createdBy?.toLowerCase().includes(lowercasedSearch) ||
+        item.status?.toLowerCase().includes(lowercasedSearch)
+    );
+
+    setRequestedData(filteredRequestedData);
+    setHistoryData(filteredHistoryData);
+  };
+  const handleSearchInputChange = (text) => {
+    setSearchInp(text);
+    clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(handleSearch, 500); // Debounce search by 500ms
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -188,14 +420,37 @@ const TeacherHistory = ({ teacherDetail }) => {
                 <Text style={styles.backText}>Back</Text>
               </TouchableOpacity>
               <View style={styles.rightIcons}>
-                <TouchableOpacity style={styles.icon}>
+                <TouchableOpacity style={styles.icon} onPress={() => { setSearchVisible(true) }} >
                   <Ionicons name="search-outline" size={24} color={Colors.PRIMARY} />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.icon}>
+                <TouchableOpacity style={styles.icon} onPress={handleSearchByDate}>
+                  <AntDesign name="calendar" size={24} color="black" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.icon} onPress={handleSort}>
                   <Ionicons name="filter-outline" size={24} color={Colors.PRIMARY} />
                 </TouchableOpacity>
               </View>
+
             </View>
+            {
+              searchVisible && (
+                <View style={styles.searchBox}>
+                  <RNTextInput
+                    style={styles.input}
+                    placeholder="Type here to search"
+                    onChange={(e) => {
+                      setSearchInp(e.nativeEvent.text); // Update state with the text from the input
+                      handleSearch(); // Perform search filtering
+                    }}
+                    value={serchInp}
+
+                  />
+                  <TouchableOpacity onPress={() => { setSearchVisible(false) }}>
+                    <Text style={styles.text}>Close</Text>
+                  </TouchableOpacity>
+                </View>
+              )
+            }
             <View style={styles.contentContainer}>
               <Text style={styles.sectionHeader}>Pending Request</Text>
             </View>
@@ -220,11 +475,42 @@ const TeacherHistory = ({ teacherDetail }) => {
           </>
         }
       />
+      {renderModal()}
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  Bcontainer: {
+    flex: 1,
+    padding: 24,
+    justifyContent: 'center',
+    backgroundColor: 'grey',
+  },
+  BcontentContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    margin: 10,
+    borderWidth: 1,
+    borderColor: Colors.SECONDARY,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: '#ffff'
+  },
+  input: {
+    padding: 8,
+    flex: 1,  // Allow the TextInput to take the remaining space
+    marginRight: 10,
+    fontSize: 16,
+  },
+  text: {
+    fontSize: 16,
+    color: '#333',
+  },
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
@@ -345,6 +631,62 @@ const styles = StyleSheet.create({
   },
   historyContainer: {
     paddingHorizontal: 16,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    alignSelf: 'center',
+    marginBottom: 15,
+  },
+  radioOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 10,
+    justifyContent: 'space-between',
+  },
+  radioButton: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: Colors.PRIMARY,
+    marginRight: 10,
+  },
+  radioButtonSelected: {
+    backgroundColor: Colors.PRIMARY,
+  },
+  optionText: {
+    fontSize: 16,
+  },
+  applyButtonModal: {
+    backgroundColor: Colors.SECONDARY,
+    padding: 15,
+    borderRadius: 8,
+    marginTop: 20,
+  },
+  applyButtonTextModal: {
+    color: "#fff",
+    textAlign: "center",
+    fontWeight: "bold",
+  },
+  cancelButtonModal: {
+    marginTop: 10,
+    alignItems: "center",
+  },
+  cancelTextModal: {
+    color: Colors.SECONDARY,
+    fontSize: 16,
   },
 });
 

@@ -18,6 +18,7 @@ import { Colors } from '../../assets/Colors';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import {
   collection,
+  deleteDoc,
   doc,
   getDocs,
   onSnapshot,
@@ -60,6 +61,109 @@ const StudentRequestHistory = ({ studentDetail }) => {
     }
   };
 
+
+  // const updateFirestore = async () => {
+  //   try {
+  //     console.log("Starting updateFirestore...");
+     
+  //     const attendanceRef = collection(
+  //       firestore,
+  //       `UserData/${studentDetail.id}/AttendanceRequests`
+  //     );
+
+
+
+
+
+  //     const attendanceQuery = query(
+  //       attendanceRef,
+  //       where("status", "==", "Requested"),
+  //       where("createdBy", "==", requestDetails.createdBy),
+  //       where("createdAt", "==", requestDetails.createdAt),
+  //       where("id", "==", requestDetails.id)
+  //     );
+
+  //     const snapshot = await getDocs(attendanceQuery);
+
+  //     if (snapshot.empty) {
+  //       console.warn("No matching AttendanceRequests found for the student.");
+  //       return;
+  //     }
+
+  //     await Promise.all(snapshot.docs.map(async (docSnapshot) => {
+  //       const docRef = doc(
+  //         firestore,
+  //         `UserData/${studentDetail.id}/AttendanceRequests`,
+  //         docSnapshot.id
+  //       );
+
+  //       await deleteDoc(docRef);
+  //     }));
+
+  //     if (!requestDetails.teacherId) {
+  //       throw new Error("Missing teacherId in requestDetails.");
+  //     }
+
+  //     const teacherAttendanceQuery = query(
+  //       collection(firestore, `UserData/${requestDetails.teacherId}/AttendanceRequests`),
+  //       where("createdAt", "==", requestDetails.createdAt),
+  //       where("otp", "==", otpValue)
+  //     );
+
+  //     const teacherSnapshot = await getDocs(teacherAttendanceQuery);
+
+  //     if (teacherSnapshot.empty) {
+  //       console.warn("No matching teacher AttendanceRequests found.");
+  //       return;
+  //     }
+
+  //     await Promise.all(teacherSnapshot.docs.map(async (d) => {
+  //       const enrolledStudents = d.get("enrolledStudents") || [];
+
+  //       if (!Array.isArray(enrolledStudents)) {
+  //         console.warn("Invalid enrolledStudents format.");
+  //         return;
+  //       }
+
+
+
+
+
+
+  //       const updatedStudents = enrolledStudents.map((student) => {
+  //         if (
+  //           student.email === auth.currentUser.email
+  //         ) {
+  //           return { ...student, status: "Completed", ctime: new Date().toISOString(), locationLat: currentLocation.coords.latitude, locationLong: currentLocation.coords.longitude };
+  //         }
+  //         return student;
+  //       });
+  //       console.log("updatedStudents", updatedStudents)
+  //       const teacherDocRef = doc(
+  //         firestore,
+  //         `UserData/${requestDetails.teacherId}/AttendanceRequests`,
+  //         d.id
+  //       );
+
+  //       await updateDoc(teacherDocRef, {
+  //         enrolledStudents: updatedStudents,
+  //         pendingNumberOfStudents: d.get("pendingNumberOfStudents") - 1,
+
+  //       });
+  //     }));
+
+  //     console.log("Firestore updates completed successfully.");
+  //   } catch (err) {
+  //     console.error("Error updating Firestore:", err);
+  //   } finally {
+  //     setIsUpdating(false)
+  //     setModalVisible(false)
+  //     navigation.goBack()
+  //   }
+  // };
+  const handleCancel = async (item) => {
+
+  }
   useEffect(() => {
     if (!studentDetail?.id) return;
 
@@ -155,7 +259,8 @@ const StudentRequestHistory = ({ studentDetail }) => {
         </View>
       </View>
       <View style={styles.requestActionsRow}>
-        <TouchableOpacity style={styles.cancelButton}>
+        <TouchableOpacity style={styles.cancelButton}
+          onPress={() => { handleCancel(item) }}>
           <Text style={styles.buttonTextSecondary}>Cancel</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -265,10 +370,10 @@ const StudentRequestHistory = ({ studentDetail }) => {
                   </TouchableOpacity>
                 ))}
                 <TouchableOpacity
-                  style={styles.cancelButton}
+                  style={styles.cancelButtonModal}
                   onPress={() => setModalVisible(false)}
                 >
-                  <Text style={styles.cancelText}>Close</Text>
+                  <Text style={styles.cancelTextModal}>Close</Text>
                 </TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>
@@ -492,6 +597,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#333',
     fontFamily: 'Signika-regular',
+    fontWeight: 600,
   },
   createdBy: {
     fontSize: 16,
@@ -586,22 +692,22 @@ const styles = StyleSheet.create({
   optionText: {
     fontSize: 16,
   },
-  applyButton: {
+  applyButtonModal: {
     backgroundColor: Colors.SECONDARY,
     padding: 15,
     borderRadius: 8,
     marginTop: 20,
   },
-  applyButtonText: {
+  applyButtonTextModal: {
     color: "#fff",
     textAlign: "center",
     fontWeight: "bold",
   },
-  cancelButton: {
+  cancelButtonModal: {
     marginTop: 10,
     alignItems: "center",
   },
-  cancelText: {
+  cancelTextModal: {
     color: Colors.SECONDARY,
     fontSize: 16,
   },

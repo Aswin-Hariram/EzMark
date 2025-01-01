@@ -11,7 +11,7 @@ import dp from "../../assets/Teachers/profile.png"
 import { TextInput } from 'react-native-paper';
 
 const RequestDetails = () => {
-    const { requestDetails = {}, type = '' } = useRoute()?.params || {};
+    const { requestDetails = {}, type = '',teacherDetail } = useRoute()?.params || {};
     const [requestedData, setRequestedData] = useState([requestDetails]);
     const [loadingId, setLoadingId] = useState(null);
     const [summaryData, setHistoryData] = useState([]);
@@ -22,6 +22,7 @@ const RequestDetails = () => {
 
     const handleComplete = async (item) => {
         try {
+            if(!teacherDetail) throw new Error('Teacher details not found');
             setLoadingId(item.id); // Start loading for specific item
 
             const studentQuery = query(

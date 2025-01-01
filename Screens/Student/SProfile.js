@@ -9,6 +9,7 @@ import { Colors } from '../../assets/Colors';
 import { Dropdown } from 'react-native-element-dropdown';
 import { deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, firestore } from '../../Config/FirebaseConfig';
+import LottieView from 'lottie-react-native';
 
 const SProfile = ({ student }) => {
   const navigation = useNavigation();
@@ -19,31 +20,33 @@ const SProfile = ({ student }) => {
   const [studentRollNo, setStudentRollNo] = useState(student?.rollno || '');
   const [classes, setClasses] = useState([]);
   const [subjects, setSubjects] = useState([])
-  const [subjectsSelected, setSubjectsSelected] = useState(student.subjects || []);
+  const [subjectsSelected, setSubjectsSelected] = useState(student?.subjects || []);
   const [studentClass, setStudentClass] = useState(student?.class || '');
   const [isUpdating, setIsUpdating] = useState(false);
   const [studentImage, setStudentImage] = useState(student?.image || dp);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchClasses = async () => {
-      try {
-        const docRef = doc(firestore, 'BasicData', 'Data');
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data.Class) {
-            setClasses(data.Class.map((cls) => ({ label: cls, value: cls })));
-          }
-        } else {
-          console.warn("No classes data found");
-        }
-      } catch (error) {
-        console.error('Error fetching classes:', error);
-        Alert.alert('Error', 'Failed to load classes.');
-      }
-    };
-    fetchClasses();
-  }, []);
+
+  // useEffect(() => {
+  //   const fetchClasses = async () => {
+  //     try {
+  //       const docRef = doc(firestore, 'BasicData', 'Data');
+  //       const docSnap = await getDoc(docRef);
+  //       if (docSnap.exists()) {
+  //         const data = docSnap.data();
+  //         if (data.Class) {
+  //           setClasses(data.Class.map((cls) => ({ label: cls, value: cls })));
+  //         }
+  //       } else {
+  //         console.warn("No classes data found");
+  //       }
+  //     } catch (error) {
+  //       console.error('Error fetching classes:', error);
+  //       Alert.alert('Error', 'Failed to load classes.');
+  //     }
+  //   };
+  //   fetchClasses();
+  // }, []);
 
   // const validateInput = () => {
   //   const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
@@ -120,7 +123,24 @@ const SProfile = ({ student }) => {
 
 
         <View style={styles.profileSection}>
-          <Image style={styles.profileImage} source={{ uri: studentImage }} defaultSource={dp} />
+          {loading && (
+            <View style={styles.Lcontainer}>
+              <View style={styles.wrapper}>
+                <LottieView
+                  source={require('../../assets/avatar.json')}
+                  autoPlay
+                  loop
+                  style={styles.lottie}
+                />
+              </View>
+            </View>
+          )}
+           <Image
+            style={!loading ? styles.profileImage : { width: 0, height: 0 }}
+            source={{ uri: studentImage }}
+            onLoadEnd={() => setLoading(false)}
+            onError={() => setLoading(false)} // Fallback in case the image fails to load
+          /> 
         </View>
 
         <View style={styles.formSection}>
@@ -148,7 +168,23 @@ const SProfile = ({ student }) => {
             style={styles.input}
             editable={false}
           />
-          <Dropdown
+          <TextInput
+            label="Department"
+            value={studentDepartment}
+            onChangeText={setStudentRollNo}
+            mode="outlined"
+            style={styles.input}
+            editable={false}
+          />
+          <TextInput
+            label="Class"
+            value={studentClass}
+            onChangeText={setStudentRollNo}
+            mode="outlined"
+            style={styles.input}
+            editable={false}
+          />
+          {/* <Dropdown
             style={styles.dropdown}
             data={classes}
             labelField="label"
@@ -156,7 +192,7 @@ const SProfile = ({ student }) => {
             placeholder="Select Class"
             value={studentClass}
             disable={true}
-          />
+          /> */}
 
           {/* <Dropdown
             style={styles.dropdown}
@@ -227,6 +263,22 @@ const SProfile = ({ student }) => {
 export default SProfile;
 
 const styles = StyleSheet.create({
+  Lcontainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  wrapper: {
+    width: 250, // Set desired dimensions
+    height: 170,
+    overflow: 'hidden', // Ensures content doesn't spill out
+  },
+  lottie: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    alignSelf: 'center', // Centers the animation in its container
+  },
   container: {
     flex: 1,
     backgroundColor: 'white',

@@ -272,11 +272,6 @@ const VerificationScreen = () => {
         }
     };
 
-    const getLocation = async () => {
-
-
-    }
-
 
     const handleOtpSubmit = async () => {
         console.log("Verify pressed...")

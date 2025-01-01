@@ -10,6 +10,7 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { ActivityIndicator, FAB } from 'react-native-paper';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import MainDashboard from './MainDashboard';
+import TProfile from './TProfile';
 
 const Dashboard = ({ teacherDetail }) => {
   const navigation = useNavigation();
@@ -68,8 +69,7 @@ const TeacherDashBoard = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator animating={true} size="large" color={Colors.SECONDARY} />
-        <Text style={styles.loadingText}>Loading Teacher Data...</Text>
+        <ActivityIndicator animating={true} size="smalll" color={Colors.SECONDARY} />
       </View>
     );
   }
@@ -85,10 +85,10 @@ const TeacherDashBoard = () => {
             case 'Dashboard':
               iconName = 'dashboard';
               break;
-            case 'TeacherHistory':
+            case 'Requests':
               iconName = 'history';
               break;
-            case 'TeacherProfile':
+            case 'Profile':
               iconName = 'person';
               break;
             default:
@@ -104,9 +104,9 @@ const TeacherDashBoard = () => {
       <Tab.Screen name="Dashboard">
         {() => <Dashboard teacherDetail={teacherDetail[0]} />}
       </Tab.Screen>
-      <Tab.Screen name="TeacherHistory" children={() =>  <TeacherHistory teacherDetail={teacherDetail[0]} /> } />
-      <Tab.Screen name="TeacherProfile">
-        {() => <TeacherProfile teacher1={teacherDetail[0]} getTeachers1={getTeacher} />}
+      <Tab.Screen name="Requests" children={() =>  <TeacherHistory teacherDetail={teacherDetail[0]} /> } />
+      <Tab.Screen name="Profile">
+        {() => <TProfile teacher1={teacherDetail[0]} getTeachers1={getTeacher} />}
       </Tab.Screen>
     </Tab.Navigator>
   );

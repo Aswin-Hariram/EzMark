@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', // Align the radio buttons in the center
   },
   loginButton: {
-    backgroundColor: Colors.PRIMARY,
+    backgroundColor: Colors.SECONDARY,
     width: 300,
     height: 50,
     borderRadius: 20,
