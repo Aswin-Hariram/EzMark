@@ -1,28 +1,26 @@
 import React, { useState, useMemo } from 'react';
 import {
- 
   Alert,
   Image,
   KeyboardAvoidingView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
   Keyboard,
   TouchableWithoutFeedback,
   Platform,
 } from 'react-native';
-import { ActivityIndicator, Divider } from 'react-native-paper';
+import { ActivityIndicator, Divider, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import RadioGroup from 'react-native-radio-buttons-group';
-import Entypo from '@expo/vector-icons/Entypo';
 import { Colors } from '../assets/Colors';
 import { auth, firestore } from '../Config/FirebaseConfig';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { collection, getDocs, query, where } from 'firebase/firestore';
+import LottieView from 'lottie-react-native';
 
 const LoginScreen = () => {
   const [selectedId, setSelectedId] = useState('1'); // Default selection set to "Student"
@@ -86,6 +84,8 @@ const LoginScreen = () => {
     }
   };
 
+  
+
   const handleLogin = async () => {
     if (!validateInput(email, password)) return;
 
@@ -107,45 +107,70 @@ const LoginScreen = () => {
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <SafeAreaView>
-          <Image style={styles.image} source={require('../assets/Login/signinImage.png')} />
+        <SafeAreaView style={{justifyContent:'center'}}>
+          <LottieView style={styles.image} source={require('../assets/LoginAnimation.json')} autoPlay />
           <Text style={styles.loginText}>Login</Text>
 
           <View style={styles.inputContainer}>
             <View style={styles.inputWrapper}>
-              <Image style={styles.icon} source={require('../assets/Login/email.png')} />
               <TextInput
                 style={styles.textInput}
                 placeholder="Email ID"
                 value={email}
+                activeOutlineColor={Colors.PRIMARY}
+                mode="outlined"
+                contentStyle={styles.textInputContent}
+                activeUnderlineColor={Colors.PRIMARY}
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                left={
+                  <TextInput.Icon
+                    icon="email-outline"
+                    size={24}
+                    style={styles.iconStyle}
+                  />
+                }
+                right={
+                  email.length > 0 && (
+                    <TextInput.Icon
+                      icon="close-circle"
+                      size={24}
+                      style={styles.iconStyle}
+                      onPress={() => setEmail('')}
+                    />
+                  )
+                }
               />
-              {email.length > 0 && (
-                <TouchableOpacity onPress={() => setEmail('')}>
-                  <Entypo name="cross" size={24} color="black" />
-                </TouchableOpacity>
-              )}
             </View>
             <Divider />
-
             <View style={styles.inputWrapper}>
-              <Image style={styles.icon} source={require('../assets/Login/lock.png')} />
               <TextInput
                 style={styles.textInput}
                 placeholder="Password"
                 secureTextEntry={!showPassword}
+                activeOutlineColor={Colors.PRIMARY}
+                mode="outlined"
+                contentStyle={styles.textInputContent}
+                activeUnderlineColor={Colors.PRIMARY}
                 value={password}
                 onChangeText={setPassword}
+                right={
+                  <TextInput.Icon
+                    icon="eye"
+                    size={24}
+                    style={styles.iconStyle}
+                    onPress={() => setShowPassword(!showPassword)}
+                  />
+                }
+                left={
+                  <TextInput.Icon
+                    icon="lock-outline"
+                    size={24}
+                    style={styles.iconStyle}
+                  />
+                }
               />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <Entypo
-                  name={showPassword ? 'eye-with-line' : 'eye'}
-                  size={20}
-                  color="gray"
-                />
-              </TouchableOpacity>
             </View>
             <Divider />
           </View>
@@ -168,7 +193,7 @@ const LoginScreen = () => {
           </TouchableOpacity>
 
           <Text style={styles.signup}>
-            New to EzMark App?{' '}
+            New to EzMark App, {' '}
             <Text style={{ color: Colors.SECONDARY }}>Need Help?</Text>
           </Text>
         </SafeAreaView>
@@ -178,9 +203,6 @@ const LoginScreen = () => {
 };
 
 export default LoginScreen;
-
-
-
 
 const styles = StyleSheet.create({
   container: {
@@ -198,6 +220,7 @@ const styles = StyleSheet.create({
   loginText: {
     fontSize: 30,
     marginBottom: 0,
+    fontFamily:'sans-serif',
   },
   inputContainer: {
     flexDirection: 'column',
@@ -209,35 +232,25 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 25,
   },
-  icon: {
-    width: 20,
-    height: 20,
-    marginTop: 0,
-  },
-  clearIcon: {
-    width: 20,
-    height: 20,
-    tintColor: 'gray', // Adjust color as needed
-  },
   textInput: {
     flex: 1,
-    height: 40,
+    height: 50,
     fontSize: 16,
-    borderBottomColor: 'gray',
+    backgroundColor: 'white',
+    justifyContent: 'center',
   },
-  forgotText: {
-    marginTop: 10,
-    color: Colors.SECONDARY,
-    fontSize: 17,
-    fontFamily: 'Signika',
-    fontWeight: 'condensedBold',
-    marginLeft: 'auto',
+  textInputContent: {
+    paddingVertical: 100,
+  },
+  iconStyle: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   radioButtonContainer: {
     marginTop: 30,
-    flexDirection: 'row', // Horizontal layout for the radio buttons
-    justifyContent: 'space-around', // Space between the radio buttons
-    alignItems: 'center', // Align the radio buttons in the center
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
   },
   loginButton: {
     backgroundColor: Colors.SECONDARY,

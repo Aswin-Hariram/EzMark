@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, FlatList, Alert
 import { Ionicons } from '@expo/vector-icons';
 import CPB from '../../Components/CPB';
 import { Colors } from '../../assets/Colors';
-import { collection, doc, getDocs, query, updateDoc, where, } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, query, updateDoc, where, } from 'firebase/firestore';
 import { firestore } from '../../Config/FirebaseConfig';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import MapView, { Marker } from 'react-native-maps';
@@ -11,9 +11,10 @@ import dp from "../../assets/Teachers/profile.png"
 import { TextInput } from 'react-native-paper';
 
 const RequestDetails = () => {
-    const { requestDetails = {}, type = '',teacherDetail } = useRoute()?.params || {};
+    const { requestDetails = {}, type = '', teacherDetail } = useRoute()?.params || {};
     const [requestedData, setRequestedData] = useState([requestDetails]);
     const [loadingId, setLoadingId] = useState(null);
+    const [loadingDId, setLoadingDId] = useState(null);
     const [summaryData, setHistoryData] = useState([]);
     const navigation = useNavigation();
 
@@ -22,7 +23,7 @@ const RequestDetails = () => {
 
     const handleComplete = async (item) => {
         try {
-            if(!teacherDetail) throw new Error('Teacher details not found');
+            if (!teacherDetail) throw new Error('Teacher details not found');
             setLoadingId(item.id); // Start loading for specific item
 
             const studentQuery = query(
@@ -81,6 +82,59 @@ const RequestDetails = () => {
 
 
     };
+    const handleCancel = async (item) => {
+        try {
+            setLoadingDId(item.id); // Start loading for specific item
+            console.log("Item=>", item)
+            const studentQuery = query(
+                collection(firestore, "UserData"),
+                where("class", "==", item.class || ""),
+                where("type", "==", "Student")
+            );
+
+            const querySnapshot = await getDocs(studentQuery);
+
+            if (querySnapshot.empty) {
+                Alert.alert('No Students Found', `No students enrolled in class: ${item.class}`);
+                setLoadingId(null); // Stop loading if no students found
+                return;
+            }
+
+            for (const userDoc of querySnapshot.docs) {
+                const reqQuery = query(
+                    collection(firestore, `UserData/${userDoc.id}/AttendanceRequests`),
+                    where("status", "==", "Requested"),
+                    where("createdAt", "==", item.createdAt),
+                    where("class", "==", item.class),
+                    where("createdBy", "==", item.createdBy),
+                    where("subjectName", "==", item.subjectName)
+                );
+
+                const snap = await getDocs(reqQuery);
+
+                for (const req of snap.docs) {
+                    await deleteDoc(doc(firestore, `UserData/${userDoc.id}/AttendanceRequests`, req.id));
+                }
+            }
+            const enrolledstudents = item.enrolledStudents
+            enrolledstudents.forEach(student => {
+                console.log(student.status)
+                if (student.status === "Requested") {
+                    student.status = "Closed";
+                }
+            });
+            console.log(enrolledstudents)
+            await deleteDoc(doc(firestore, `UserData/${teacherDetail.id}/AttendanceRequests`, item.id));
+
+            setLoadingDId(null);
+            Alert.alert('Completed', 'The attendance request has been successfully completed.');
+        } catch (error) {
+            console.error(error.message);
+            setLoadingDId(null); // Stop loading on error
+        }
+
+
+    };
 
     const renderPendingRequest = useCallback(({ item }) => (
         <View style={styles.requestCardContainer}>
@@ -99,8 +153,8 @@ const RequestDetails = () => {
             </View>
             {type !== 'History' && (
                 <View style={styles.requestActionsRow}>
-                    <TouchableOpacity style={styles.cancelButton}>
-                        <Text style={styles.buttonTextSecondary}>Cancel</Text>
+                    <TouchableOpacity style={styles.cancelButton}  disabled={loadingDId === item.id} onPress={()=>{handleCancel(requestDetails)}} >
+                    <Text style={styles.buttonTextSecondary}>{loadingDId === item.id ? 'Deleting...' : 'Delete'}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.closeButton}

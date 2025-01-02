@@ -14,6 +14,7 @@ import { PieChart } from "react-native-chart-kit";
 import { Colors } from "../../assets/Colors";
 import { useNavigation } from "@react-navigation/native";
 import { collection, getDocs } from "firebase/firestore";
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Feather from '@expo/vector-icons/Feather';
 import { firestore } from "../../Config/FirebaseConfig";
 import { se } from "date-fns/locale";
@@ -106,7 +107,7 @@ const MainDashboard = ({ teacherDetail }) => {
             <View style={styles.header}>
                 <Feather name="menu" size={28} color="black" />
                 <Text style={styles.headerText}>EzMark</Text>
-                <Feather name="share" size={25} color="black" />
+                <MaterialCommunityIcons name="qrcode-scan" size={27} color="black" />
             </View>
 
             <View style={styles.grid}>
@@ -165,7 +166,7 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         marginTop: Platform.OS === 'android' ? 20 : 0,
-        padding: 8,
+        padding: 13,
         justifyContent: 'space-between',
         alignItems: 'center',
     },

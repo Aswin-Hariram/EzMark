@@ -3,9 +3,12 @@ import React, { useEffect, useState } from 'react';
 import CPB from '../../Components/CPB'; // Ensure this component is implemented correctly.
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Colors } from '../../assets/Colors';
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { firestore } from '../../Config/FirebaseConfig';
+import { set } from 'date-fns';
+import LottieView from 'lottie-react-native';
 
 
 const StudentMainDashboard = ({ studentDetail }) => {
@@ -14,11 +17,13 @@ const StudentMainDashboard = ({ studentDetail }) => {
   const [enrolledSubjects, setEnrolledSubjects] = useState([]);
   const [overAll, setOverAll] = useState([]);
   const [sub, setSub] = useState(overAll[0] || {});
-  const [isrefreshing,setIsRefreshing] = useState(false)
+  const [isrefreshing, setIsRefreshing] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   const fetchSubjects = async () => {
     try {
       setIsRefreshing(true)
+      setIsLoading(true)
       console.log("Fetching student details...");
       if (!studentDetail || !studentDetail.id) {
         console.error("Student details are missing!");
@@ -69,6 +74,9 @@ const StudentMainDashboard = ({ studentDetail }) => {
       }
     } catch (err) {
       console.error("Error fetching subjects:", err);
+    }
+    finally {
+      setIsLoading(false)
     }
   };
 
@@ -131,7 +139,7 @@ const StudentMainDashboard = ({ studentDetail }) => {
 
   const handleSort = () => {
     const sortedSubjects = [...enrolledSubjects];
-  
+
     if (sortOrder === "desc") {
       // Sort in descending order
       sortedSubjects.sort((a, b) => b.percentage - a.percentage);
@@ -141,15 +149,23 @@ const StudentMainDashboard = ({ studentDetail }) => {
       sortedSubjects.sort((a, b) => a.percentage - b.percentage);
       setSortOrder("desc"); // Toggle to descending order after sorting
     }
-  
+
     setEnrolledSubjects(sortedSubjects); // Update the state with sorted subjects
   };
+
+  const renderHeader = (load) => (
+    <View style={[{...styles.header,backgroundColor:'white'}]}>
+      <Feather name="menu" size={28} color="black" />
+      <Text style={styles.headerText}>EzMark</Text>
+      <Feather name="share" size={27} color="black" />
+    </View>
+  )
   const renderView = () => (
     <View>
       <View style={styles.header}>
         <Feather name="menu" size={28} color="black" />
         <Text style={styles.headerText}>EzMark</Text>
-        <Feather name="share" size={25} color="black" />
+        <MaterialCommunityIcons name="qrcode-scan" size={24} color="black" />
       </View>
 
       <View style={styles.container}>
@@ -193,6 +209,17 @@ const StudentMainDashboard = ({ studentDetail }) => {
     </View>
   )
 
+  if (isLoading) {
+    return (
+      <SafeAreaView>
+       
+        <View style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
+          <LottieView source={require('../../assets/loadingPage.json')} autoPlay loop style={{ width: '70%', height: 100 }} />
+        </View>
+      </SafeAreaView>
+    )
+  }
+
   return (
     <SafeAreaView>
       <FlatList
@@ -206,8 +233,8 @@ const StudentMainDashboard = ({ studentDetail }) => {
               keyExtractor={(item) => item.id.toString()}
             />
           )}
-          refreshing={isrefreshing}
-          onRefresh={fetchSubjects}
+        refreshing={isrefreshing}
+        onRefresh={fetchSubjects}
       />
     </SafeAreaView>
   );

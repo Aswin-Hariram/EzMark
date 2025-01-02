@@ -1,4 +1,4 @@
-import { StyleSheet, ActivityIndicator } from 'react-native';
+import { StyleSheet, ActivityIndicator, View } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import StudentMainDashboard from './StudentMainDashboard';
@@ -9,6 +9,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { auth, firestore } from '../../Config/FirebaseConfig';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
+import LottieView from 'lottie-react-native';
 
 const StudentDashBoard = () => {
     const Tab = createBottomTabNavigator();
@@ -77,7 +78,11 @@ const StudentDashBoard = () => {
 
                 children={() => {
                     if (loading&&!studentData) {
-                        return <ActivityIndicator size="large" color={Colors.SECONDARY} />;
+                        return (
+                            <View style={{width:'100%', height:'100%',justifyContent:'center',alignItems:'center',backgroundColor:'white'}}>
+                                <LottieView source={require('../../assets/loadingPage.json')} autoPlay loop style={{width:'70%',height:100}} />
+                            </View>
+                        );
                     }
                     return <StudentMainDashboard studentDetail={studentData} />;
                 }}

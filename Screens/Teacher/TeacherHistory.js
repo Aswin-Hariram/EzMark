@@ -12,7 +12,7 @@ import { firestore } from '../../Config/FirebaseConfig';
 import { format } from 'date-fns';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { useNavigation } from '@react-navigation/native';
-import { RadioButton, TextInput } from 'react-native-paper';
+import { FAB, RadioButton, TextInput } from 'react-native-paper';
 
 const TeacherHistory = ({ teacherDetail }) => {
   const [requestedData, setRequestedData] = useState([]);
@@ -284,7 +284,7 @@ const TeacherHistory = ({ teacherDetail }) => {
           </View>
           <View style={styles.classContainer}>
             <Text style={{ ...styles.classText, marginRight: 5, fontSize: 18 }}>{item.class || 'N/A'}</Text>
-            <Text style={{ ...styles.classText, fontSize: 14 }}>{` ( ${item.subjectName} )`}</Text>
+            <Text style={{ ...styles.classText, fontSize: 14,fontWeight:'normal' }}>{` ( ${item.subjectName} )`}</Text>
           </View>
           <Text style={styles.dateText}>{item.time || 'Unknown Date'}</Text>
         </View>
@@ -489,6 +489,14 @@ const TeacherHistory = ({ teacherDetail }) => {
         }
       />
       {renderModal()}
+      <FAB
+        icon="plus"
+        color="white"
+        style={styles.fab}
+        onPress={() => {
+          navigation.navigate("CreateRequest", { teacherDetail: teacherDetail });
+        }}
+      />
     </SafeAreaView>
   );
 };
@@ -513,6 +521,13 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 10,
     backgroundColor: '#ffff'
+  },
+  fab: {
+    position: 'absolute',
+    margin: 16,
+    right: 5,
+    bottom: 5,
+    backgroundColor: Colors.SECONDARY,
   },
   input: {
     padding: 8,
@@ -599,11 +614,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     alignItems: 'center',
   },
+  
   classText: {
-    fontSize: 22,
-    fontWeight: 'condensedBold',
-    fontFamily: 'Signika',
+    fontSize: 18,
     color: '#333',
+    fontFamily: 'Signika-regular',
+    fontWeight: 600,
   },
   dateText: {
     fontSize: 14,

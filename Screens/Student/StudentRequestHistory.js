@@ -26,7 +26,7 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore';
-import { firestore } from '../../Config/FirebaseConfig';
+import { auth, firestore } from '../../Config/FirebaseConfig';
 import { format } from 'date-fns';
 import { useNavigation } from '@react-navigation/native';
 import { RadioButton, TextInput } from 'react-native-paper';
@@ -41,6 +41,7 @@ const StudentRequestHistory = ({ studentDetail }) => {
   const [modalVisible, setModalVisible] = useState(false)
   const [sortOption, setSortOption] = useState("date");
   const [searchVisible, setSearchVisible] = useState(false)
+  const [isCUpdating, setIsDUpdating] = useState(false)
 
   const [serchInp, setSearchInp] = useState('')
 
@@ -61,107 +62,107 @@ const StudentRequestHistory = ({ studentDetail }) => {
     }
   };
 
+  const updateFirestore = async (otpValue, requestDetails) => {
+    try {
+      console.log("Starting updateFirestore...");
+      setIsDUpdating(true);
+      const attendanceRef = collection(
+        firestore,
+        `UserData/${studentDetail.id}/AttendanceRequests`
+      );
 
-  // const updateFirestore = async () => {
-  //   try {
-  //     console.log("Starting updateFirestore...");
+
+
+
+
+      const attendanceQuery = query(
+        attendanceRef,
+        where("status", "==", "Requested"),
+        where("createdBy", "==", requestDetails.createdBy),
+        where("createdAt", "==", requestDetails.createdAt),
+        where("id", "==", requestDetails.id)
+      );
+
+      const snapshot = await getDocs(attendanceQuery);
+
+      if (snapshot.empty) {
+        console.log("No matching AttendanceRequests found for the student.");
+        return;
+      }
+
+      await Promise.all(snapshot.docs.map(async (docSnapshot) => {
+        const docRef = doc(
+          firestore,
+          `UserData/${studentDetail.id}/AttendanceRequests`,
+          docSnapshot.id
+        );
+
+        await updateDoc(docRef, {
+          status: "Rejected",
+          ctime: new Date().toISOString(),
+          locationLat: '',
+          locationLong: ''
+        });
+      }));
+
+      if (!requestDetails.teacherId) {
+        throw new Error("Missing teacherId in requestDetails.");
+      }
+
+      const teacherAttendanceQuery = query(
+        collection(firestore, `UserData/${requestDetails.teacherId}/AttendanceRequests`),
+        where("createdAt", "==", requestDetails.createdAt),
+        where("otp", "==", otpValue)
+      );
+
+      const teacherSnapshot = await getDocs(teacherAttendanceQuery);
+
+      if (teacherSnapshot.empty) {
+        console.log("No matching teacher AttendanceRequests found.");
+        return;
+      }
+
+      await Promise.all(teacherSnapshot.docs.map(async (d) => {
+        const enrolledStudents = d.get("enrolledStudents") || [];
+
+        if (!Array.isArray(enrolledStudents)) {
+          console.warn("Invalid enrolledStudents format.");
+          return;
+        }
+        const updatedStudents = enrolledStudents.map((student) => {
+          if (
+            student.email === auth.currentUser.email
+          ) {
+            return { ...student, status: "Rejected", ctime: new Date().toISOString(), locationLat: '', locationLong: '' };
+          }
+          return student;
+        });
+        console.log("updatedStudents", updatedStudents)
+        const teacherDocRef = doc(
+          firestore,
+          `UserData/${requestDetails.teacherId}/AttendanceRequests`,
+          d.id
+        );
+
+        await updateDoc(teacherDocRef, {
+          enrolledStudents: updatedStudents,
+          pendingNumberOfStudents: d.get("pendingNumberOfStudents") - 1,
+
+        });
+      }));
+
+      console.log("Firestore updates completed successfully.");
+    } catch (err) {
+      console.error("Error updating Firestore:", err);
+    } finally {
+      setIsDUpdating(false);
      
-  //     const attendanceRef = collection(
-  //       firestore,
-  //       `UserData/${studentDetail.id}/AttendanceRequests`
-  //     );
-
-
-
-
-
-  //     const attendanceQuery = query(
-  //       attendanceRef,
-  //       where("status", "==", "Requested"),
-  //       where("createdBy", "==", requestDetails.createdBy),
-  //       where("createdAt", "==", requestDetails.createdAt),
-  //       where("id", "==", requestDetails.id)
-  //     );
-
-  //     const snapshot = await getDocs(attendanceQuery);
-
-  //     if (snapshot.empty) {
-  //       console.warn("No matching AttendanceRequests found for the student.");
-  //       return;
-  //     }
-
-  //     await Promise.all(snapshot.docs.map(async (docSnapshot) => {
-  //       const docRef = doc(
-  //         firestore,
-  //         `UserData/${studentDetail.id}/AttendanceRequests`,
-  //         docSnapshot.id
-  //       );
-
-  //       await deleteDoc(docRef);
-  //     }));
-
-  //     if (!requestDetails.teacherId) {
-  //       throw new Error("Missing teacherId in requestDetails.");
-  //     }
-
-  //     const teacherAttendanceQuery = query(
-  //       collection(firestore, `UserData/${requestDetails.teacherId}/AttendanceRequests`),
-  //       where("createdAt", "==", requestDetails.createdAt),
-  //       where("otp", "==", otpValue)
-  //     );
-
-  //     const teacherSnapshot = await getDocs(teacherAttendanceQuery);
-
-  //     if (teacherSnapshot.empty) {
-  //       console.warn("No matching teacher AttendanceRequests found.");
-  //       return;
-  //     }
-
-  //     await Promise.all(teacherSnapshot.docs.map(async (d) => {
-  //       const enrolledStudents = d.get("enrolledStudents") || [];
-
-  //       if (!Array.isArray(enrolledStudents)) {
-  //         console.warn("Invalid enrolledStudents format.");
-  //         return;
-  //       }
-
-
-
-
-
-
-  //       const updatedStudents = enrolledStudents.map((student) => {
-  //         if (
-  //           student.email === auth.currentUser.email
-  //         ) {
-  //           return { ...student, status: "Completed", ctime: new Date().toISOString(), locationLat: currentLocation.coords.latitude, locationLong: currentLocation.coords.longitude };
-  //         }
-  //         return student;
-  //       });
-  //       console.log("updatedStudents", updatedStudents)
-  //       const teacherDocRef = doc(
-  //         firestore,
-  //         `UserData/${requestDetails.teacherId}/AttendanceRequests`,
-  //         d.id
-  //       );
-
-  //       await updateDoc(teacherDocRef, {
-  //         enrolledStudents: updatedStudents,
-  //         pendingNumberOfStudents: d.get("pendingNumberOfStudents") - 1,
-
-  //       });
-  //     }));
-
-  //     console.log("Firestore updates completed successfully.");
-  //   } catch (err) {
-  //     console.error("Error updating Firestore:", err);
-  //   } finally {
-  //     setIsUpdating(false)
-  //     setModalVisible(false)
-  //     navigation.goBack()
-  //   }
-  // };
+    }
+  };
   const handleCancel = async (item) => {
+    console.log("item=>", item)
+    console.log("cancel pressed...")
+    updateFirestore(item.otp, item)
 
   }
   useEffect(() => {
@@ -261,7 +262,7 @@ const StudentRequestHistory = ({ studentDetail }) => {
       <View style={styles.requestActionsRow}>
         <TouchableOpacity style={styles.cancelButton}
           onPress={() => { handleCancel(item) }}>
-          <Text style={styles.buttonTextSecondary}>Cancel</Text>
+          <Text style={styles.buttonTextSecondary}>{isCUpdating?"Rejecting...":"Reject"}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.closeButton}

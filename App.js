@@ -50,41 +50,12 @@ export default function App() {
 
   function RootStack() {
 
-    useEffect(() => {
-      const checker = auth.onAuthStateChanged(async (user) => {
-        if (user) {
-          console.log('User is signed in');
-          try {
-            const userType = await AsyncStorage.getItem('userType');
-            console.log("userType",userType);
-            if (userType === 'Admin') {
-              setinitialRoute('AdminDashboardScreen');
-            }
-            else if (userType === 'Teacher') {
-              setinitialRoute('TeacherDashBoard');
-            }
-            else if (userType === 'Student') {
-              setinitialRoute('StudentDashBoard');
-            }
-          } catch (error) {
-            console.error('Error fetching user type from AsyncStorage:', error);
-          }
-        } else {
-          console.log('User is not signed in');
-          setinitialRoute('Login');
-        }
-        setLoading(false); // Ensure loading is set to false after the async call
-      });
-
-      // Clean up the subscription when the component unmounts
-      return () => checker();
-    }, []);
-
 
     return (
 
 
-      <Stack.Navigator initialRouteName={"IntroScreen"} screenOptions={{ headerShown: false }}>
+      <Stack.Navigator  screenOptions={{ headerShown: false }}>
+       <Stack.Screen name='IntroScreen' component={IntroScreen}/>
         <Stack.Screen name="AdminDashboardScreen" component={AdminDashboardScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Home" component={HomeScreen} />
@@ -103,7 +74,7 @@ export default function App() {
         <Stack.Screen name='VerificationScreen' component={VerificationScreen} />
         <Stack.Screen name='TProfile' component={TProfile} />
         <Stack.Screen name='AttendanceScreen' component={AttendanceScreen}/>
-        <Stack.Screen name='IntroScreen' component={IntroScreen}/>
+       
       </Stack.Navigator>
     );
   }

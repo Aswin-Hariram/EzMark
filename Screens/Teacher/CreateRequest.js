@@ -16,10 +16,12 @@ import {
 import { TextInput } from 'react-native-paper';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AntDesign from '@expo/vector-icons/AntDesign';
+import { Colors } from '../../assets/Colors';
 import { Dropdown } from 'react-native-element-dropdown';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { firestore } from '../../Config/FirebaseConfig';
 import { addDoc, collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
+import LottieView from 'lottie-react-native';
 
 const CreateRequest = () => {
     const navigation = useNavigation();
@@ -167,14 +169,14 @@ const CreateRequest = () => {
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollView}>
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => navigation.goBack()}>
-                        <Ionicons name="arrow-back" size={28} color="black" />
+                    <TouchableOpacity style={styles.leftIcon} onPress={() => navigation.goBack()}>
+                        <Ionicons name="chevron-back-outline" size={24} color={Colors.PRIMARY} />
+                        <Text style={styles.backText}>Back</Text>
                     </TouchableOpacity>
-                    <Text style={styles.headerText}>Create Request</Text>
                 </View>
 
                 <View style={styles.formSection}>
-                    <Image style={styles.icon} source={require('../../assets/createImage.png')} />
+                    <LottieView source={require("../../assets/createReq.json")} autoPlay loop style={styles.icon} /> 
 
                     {loading ? (
                         <ActivityIndicator size="small" color="#153448" />
@@ -281,17 +283,27 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: 'white',
         padding: 20,
-        marginVertical:Platform.OS==='android'?20:0,
+        marginVertical: Platform.OS === 'android' ? 20 : 0,
     },
     header: {
+        height: 60,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 10,
+    },
+    leftIcon: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 20,
     },
-    headerText: {
-        marginLeft: 10,
-        fontWeight: 'bold',
-        fontSize: 18,
+    backText: {
+        marginLeft: 4,
+        color: "black",
+        fontSize: 16,
+    },
+    rightIcons: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     scrollView: {
         paddingBottom: 20,
@@ -369,11 +381,11 @@ const styles = StyleSheet.create({
         color: '#000',
     },
     icon: {
-        width: 200,
-        height: 200,
-        marginTop: 0,
+        width: 250,
+        height: 250,
+        marginTop: 10,
         resizeMode: 'contain',
         alignSelf: 'center',
-        marginBottom:20,
+        marginBottom: 20,
     },
 });

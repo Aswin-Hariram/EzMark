@@ -14,6 +14,7 @@ import { collection, getDocs, query, updateDoc, where, doc } from 'firebase/fire
 import { auth, firestore } from '../../Config/FirebaseConfig';
 import { ActivityIndicator } from 'react-native-paper';
 import * as Location from 'expo-location';
+import { set } from 'date-fns';
 
 const VerificationScreen = () => {
     const navigation = useNavigation();
@@ -27,6 +28,7 @@ const VerificationScreen = () => {
     const [isUpdating, setIsUpdating] = useState(false);
     const [locationLat, setLocationLat] = useState('')
     const [locationLong, setLocationLong] = useState('')
+    const [otpverifing,setOtpVerifing] = useState(false)
 
     const inputRefs = useRef([]);
 
@@ -164,6 +166,7 @@ const VerificationScreen = () => {
     const updateFirestore = async (otpValue) => {
         try {
             console.log("Starting updateFirestore...");
+         
             let currentLocation = await Location.getCurrentPositionAsync({});
             if (!currentLocation)
                 throw new Error("Missing location permission");
@@ -171,6 +174,7 @@ const VerificationScreen = () => {
                 throw new Error("Missing studentDetail or requestDetails.");
             }
             setIsUpdating(true)
+            setOtpVerifing(true)
             const attendanceRef = collection(
                 firestore,
                 `UserData/${studentDetail.id}/AttendanceRequests`
@@ -268,6 +272,7 @@ const VerificationScreen = () => {
         } finally {
             setIsUpdating(false)
             setModalVisible(false)
+            setOtpVerifing(false)
             navigation.goBack()
         }
     };
@@ -346,7 +351,7 @@ const VerificationScreen = () => {
                             <AntDesign name="close" size={24} color="black" />
                         </TouchableOpacity>
                     </View>
-                    <View style={styles.otpContainer}>
+                   { !otpverifing?<View style={styles.otpContainer}>
                         {otp.map((digit, index) => (
                             <RNTextInput
                                 key={index}
@@ -368,7 +373,10 @@ const VerificationScreen = () => {
                                 }}
                             />
                         ))}
-                    </View>
+                    </View>:
+                    <View>
+                        <LottieView source={require('../../assets/pin.json')} autoPlay loop style={{width:'100%',height:'230',overflow:'hidden',alignSelf:'center'}} />
+                    </View>}
                     <TouchableOpacity
                         style={styles.submitButton}
                         onPress={handleOtpSubmit}
