@@ -28,6 +28,7 @@ import RequestDetails from './Screens/Teacher/RequestDetails';
 import VerificationScreen from './Screens/Student/VerificationScreen';
 import AttendanceScreen from './Screens/Teacher/AttendanceScreen';
 import TProfile from './Screens/Teacher/TProfile';
+import IntroScreen from './Screens/IntroScreen';
 
 export default function App() {
   const [loaded, error] = useFonts({
@@ -83,7 +84,7 @@ export default function App() {
     return (
 
 
-      <Stack.Navigator initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
+      <Stack.Navigator initialRouteName={"IntroScreen"} screenOptions={{ headerShown: false }}>
         <Stack.Screen name="AdminDashboardScreen" component={AdminDashboardScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Home" component={HomeScreen} />
@@ -102,6 +103,7 @@ export default function App() {
         <Stack.Screen name='VerificationScreen' component={VerificationScreen} />
         <Stack.Screen name='TProfile' component={TProfile} />
         <Stack.Screen name='AttendanceScreen' component={AttendanceScreen}/>
+        <Stack.Screen name='IntroScreen' component={IntroScreen}/>
       </Stack.Navigator>
     );
   }
