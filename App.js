@@ -26,9 +26,9 @@ import AddClass from './Screens/Admin/AddClass';
 import CreateRequest from './Screens/Teacher/CreateRequest';
 import RequestDetails from './Screens/Teacher/RequestDetails';
 import VerificationScreen from './Screens/Student/VerificationScreen';
-import AttendanceScreen from './Screens/Teacher/AttendanceScreen';
 import TProfile from './Screens/Teacher/TProfile';
 import IntroScreen from './Screens/IntroScreen';
+import ClassSummary from './Screens/Teacher/ClassSummary';
 
 export default function App() {
   const [loaded, error] = useFonts({
@@ -72,9 +72,8 @@ export default function App() {
         <Stack.Screen name='CreateRequest' component={CreateRequest} />
         <Stack.Screen name='RequestDetails' component={RequestDetails} />
         <Stack.Screen name='VerificationScreen' component={VerificationScreen} />
-        <Stack.Screen name='TProfile' component={TProfile} />
-        <Stack.Screen name='AttendanceScreen' component={AttendanceScreen}/>
-       
+        <Stack.Screen name='TProfile' component={TProfile} />     
+        <Stack.Screen name='ClassSummary' component={ClassSummary} />       
       </Stack.Navigator>
     );
   }

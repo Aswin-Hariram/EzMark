@@ -156,7 +156,7 @@ const StudentRequestHistory = ({ studentDetail }) => {
       console.error("Error updating Firestore:", err);
     } finally {
       setIsDUpdating(false);
-     
+
     }
   };
   const handleCancel = async (item) => {
@@ -262,7 +262,7 @@ const StudentRequestHistory = ({ studentDetail }) => {
       <View style={styles.requestActionsRow}>
         <TouchableOpacity style={styles.cancelButton}
           onPress={() => { handleCancel(item) }}>
-          <Text style={styles.buttonTextSecondary}>{isCUpdating?"Rejecting...":"Reject"}</Text>
+          <Text style={styles.buttonTextSecondary}>{isCUpdating ? "Rejecting..." : "Reject"}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.closeButton}
@@ -532,16 +532,15 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-
-    paddingTop: Platform.OS === 'ios' ? 0 : 25,
-    marginTop: Platform.OS === 'ios' ? 0 : 25,
+    paddingTop: Platform.OS === 'ios' ? 0 : 20,
   },
   header: {
     flexDirection: 'row',
+    paddingHorizontal: 10,
+    paddingTop: 15,
+    marginBottom:10,
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
   },
   leftIcon: {
     flexDirection: 'row',

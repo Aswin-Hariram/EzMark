@@ -22,13 +22,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import LottieView from 'lottie-react-native';
 
-const LoginScreen = () => {
+const LoginScreen = ({navigation}) => {
   const [selectedId, setSelectedId] = useState('1'); // Default selection set to "Student"
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const navigation = useNavigation();
+ 
 
   const radioButtons = useMemo(
     () => [
@@ -68,9 +68,9 @@ const LoginScreen = () => {
         if (doc.data().type === type) {
           await AsyncStorage.setItem('userType', type);
           await signInWithEmailAndPassword(auth, email, password);
-          if (type === 'Admin') navigation.navigate('AdminDashboardScreen');
-          else if (type === 'Teacher') navigation.navigate('TeacherDashBoard');
-          else if (type === 'Student') navigation.navigate('StudentDashBoard');
+          if (type === 'Admin') navigation.replace('AdminDashboardScreen');
+          else if (type === 'Teacher') navigation.replace('TeacherDashBoard');
+          else if (type === 'Student') navigation.replace('StudentDashBoard');
           return;
         }
       }

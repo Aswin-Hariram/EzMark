@@ -135,12 +135,12 @@ const SProfile = ({ student }) => {
               </View>
             </View>
           )}
-           <Image
+          <Image
             style={!loading ? styles.profileImage : { width: 0, height: 0 }}
             source={{ uri: studentImage }}
             onLoadEnd={() => setLoading(false)}
             onError={() => setLoading(false)} // Fallback in case the image fails to load
-          /> 
+          />
         </View>
 
         <View style={styles.formSection}>
@@ -244,8 +244,14 @@ const SProfile = ({ student }) => {
         <TouchableOpacity
           style={[styles.updateButton, isUpdating && { opacity: 0.7 }]}
           onPress={() => {
-            auth.signOut();
-            navigation.navigate("Login");
+            auth.signOut()
+              .then(() => {
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Login' }],
+                })
+              });
+
           }}
           disabled={isUpdating}
         >
@@ -283,7 +289,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'white',
     padding: 10,
-    marginTop:Platform.OS === 'ios' ? 0 : 15,
+    paddingTop: Platform.OS === 'ios' ? 0 : 15,
   },
   header: {
     flexDirection: 'row',
@@ -291,9 +297,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   headerText: {
-    marginLeft: 10,
+    marginLeft: 8,
+    color: Colors.PRIMARY,
+    fontSize: 16,
     fontWeight: 'bold',
-    fontSize: 18,
   },
   profileSection: {
     alignItems: 'center',
@@ -350,24 +357,10 @@ const styles = StyleSheet.create({
 
   chipWrapper: {
     marginBottom: 10,
-    marginRight: 10,
-    flexShrink: 0,  // Prevents individual chips from shrinking
-  },
-  chip: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: '#EEEEEE',
-    borderColor: Colors.SECONDARY,
-    borderWidth: 0.5,
-    borderRadius: 20,
-    maxWidth: '48%', // Prevents chips from being too wide, ensuring even distribution
-  },
-  selectedChip: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: Colors.SECONDARY,
-    borderRadius: 20,
-    maxWidth: '48%',
+    marginRight: 3,
+    flexShrink: 0,
+    flexDirection: 'row',
+    alignItems: 'center',// Prevents individual chips from shrinking
   },
   chipText: {
     fontSize: 14,
@@ -379,37 +372,18 @@ const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
   },
-  noChipsText: {
-    color: '#6c757d',
-    fontSize: 14,
-    marginTop: 10,
-  },
-  chipWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    margin: 5,
-  },
+
   chip: {
     paddingVertical: 8,
-    paddingHorizontal: 15,
+    paddingHorizontal: 10,
     backgroundColor: '#EEEEEE',
     borderColor: Colors.SECONDARY,
     borderWidth: 0.5,
     borderRadius: 20,
   },
-  selectedChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    backgroundColor: Colors.SECONDARY,
-    borderRadius: 20,
-  },
   chipText: {
     fontSize: 14,
     color: 'black',
-  },
-  selectedChipText: {
-    fontSize: 14,
-    color: 'white',
   },
   noChipsText: {
     fontSize: 16,

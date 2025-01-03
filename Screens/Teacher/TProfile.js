@@ -165,7 +165,10 @@ const TProfile = ({ teacher1, getTeachers1 }) => {
   const handleLogout = () => {
     if (auth.currentUser) {
       auth.signOut().then(() => {
-        navigation.navigate("Login");
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Login' }],
+        })
       }).catch((error) => {
         console.error("Error signing out:", error);
       });
@@ -243,11 +246,11 @@ const TProfile = ({ teacher1, getTeachers1 }) => {
                 <View key={chip} style={styles.chipWrapper}>
                   <TouchableOpacity
                     style={selectedSubjects.includes(chip) ? styles.selectedChip : styles.chip}
-                    // onPress={() => {
-                    //   setSelectedClasses((prev) =>
-                    //     prev.includes(chip) ? prev.filter((subject) => subject !== chip) : [...prev, chip]
-                    //   );
-                    // }}
+                  // onPress={() => {
+                  //   setSelectedClasses((prev) =>
+                  //     prev.includes(chip) ? prev.filter((subject) => subject !== chip) : [...prev, chip]
+                  //   );
+                  // }}
                   >
                     <Text style={selectedSubjects.includes(chip) ? styles.selectedChipText : styles.chipText}>
                       {chip}

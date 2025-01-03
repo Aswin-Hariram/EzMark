@@ -282,8 +282,8 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: 'white',
-        padding: 20,
-        marginVertical: Platform.OS === 'android' ? 20 : 0,
+        paddingTop: Platform.OS === 'android' ? 20 : 0,
+        
     },
     header: {
         height: 60,
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
         color: '#000',
     },
     submitButton: {
-        backgroundColor: '#153448',
+        backgroundColor: Colors.SECONDARY,
         paddingVertical: 12,
         borderRadius: 8,
         alignItems: 'center',

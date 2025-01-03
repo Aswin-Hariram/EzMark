@@ -7,6 +7,7 @@ import {
     View,
     TouchableOpacity,
     Platform,
+    RefreshControl,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -14,10 +15,10 @@ import { PieChart } from "react-native-chart-kit";
 import { Colors } from "../../assets/Colors";
 import { useNavigation } from "@react-navigation/native";
 import { collection, getDocs } from "firebase/firestore";
+import Entypo from '@expo/vector-icons/Entypo';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Feather from '@expo/vector-icons/Feather';
 import { firestore } from "../../Config/FirebaseConfig";
-import { se } from "date-fns/locale";
 
 const MainDashboard = ({ teacherDetail }) => {
     const navi = useNavigation();
@@ -25,6 +26,8 @@ const MainDashboard = ({ teacherDetail }) => {
     const [allRequests, setAllRequests] = useState([]);
     const [data, setData] = useState([]);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [noData, setNoData] = useState(false);
+
     const chartConfig = {
         backgroundGradientFrom: "#ffffff",
         backgroundGradientTo: "#ffffff",
@@ -38,11 +41,10 @@ const MainDashboard = ({ teacherDetail }) => {
         },
     };
 
-    // Generate shades of the primary color
     const generateShades = (baseColor, count) => {
         const shades = [];
         for (let i = 0; i < count; i++) {
-            const shadeFactor = 0.5 + i * 0.2; // Adjust shade factor
+            const shadeFactor = 0.5 + i * 0.2;
             const r = parseInt(baseColor.slice(1, 3), 16);
             const g = parseInt(baseColor.slice(3, 5), 16);
             const b = parseInt(baseColor.slice(5, 7), 16);
@@ -91,9 +93,10 @@ const MainDashboard = ({ teacherDetail }) => {
             setAllRequests(requests);
             countClassOccurrences(requests);
         } catch (e) {
-            console.error(e.message);
-        }
-        finally {
+            console.log(e);
+            setNoData(true);
+            setAllRequests([]);
+        } finally {
             setIsRefreshing(false);
         }
     };
@@ -124,49 +127,71 @@ const MainDashboard = ({ teacherDetail }) => {
             </View>
 
             <Text style={styles.sectionTitle}>Overview</Text>
-            <View style={styles.progressChartContainer}>
-                <PieChart
-                    data={data}
-                    width={Dimensions.get("window").width - 80}
-                    height={220}
-                    chartConfig={chartConfig}
-                    accessor="population"
-                    backgroundColor="transparent"
-                    paddingLeft="15"
-                    absolute
-                />
-            </View>
-
+            {allRequests.length>0 ? (
+                <View style={styles.progressChartContainer}>
+                    <PieChart
+                        data={data}
+                        width={Dimensions.get("window").width - 80}
+                        height={220}
+                        chartConfig={chartConfig}
+                        accessor="population"
+                        backgroundColor="transparent"
+                        paddingLeft="15"
+                        absolute
+                    />
+                </View>
+            ) : (
+                <View style={{ justifyContent: 'center', alignItems: 'center', marginTop: 20 }}>
+                    <Text>No Data found</Text>
+                </View>
+            )}
             <Text style={styles.sectionTitle}>Classes</Text>
         </View>
     );
 
     const renderClassItem = ({ item }) => (
-        <TouchableOpacity>
+        console.log("teacherDetail", teacherDetail),
+        <TouchableOpacity onPress={() => { navi.navigate("ClassSummary", { className: item, teacherDetail:teacherDetail }); }}>
             <View style={styles.classContainer}>
-                <Text style={styles.className}>{item.class}</Text>
-                <Text style={styles.className}>Enrolled Subject</Text>
-                {console.log("item=>", item)}
+                <View>
+                    <Text style={styles.className}>{item}</Text>
+                    <Text style={styles.classDep}>Department: Computer Science</Text>
+                </View>
+                <Entypo name="chevron-right" size={24} color={Colors.PRIMARY} />
             </View>
-
         </TouchableOpacity>
     );
 
     return (
-        <SafeAreaView style={{ flex: 1, }}>
-            {renderHeader()}
+        <SafeAreaView style={{ flex: 1 }}>
             
+            <FlatList
+                data={classes}
+                ListHeaderComponent={renderHeader}
+                renderItem={renderClassItem}
+                keyExtractor={(item) => item}
+                style={{ marginBottom: 20 }}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={isRefreshing}
+                        onRefresh={fetchClassAndSubject}
+                    />
+                }
+            />
         </SafeAreaView>
     );
 };
 
 export default MainDashboard;
 
+
+
+
 const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
-        marginTop: Platform.OS === 'android' ? 20 : 0,
-        padding: 13,
+        paddingTop: Platform.OS === 'android' ? 20 : 0,
+        paddingHorizontal: 10,
         justifyContent: 'space-between',
         alignItems: 'center',
     },
@@ -195,13 +220,11 @@ const styles = StyleSheet.create({
     },
     grid: {
         marginTop: 10,
-        marginHorizontal: 8,
     },
     row: {
         flexDirection: "row",
         justifyContent: "space-between",
         paddingVertical: 10,
-        paddingHorizontal: 0,
         width: "100%",
     },
     column: {
@@ -237,8 +260,8 @@ const styles = StyleSheet.create({
     },
     progressChartContainer: {
         backgroundColor: "#ffffff",
-        marginVertical: 10,
-        marginHorizontal: 10,
+        marginVertical: 5,
+        marginHorizontal: 5,
         borderRadius: 10,
         shadowColor: "#000",
         shadowOpacity: 0.1,
@@ -247,21 +270,31 @@ const styles = StyleSheet.create({
     },
     classContainer: {
         padding: 15,
-        marginVertical: 10,
-        marginHorizontal: 10,
+        marginVertical: 8,
+        marginHorizontal: 5,
         position: "relative",
         backgroundColor: "white",
         borderRadius: 8,
         shadowColor: "#000",
         shadowOpacity: 0.1,
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
         shadowRadius: 5,
         elevation: 3,
     },
     className: {
+        fontSize: 18,
+        marginBottom: 5,
+        color: "black",
+        fontFamily: "Metro-regular",
+    },
+    classDep: {
         fontSize: 15,
         marginBottom: 5,
         color: "black",
         fontFamily: "Metro-regular",
+        color:Colors.SECONDARY
     },
     detailsText: {
         fontSize: 14,

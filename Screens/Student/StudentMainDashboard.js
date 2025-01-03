@@ -244,8 +244,8 @@ export default StudentMainDashboard;
 
 const styles = StyleSheet.create({
   mainList: {
-    padding: 10,
-    marginVertical: Platform.OS === 'android' ? 20 : 0,
+    paddingTop: Platform.OS === 'android' ? 20 : 0,
+    paddingHorizontal: 5,
   },
   container: {
     padding: 16,
@@ -348,10 +348,11 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    marginTop: Platform.OS === 'android' ? 20 : 0,
-    padding: 10,
+    paddingHorizontal: 10,
+    paddingTop:15,
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom:20,
   },
   headerText: {
     fontSize: 20,
