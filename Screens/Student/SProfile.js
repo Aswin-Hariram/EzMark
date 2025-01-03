@@ -244,13 +244,23 @@ const SProfile = ({ student }) => {
         <TouchableOpacity
           style={[styles.updateButton, isUpdating && { opacity: 0.7 }]}
           onPress={() => {
-            auth.signOut()
-              .then(() => {
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: 'Login' }],
-                })
-              });
+            Alert.alert("Logout", "Are you sure you want to logout?", [
+              {
+                text: "No",
+                onPress: () => console.log("Cancel Pressed"),
+              }, {
+                text: "Yes",
+                onPress: () => {
+                  auth.signOut()
+                    .then(() => {
+                      navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'Login' }],
+                      })
+                    });
+                }
+              }
+            ], { cancelable: true });
 
           }}
           disabled={isUpdating}

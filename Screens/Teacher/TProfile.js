@@ -164,14 +164,23 @@ const TProfile = ({ teacher1, getTeachers1 }) => {
 
   const handleLogout = () => {
     if (auth.currentUser) {
-      auth.signOut().then(() => {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Login' }],
-        })
-      }).catch((error) => {
-        console.error("Error signing out:", error);
-      });
+      Alert.alert("Logout", "Are you sure you want to logout?", [
+        {
+          text: "No",
+          onPress: () => console.log("Cancel Pressed"),
+        }, {
+          text: "Yes",
+          onPress: () => {
+            auth.signOut()
+              .then(() => {
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Login' }],
+                })
+              });
+          }
+        }
+      ], { cancelable: true });
     } else {
       console.log("User is not authenticated");
     }

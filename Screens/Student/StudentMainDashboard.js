@@ -153,13 +153,6 @@ const StudentMainDashboard = ({ studentDetail }) => {
     setEnrolledSubjects(sortedSubjects); // Update the state with sorted subjects
   };
 
-  const renderHeader = (load) => (
-    <View style={[{...styles.header,backgroundColor:'white'}]}>
-      <Feather name="menu" size={28} color="black" />
-      <Text style={styles.headerText}>EzMark</Text>
-      <Feather name="share" size={27} color="black" />
-    </View>
-  )
   const renderView = () => (
     <View>
       <View style={styles.header}>

@@ -7,6 +7,7 @@ import { Colors } from '../../assets/Colors';
 import ManageStudents from './ManageStudents';
 import ManageClasses from './ManageClasses';
 import ManageTeachers from './ManageTeachers';
+import AdminMainDashBoard from './AdminMainDashBoard';
 // Sample data for recent attendance activities
 const recentAttendanceData = [
     { id: '1', className: 'Class 1A', subject: 'Maths', date: '2024-12-22', percentage: '95%' },
@@ -21,55 +22,9 @@ const Tab = createBottomTabNavigator(); // Declare Tab navigator here
 const Dashboard = () => {
 
     return (
-        <SafeAreaView style={styles.container}>
-            <FlatList
-                data={recentAttendanceData}
-                ListHeaderComponent={() => (
-                    <>
-                        {/* Greeting Section */}
-                        
-
-                        {/* Overview Section */}
-                        <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>Overview</Text>
-                            <View style={styles.cardsRow} >
-                                <View style={styles.card}>
-                                    <Icon name="class" size={30} color="#fff" style={styles.cardIcon} />
-                                    <Text style={styles.cardTitle}>Classes</Text>
-                                    <Text style={styles.cardValue}>20</Text>
-                                </View>
-                                <View style={styles.card}>
-                                    <Icon name="person" size={30} color="#fff" style={styles.cardIcon} />
-                                    <Text style={styles.cardTitle}>Students</Text>
-                                    <Text style={styles.cardValue}>200</Text>
-                                </View>
-                            </View>
-                            <View style={styles.cardsRow}>
-                                <View style={styles.card}>
-                                    <Icon name="school" size={30} color="#fff" style={styles.cardIcon} />
-                                    <Text style={styles.cardTitle}>Teachers</Text>
-                                    <Text style={styles.cardValue}>15</Text>
-                                </View>
-                                <View style={styles.card}>
-                                    <Icon name="book" size={30} color="#fff" style={styles.cardIcon} />
-                                    <Text style={styles.cardTitle}>Subjects</Text>
-                                    <Text style={styles.cardValue}>10</Text>
-                                </View>
-                            </View>
-                        </View>
-                        <Text style={styles.sectionTitle}>Recent Activities</Text>
-                    </>
-                )}
-                renderItem={({ item }) => (
-                    <View style={styles.attendanceCard}>
-                        <Text style={styles.attendanceClass}>{item.className} - {item.subject}</Text>
-                        <Text style={styles.attendanceDate}>{item.date}</Text>
-                        <Text style={styles.attendancePercentage}>Attendance: {item.percentage}</Text>
-                    </View>
-                )}
-                keyExtractor={(item) => item.id}
-            />
-        </SafeAreaView>
+       
+         <AdminMainDashBoard />
+    
     );
 };
 
