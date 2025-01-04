@@ -423,6 +423,7 @@ const TeacherHistory = ({ teacherDetail }) => {
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
+      showsVerticalScrollIndicator={false}
         style={{ paddingHorizontal: 13 }}
         data={requestedData}
         renderItem={renderPendingRequest}
@@ -479,6 +480,7 @@ const TeacherHistory = ({ teacherDetail }) => {
             </View>
             {historyData.length > 0 ? (
               <FlatList
+              showsVerticalScrollIndicator={false}
                 data={historyData}
                 renderItem={renderHistory}
                 keyExtractor={(item) => `history-${item.id}`}

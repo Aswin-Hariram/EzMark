@@ -10,6 +10,7 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { ActivityIndicator, Divider, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,13 +23,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import LottieView from 'lottie-react-native';
 
-const LoginScreen = ({navigation}) => {
+const LoginScreen = ({ navigation }) => {
   const [selectedId, setSelectedId] = useState('1'); // Default selection set to "Student"
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
- 
+
 
   const radioButtons = useMemo(
     () => [
@@ -84,7 +85,7 @@ const LoginScreen = ({navigation}) => {
     }
   };
 
-  
+
 
   const handleLogin = async () => {
     if (!validateInput(email, password)) return;
@@ -107,95 +108,108 @@ const LoginScreen = ({navigation}) => {
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <SafeAreaView style={{justifyContent:'center'}}>
-          <LottieView style={styles.image} source={require('../assets/LoginAnimation.json')} autoPlay />
-          <Text style={styles.loginText}>Login</Text>
+        <SafeAreaView style={{ justifyContent: 'center' }}>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <LottieView style={styles.image} source={require('../assets/LoginAnimation.json')} autoPlay />
+            <Text style={styles.loginText}>Login</Text>
 
-          <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <TextInput
-                style={styles.textInput}
-                placeholder="Email ID"
-                value={email}
-                activeOutlineColor={Colors.PRIMARY}
-                mode="outlined"
-                contentStyle={styles.textInputContent}
-                activeUnderlineColor={Colors.PRIMARY}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                left={
-                  <TextInput.Icon
-                    icon="email-outline"
-                    size={24}
-                    style={styles.iconStyle}
-                  />
-                }
-                right={
-                  email.length > 0 && (
+            <View style={styles.inputContainer}>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Email ID"
+                  value={email}
+                  activeOutlineColor={Colors.PRIMARY}
+                  mode="outlined"
+                  contentStyle={styles.textInputContent}
+                  activeUnderlineColor={Colors.PRIMARY}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  left={
                     <TextInput.Icon
-                      icon="close-circle"
+                      icon="email-outline"
                       size={24}
                       style={styles.iconStyle}
-                      onPress={() => setEmail('')}
                     />
-                  )
-                }
+                  }
+                  right={
+                    email.length > 0 && (
+                      <TextInput.Icon
+                        icon="close-circle"
+                        size={24}
+                        style={styles.iconStyle}
+                        onPress={() => setEmail('')}
+                      />
+                    )
+                  }
+                />
+              </View>
+              <Divider />
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Password"
+                  secureTextEntry={!showPassword}
+                  activeOutlineColor={Colors.PRIMARY}
+                  mode="outlined"
+                  contentStyle={styles.textInputContent}
+                  activeUnderlineColor={Colors.PRIMARY}
+                  value={password}
+                  onChangeText={setPassword}
+                  right={
+                    showPassword ?
+                      (
+                        <TextInput.Icon
+                          icon="eye"
+                          size={24}
+                          style={styles.iconStyle}
+                          onPress={() => setShowPassword(!showPassword)}
+                        />
+                      ):
+                      (
+                        <TextInput.Icon
+                      icon="eye-off"
+                      size={24}
+                      style={styles.iconStyle}
+                      onPress={() => setShowPassword(!showPassword)}
+                    />
+                      )
+                  }
+                  left={
+                    <TextInput.Icon
+                      icon="lock-outline"
+                      size={24}
+                      style={styles.iconStyle}
+                    />
+                  }
+                />
+              </View>
+              <Divider />
+            </View>
+
+            <View style={styles.radioButtonContainer}>
+              <RadioGroup
+                layout="row"
+                radioButtons={radioButtons}
+                onPress={setSelectedId}
+                selectedId={selectedId}
               />
             </View>
-            <Divider />
-            <View style={styles.inputWrapper}>
-              <TextInput
-                style={styles.textInput}
-                placeholder="Password"
-                secureTextEntry={!showPassword}
-                activeOutlineColor={Colors.PRIMARY}
-                mode="outlined"
-                contentStyle={styles.textInputContent}
-                activeUnderlineColor={Colors.PRIMARY}
-                value={password}
-                onChangeText={setPassword}
-                right={
-                  <TextInput.Icon
-                    icon="eye"
-                    size={24}
-                    style={styles.iconStyle}
-                    onPress={() => setShowPassword(!showPassword)}
-                  />
-                }
-                left={
-                  <TextInput.Icon
-                    icon="lock-outline"
-                    size={24}
-                    style={styles.iconStyle}
-                  />
-                }
-              />
-            </View>
-            <Divider />
-          </View>
 
-          <View style={styles.radioButtonContainer}>
-            <RadioGroup
-              layout="row"
-              radioButtons={radioButtons}
-              onPress={setSelectedId}
-              selectedId={selectedId}
-            />
-          </View>
+            <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+              {loading ? (
+                <ActivityIndicator size="small" color={"white"} />
+              ) : (
+                <Text style={styles.loginButtonText}>Login</Text>
+              )}
+            </TouchableOpacity>
 
-          <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-            {loading ? (
-              <ActivityIndicator size="small" color={"white"} />
-            ) : (
-              <Text style={styles.loginButtonText}>Login</Text>
-            )}
-          </TouchableOpacity>
-
-          <Text style={styles.signup}>
-            New to EzMark App, {' '}
-            <Text style={{ color: Colors.SECONDARY }}>Need Help?</Text>
-          </Text>
+            <Text style={styles.signup}>
+              New to EzMark App, {' '}
+              <Text style={{ color: Colors.SECONDARY }}>Need Help?</Text>
+            </Text>
+          </ScrollView>
         </SafeAreaView>
       </KeyboardAvoidingView>
     </TouchableWithoutFeedback>
@@ -220,7 +234,7 @@ const styles = StyleSheet.create({
   loginText: {
     fontSize: 30,
     marginBottom: 0,
-    fontFamily:'sans-serif',
+    fontFamily: 'sans-serif',
   },
   inputContainer: {
     flexDirection: 'column',

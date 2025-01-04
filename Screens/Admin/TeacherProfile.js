@@ -285,8 +285,9 @@ const styles = StyleSheet.create({
   },
   backText: {
     marginLeft: 4,
-    color: "black",
+    color: Colors.PRIMARY,
     fontSize: 16,
+    fontWeight: 'bold',
   },
   icon: {
     marginLeft: 16,

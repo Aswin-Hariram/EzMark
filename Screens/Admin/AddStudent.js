@@ -198,7 +198,7 @@ const AddStudent = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scrollView}>
+            <ScrollView contentContainerStyle={styles.scrollView} showsVerticalScrollIndicator={false} >
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.leftIcon} onPress={() => navigation.goBack()}>
                         <Ionicons name="chevron-back-outline" size={24} color={Colors.PRIMARY} />
@@ -348,12 +348,23 @@ const AddStudent = () => {
                             value={studentPassword}
                             onChangeText={setStudentPassword}
                             right={
-                                <TextInput.Icon
-                                    icon="eye"
-                                    size={24}
-                                    style={styles.iconStyle}
-                                    onPress={() => setShowPassword(!showPassword)}
-                                />
+                                showPassword ?
+                                    (
+                                        <TextInput.Icon
+                                            icon="eye"
+                                            size={24}
+                                            style={styles.iconStyle}
+                                            onPress={() => setShowPassword(!showPassword)}
+                                        />
+                                    ) :
+                                    (
+                                        <TextInput.Icon
+                                            icon="eye-off"
+                                            size={24}
+                                            style={styles.iconStyle}
+                                            onPress={() => setShowPassword(!showPassword)}
+                                        />
+                                    )
                             }
                             left={
                                 <TextInput.Icon
@@ -446,6 +457,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        fontWeight:'bold'
     },
     leftIcon: {
         flexDirection: 'row',
@@ -453,7 +465,8 @@ const styles = StyleSheet.create({
     },
     backText: {
         marginLeft: 4,
-        color: "black",
+        color: Colors.PRIMARY,
+        fontWeight:'bold',
         fontSize: 16,
     },
     rightIcons: {

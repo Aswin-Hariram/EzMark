@@ -222,11 +222,14 @@ const StudentMainDashboard = ({ studentDetail }) => {
   return (
     <SafeAreaView>
       <FlatList
+      showsVerticalScrollIndicator={false}
         style={styles.mainList}
         ListHeaderComponent={renderView()}
         ListFooterComponent={
           (
             <FlatList
+            style={{paddingBottom: 40}}
+              showsVerticalScrollIndicator={false}
               data={enrolledSubjects}
               renderItem={({ item }) => renderSubjects(item)}
               keyExtractor={(item) => item.id.toString()}

@@ -439,6 +439,7 @@ const StudentRequestHistory = ({ studentDetail }) => {
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
+        showsVerticalScrollIndicator={false}
         data={requestedData}
         renderItem={renderPendingRequest}
         keyExtractor={(item) => `pending-${item.id}`}
@@ -492,6 +493,7 @@ const StudentRequestHistory = ({ studentDetail }) => {
               <Text style={styles.sectionHeader}>History</Text>
             </View>
             <FlatList
+              showsVerticalScrollIndicator={false}
               data={historyData}
               renderItem={renderHistory}
               keyExtractor={(item) => `history-${item.id}`}
@@ -539,6 +541,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: Platform.OS === 'ios' ? 0 : 20,
+    
   },
   header: {
     flexDirection: 'row',

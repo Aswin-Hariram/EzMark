@@ -1,4 +1,4 @@
-import { StyleSheet, ActivityIndicator, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import StudentMainDashboard from './StudentMainDashboard';
@@ -10,7 +10,7 @@ import { auth, firestore } from '../../Config/FirebaseConfig';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import LottieView from 'lottie-react-native';
-
+import { ActivityIndicator } from 'react-native-paper';
 const StudentDashBoard = () => {
     const Tab = createBottomTabNavigator();
     const [studentDetail, setStudentDetail] = useState([]);
