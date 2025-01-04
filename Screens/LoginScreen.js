@@ -114,6 +114,7 @@ const LoginScreen = ({ navigation }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <SafeAreaView style={{ justifyContent: 'center' }}>
+        
           <ScrollView showsVerticalScrollIndicator={false}>
             <LottieView style={styles.image} source={require('../assets/LoginAnimation.json')} autoPlay />
             <Text style={styles.loginText}>Login</Text>
@@ -163,23 +164,12 @@ const LoginScreen = ({ navigation }) => {
                   value={password}
                   onChangeText={setPassword}
                   right={
-                    showPassword ?
-                      (
-                        <TextInput.Icon
-                          icon="eye"
-                          size={24}
-                          style={styles.iconStyle}
-                          onPress={() => setShowPassword(!showPassword)}
-                        />
-                      ):
-                      (
-                        <TextInput.Icon
-                      icon="eye-off"
+                    <TextInput.Icon
+                      icon="eye"
                       size={24}
                       style={styles.iconStyle}
                       onPress={() => setShowPassword(!showPassword)}
                     />
-                      )
                   }
                   left={
                     <TextInput.Icon
