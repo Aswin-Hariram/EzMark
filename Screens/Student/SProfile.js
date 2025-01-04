@@ -123,6 +123,7 @@ const SProfile = ({ student }) => {
 
 
         <View style={styles.profileSection}>
+        
           {loading && (
             <View style={styles.Lcontainer}>
               <View style={styles.wrapper}>
@@ -144,6 +145,7 @@ const SProfile = ({ student }) => {
         </View>
 
         <View style={styles.formSection}>
+        <Text style={styles.classTitle}>Personal Details</Text>
           <TextInput
             label="Name"
             value={studentName}
@@ -357,7 +359,7 @@ const styles = StyleSheet.create({
     borderRadius: 75,
   },
   formSection: {
-    marginHorizontal: 15,
+    marginHorizontal: 5,
   },
   input: {
     backgroundColor: 'white',
