@@ -9,6 +9,7 @@ import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firesto
 import { firestore } from '../../Config/FirebaseConfig';
 import { set } from 'date-fns';
 import LottieView from 'lottie-react-native';
+import { StatusBar } from 'expo-status-bar';
 
 
 const StudentMainDashboard = ({ studentDetail }) => {
@@ -221,6 +222,10 @@ const StudentMainDashboard = ({ studentDetail }) => {
 
   return (
     <SafeAreaView>
+      <StatusBar
+       // Android-specific background color
+        barStyle="light-content"  // Text and icon color (light-content or dark-content)
+      />
       <FlatList
       showsVerticalScrollIndicator={false}
         style={styles.mainList}
@@ -370,8 +375,8 @@ const styles = StyleSheet.create({
   enrolledText: {
     fontSize: 22,
     fontFamily: 'Signika-regular',
-    fontWeight:500,
-    color:Colors.SECONDARY
+    fontWeight: 500,
+    color: Colors.SECONDARY
   },
   percentageStyle: {
     fontSize: 16,
