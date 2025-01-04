@@ -10,6 +10,7 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { ActivityIndicator, Divider, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -110,7 +111,7 @@ const LoginScreen = ({navigation}) => {
         <SafeAreaView style={{justifyContent:'center'}}>
           <LottieView style={styles.image} source={require('../assets/LoginAnimation.json')} autoPlay />
           <Text style={styles.loginText}>Login</Text>
-
+          <ScrollView>
           <View style={styles.inputContainer}>
             <View style={styles.inputWrapper}>
               <TextInput
@@ -196,6 +197,7 @@ const LoginScreen = ({navigation}) => {
             New to EzMark App, {' '}
             <Text style={{ color: Colors.SECONDARY }}>Need Help?</Text>
           </Text>
+          </ScrollView>
         </SafeAreaView>
       </KeyboardAvoidingView>
     </TouchableWithoutFeedback>
