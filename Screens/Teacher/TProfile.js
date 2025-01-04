@@ -191,7 +191,7 @@ const TProfile = ({ teacher1, getTeachers1 }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView>
+      <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.leftIcon} onPress={() => { navigation.goBack() }}>
             <Ionicons name="chevron-back-outline" size={24} color={Colors.PRIMARY} />

@@ -166,6 +166,7 @@ const MainDashboard = ({ teacherDetail }) => {
         <SafeAreaView style={{ flex: 1 }}>
             
             <FlatList
+                showsVerticalScrollIndicator={false}
                 data={classes}
                 ListHeaderComponent={renderHeader}
                 renderItem={renderClassItem}

@@ -119,7 +119,7 @@ const SProfile = ({ student }) => {
         </TouchableOpacity>
         <Text style={styles.headerText}>Profile</Text>
       </View>
-      <ScrollView>
+      <ScrollView showsVerticalScrollIndicator={false}>
 
 
         <View style={styles.profileSection}>

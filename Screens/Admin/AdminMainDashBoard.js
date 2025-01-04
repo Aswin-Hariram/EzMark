@@ -111,16 +111,16 @@ const AdminMainDashBoard = () => {
                     </View>
                 </View>
                 <View style={styles.cardsRow}>
-                    <View style={styles.card}>
+                    <TouchableOpacity style={styles.card} onPress={() => { navigation.navigate("Teachers"); }} >
                         <Icon name="school" size={30} color="#fff" style={styles.cardIcon} />
                         <Text style={styles.cardTitle}>Teachers</Text>
                         <Text style={styles.cardValue}>{teacher.length || 0}</Text>
-                    </View>
-                    <View style={styles.card}>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.card} onPress={() => { navigation.navigate("Students"); }}>
                         <Icon name="person" size={30} color="#fff" style={styles.cardIcon} />
                         <Text style={styles.cardTitle}>Students</Text>
                         <Text style={styles.cardValue}>{students.length || 0}</Text>
-                    </View>
+                    </TouchableOpacity>
                 </View>
             </View>
             <Text style={styles.sectionTitle}>Recent Activities</Text>
@@ -157,17 +157,21 @@ const AdminMainDashBoard = () => {
                 </TouchableOpacity>
             </View>
             <FlatList
+                showsVerticalScrollIndicator={false}
                 data={recentActivities}
                 ListHeaderComponent={renderHeader}
                 renderItem={({ item }) => (
-                    <View style={{ ...styles.attendanceCard, flexDirection: 'row' }}>
+                    <View style={{ ...styles.attendanceCard, flexDirection: 'row', alignItems: 'center' }}>
                         <Image
                             style={styles.profileImage}
                             source={item.image ? { uri: item.image } : require('../../assets/Teachers/profile.png')} // Fallback in case the image fails to load
                         />
                         <View style={{ marginLeft: 10 }}>
-                            <Text style={styles.attendanceClass}>{item.name} - <Text style={styles.classTxt}>{item.class}</Text></Text>
-                            <Text style={styles.attendanceDepartment}>Roll no: {item.rollno}</Text>
+                            <Text style={styles.attendanceClass}>{item.name} {item.class && <Text style={styles.classTxt}> - {item.class}</Text>} </Text>
+                            {item.rollno ?
+                                <Text style={styles.attendanceDepartment}>Roll no: {item.rollno}</Text> :
+                                <Text style={styles.attendanceDepartment}>Email: {item.email}</Text>
+                            }
                             <Text style={styles.attendanceDepartment}>Department: {item.department}</Text>
                         </View>
                     </View>
@@ -213,8 +217,8 @@ const styles = StyleSheet.create({
         marginLeft: 10,
     },
     profileImage: {
-        width: 70,
-        height: 70,
+        width: 65,
+        height: 65,
         borderRadius: 50,
     },
     cardsRow: {
@@ -259,7 +263,7 @@ const styles = StyleSheet.create({
     },
     attendanceClass: {
         fontSize: 18,
-        fontWeight: '350',
+        fontWeight: '400',
         color: '#333',
         fontFamily: 'Signika-regular',
     },

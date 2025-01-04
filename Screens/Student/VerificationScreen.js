@@ -14,7 +14,6 @@ import { collection, getDocs, query, updateDoc, where, doc } from 'firebase/fire
 import { auth, firestore } from '../../Config/FirebaseConfig';
 import { ActivityIndicator } from 'react-native-paper';
 import * as Location from 'expo-location';
-import { set } from 'date-fns';
 
 const VerificationScreen = () => {
     const navigation = useNavigation();

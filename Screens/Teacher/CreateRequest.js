@@ -11,7 +11,6 @@ import {
     Image,
     ScrollView,
     TextInput as RNTextInput,
-    ActivityIndicator,
 } from 'react-native';
 import { TextInput } from 'react-native-paper';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -22,7 +21,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { firestore } from '../../Config/FirebaseConfig';
 import { addDoc, collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
 import LottieView from 'lottie-react-native';
-
+import { ActivityIndicator } from 'react-native-paper';
 const CreateRequest = () => {
     const navigation = useNavigation();
     const { teacherDetail } = useRoute().params;
@@ -167,7 +166,7 @@ const CreateRequest = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scrollView}>
+            <ScrollView contentContainerStyle={styles.scrollView} showsVerticalScrollIndicator={false}>
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.leftIcon} onPress={() => navigation.goBack()}>
                         <Ionicons name="chevron-back-outline" size={24} color={Colors.PRIMARY} />

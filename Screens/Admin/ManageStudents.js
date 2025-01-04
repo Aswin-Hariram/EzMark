@@ -164,9 +164,11 @@ const ManageStudents = () => {
             {/* Students List */}
             {filteredStudents.length > 0 ? (
                 <FlatList
+                    
                     style={{ marginTop: 13 }}
                     data={filteredStudents}
                     refreshing={isLoading}
+                    showsVerticalScrollIndicator={false}
                     onRefresh={getStudents}
                     renderItem={({ item }) => (
                         <TouchableOpacity style={styles.teacherCard}
@@ -216,7 +218,7 @@ export default ManageStudents;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        paddingTop: Platform.OS === 'android' ? 25 : 0,
     },
     header: {
         height: 60,
@@ -231,7 +233,8 @@ const styles = StyleSheet.create({
     },
     backText: {
         marginLeft: 4,
-        color: "black",
+        color: Colors.PRIMARY,
+        fontWeight:'bold',
         fontSize: 16,
     },
     rightIcons: {

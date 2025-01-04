@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Platform, Image, Alert,  } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Platform, Image, Alert, } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -251,12 +251,23 @@ const AddTeacher = () => {
                             value={teacherPassword}
                             onChangeText={setTeacherPassword}
                             right={
-                                <TextInput.Icon
-                                    icon="eye"
-                                    size={24}
-                                    style={styles.iconStyle}
-                                    onPress={() => setShowPassword(!showPassword)}
-                                />
+                                showPassword ?
+                                    (
+                                        <TextInput.Icon
+                                            icon="eye"
+                                            size={24}
+                                            style={styles.iconStyle}
+                                            onPress={() => setShowPassword(!showPassword)}
+                                        />
+                                    ) :
+                                    (
+                                        <TextInput.Icon
+                                            icon="eye-off"
+                                            size={24}
+                                            style={styles.iconStyle}
+                                            onPress={() => setShowPassword(!showPassword)}
+                                        />
+                                    )
                             }
                             left={
                                 <TextInput.Icon
@@ -340,8 +351,9 @@ const styles = StyleSheet.create({
     },
     backText: {
         marginLeft: 4,
-        color: "black",
+        color: Colors.PRIMARY,
         fontSize: 16,
+        fontWeight:'bold'
     },
     rightIcons: {
         flexDirection: 'row',

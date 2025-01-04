@@ -4,31 +4,36 @@
     "slug": "EzMark",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/classImage.png",
+      "image": "./assets/logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.aswin-hariram.EzMark"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.aswin_hariram.EzMark"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/logo.png"
     },
     "plugins": [
       [
-        "expo-font",{
-          "fonts":["./assets/Fonts/Signika.ttf","./assets/Fonts/Metrophobic-Regular.ttf"]
-        
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/Signika.ttf",
+            "./assets/Fonts/Metrophobic-Regular.ttf"
+          ]
         }
       ]
     ]

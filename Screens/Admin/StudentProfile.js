@@ -16,6 +16,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { ActivityIndicator, TextInput } from 'react-native-paper';
 import { Colors } from '../../assets/Colors';
 import { Dropdown } from 'react-native-element-dropdown';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { firestore } from '../../Config/FirebaseConfig';
 import { s3 } from '../../Config/awsConfig';
@@ -168,12 +169,13 @@ const StudentProfile = ({ route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView>
+      <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={28} color="black" />
+          <TouchableOpacity style={styles.leftIcon} onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-back-outline" size={24} color={Colors.PRIMARY} />
+            <Text style={styles.backText}>Edit Student</Text>
           </TouchableOpacity>
-          <Text style={styles.headerText}>Edit Student</Text>
+
         </View>
 
         <View style={styles.profileSection}>
@@ -192,49 +194,125 @@ const StudentProfile = ({ route }) => {
             label="Student Name"
             value={studentName}
             onChangeText={setStudentName}
+            activeOutlineColor={Colors.PRIMARY}
+            outlineColor={Colors.SECONDARY}
             mode="outlined"
             style={styles.input}
+            left={
+              <TextInput.Icon
+                icon="account-outline"
+                size={24}
+                style={styles.iconStyle}
+              />
+            }
+            right={
+              studentName.length > 0 && (
+                <TextInput.Icon
+                  icon="close-circle"
+                  size={24}
+                  style={styles.iconStyle}
+                  onPress={() => setStudentName('')}
+                />
+              )
+            }
           />
           <TextInput
             label="Student Email"
             value={studentEmail}
+            activeOutlineColor={Colors.PRIMARY}
+            outlineColor={Colors.SECONDARY}
             onChangeText={setStudentEmail}
             mode="outlined"
             style={styles.input}
+            left={
+              <TextInput.Icon
+                icon="email-outline"
+                size={24}
+                style={styles.iconStyle}
+              />
+            }
+            right={
+              studentEmail.length > 0 && (
+                <TextInput.Icon
+                  icon="close-circle"
+                  size={24}
+                  style={styles.iconStyle}
+                  onPress={() => setStudentEmail('')}
+                />
+              )
+            }
           />
           <TextInput
             label="Roll No"
             value={studentRollNo}
             onChangeText={setStudentRollNo}
+            activeOutlineColor={Colors.PRIMARY}
+            outlineColor={Colors.SECONDARY}
             mode="outlined"
             style={styles.input}
+            left={
+              <TextInput.Icon
+                icon="numeric"
+                size={24}
+                style={styles.iconStyle}
+              />
+            }
+            right={
+              studentRollNo.length > 0 && (
+                <TextInput.Icon
+                  icon="close-circle"
+                  size={24}
+                  style={styles.iconStyle}
+                  onPress={() => setStudentRollNo('')}
+                />
+              )
+            }
           />
-          <Dropdown
-            style={styles.dropdown}
-            data={classes}
-            labelField="label"
-            valueField="value"
-            placeholder="Select Class"
-            value={studentClass}
-            onChange={(item) => setStudentClass(item.value)}
-          />
-          <Dropdown
-            style={styles.dropdown}
-            data={subjects}
-            labelField="label"
-            valueField="value"
-            search
-            placeholder="Select Subjects"
-            onChange={(item) => {
-              if (!subjectsSelected.includes(item.value)) {
-                setSubjectsSelected([...subjectsSelected, item.value]);
-              }
-              else{
-                alert(`${item.value} already selected`)
-                
-              }
-            }}
-          />
+          <View style={[styles.dropdownContainer]}>
+            <MaterialIcons
+              name="domain"
+              size={24}
+              color={Colors.PRIMARY}
+              style={styles.iconStyle}
+            />
+            <Dropdown
+              style={styles.dropdown}
+              data={classes}
+              labelField="label"
+              valueField="value"
+              search
+              searchPlaceholder='Search Classes'
+              placeholder="Select Class"
+              value={studentClass}
+              onChange={(item) => setStudentClass(item.value)}
+            />
+          </View>
+          <View style={[styles.dropdownContainer]}>
+            <MaterialIcons
+              name="domain"
+              size={24}
+              color={Colors.PRIMARY}
+              style={styles.iconStyle}
+            />
+            <Dropdown
+              style={styles.dropdown}
+              data={subjects}
+              labelField="label"
+              valueField="value"
+              search
+              searchPlaceholder='Search Subjects'
+              placeholder="Select Subjects"
+              onChange={(item) => {
+                if (!subjectsSelected.includes(item.value)) {
+                  setSubjectsSelected([...subjectsSelected, item.value]);
+                }
+                else {
+                  alert(`${item.value} already selected`)
+
+                }
+              }}
+            />
+          </View>
           <View style={styles.classesSection}>
             <Text style={styles.classTitle}>Enrolled Subjects</Text>
             <View style={styles.chipContainer}>
@@ -285,7 +363,7 @@ const StudentProfile = ({ route }) => {
           )}
         </TouchableOpacity>
 
-       
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -300,15 +378,30 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   header: {
+    height: 60,
+    flexDirection: 'row',
+    fontWeight:'bold',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  leftIcon: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
   },
-  headerText: {
-    marginLeft: 10,
-    fontWeight: 'bold',
-    fontSize: 18,
+  backText: {
+    marginLeft: 4,
+    color: Colors.PRIMARY,
+    fontWeight:'bold',
+    fontSize: 16,
   },
+  rightIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  icon: {
+    marginLeft: 16,
+  },
+
   profileSection: {
     alignItems: 'center',
     marginVertical: 20,
@@ -336,17 +429,29 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     marginBottom: 15,
   },
-  dropdown: {
+  dropdownContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     height: 50,
-    borderColor: '#153448',
+    borderColor: Colors.PRIMARY,
     borderWidth: 1,
     borderRadius: 8,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10, // Adjusted for better spacing
     marginBottom: 15,
     backgroundColor: 'white',
   },
+  iconStyle: {
+    marginRight: 10, // Space between icon and dropdown
+  },
+  dropdown: {
+    flex: 1, // Ensures dropdown takes remaining space
+    height: '100%', // Matches the container height
+    paddingHorizontal: 8,
+    backgroundColor: 'white',
+    fontSize: 16,
+  },
   updateButton: {
-    backgroundColor: Colors.PRIMARY,
+    backgroundColor: Colors.SECONDARY,
     height: 50,
     borderRadius: 10,
     justifyContent: 'center',
@@ -373,22 +478,29 @@ const styles = StyleSheet.create({
   chipWrapper: {
     marginBottom: 10,
     marginRight: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    margin: 5,
   },
   chip: {
     backgroundColor: '#e9ecef',
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 20,
+    borderColor: Colors.SECONDARY,
+    borderWidth: 0.5,
+    borderRadius: 20,
   },
   selectedChip: {
-    backgroundColor: Colors.PRIMARY,
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 20,
+    backgroundColor: Colors.SECONDARY,
+    borderRadius: 20,
   },
   chipText: {
-    color: '#6c757d',
     fontSize: 14,
+    color: 'black',
   },
   selectedChipText: {
     color: 'white',
@@ -398,36 +510,6 @@ const styles = StyleSheet.create({
     color: '#6c757d',
     fontSize: 14,
     marginTop: 10,
-  },
-  chipWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    margin: 5,
-  },
-  chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    backgroundColor: '#EEEEEE',
-    borderColor: Colors.SECONDARY,
-    borderWidth: 0.5,
-    borderRadius: 20,
-  },
-  selectedChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    backgroundColor: Colors.SECONDARY,
-    borderRadius: 20,
-  },
-  chipText: {
-    fontSize: 14,
-    color: 'black',
-  },
-  selectedChipText: {
-    fontSize: 14,
-    color: 'white',
-  },
-  noChipsText: {
-    fontSize: 16,
     color: 'gray',
     textAlign: 'center',
     marginTop: 20,

@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, Modal, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, Modal, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { AntDesign } from '@expo/vector-icons';
+import { ActivityIndicator } from 'react-native-paper';
 
 const VerifyOtpStudent = () => {
   const [isModalVisible, setModalVisible] = useState(false);

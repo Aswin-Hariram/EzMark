@@ -23,13 +23,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import LottieView from 'lottie-react-native';
 
-const LoginScreen = ({navigation}) => {
+const LoginScreen = ({ navigation }) => {
   const [selectedId, setSelectedId] = useState('1'); // Default selection set to "Student"
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
- 
+
 
   const radioButtons = useMemo(
     () => [
@@ -85,7 +85,7 @@ const LoginScreen = ({navigation}) => {
     }
   };
 
-  
+
 
   const handleLogin = async () => {
     if (!validateInput(email, password)) return;
@@ -176,22 +176,22 @@ const LoginScreen = ({navigation}) => {
             <Divider />
           </View>
 
-          <View style={styles.radioButtonContainer}>
-            <RadioGroup
-              layout="row"
-              radioButtons={radioButtons}
-              onPress={setSelectedId}
-              selectedId={selectedId}
-            />
-          </View>
+            <View style={styles.radioButtonContainer}>
+              <RadioGroup
+                layout="row"
+                radioButtons={radioButtons}
+                onPress={setSelectedId}
+                selectedId={selectedId}
+              />
+            </View>
 
-          <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-            {loading ? (
-              <ActivityIndicator size="small" color={"white"} />
-            ) : (
-              <Text style={styles.loginButtonText}>Login</Text>
-            )}
-          </TouchableOpacity>
+            <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+              {loading ? (
+                <ActivityIndicator size="small" color={"white"} />
+              ) : (
+                <Text style={styles.loginButtonText}>Login</Text>
+              )}
+            </TouchableOpacity>
 
           <Text style={styles.signup}>
             New to EzMark App, {' '}
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   loginText: {
     fontSize: 30,
     marginBottom: 0,
-    fontFamily:'sans-serif',
+    fontFamily: 'sans-serif',
   },
   inputContainer: {
     flexDirection: 'column',
