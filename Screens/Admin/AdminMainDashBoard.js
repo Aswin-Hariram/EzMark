@@ -111,16 +111,16 @@ const AdminMainDashBoard = () => {
                     </View>
                 </View>
                 <View style={styles.cardsRow}>
-                    <TouchableOpacity style={styles.card} onPress={() => { navigation.navigate("Teachers"); }} >
+                    <View style={styles.card}>
                         <Icon name="school" size={30} color="#fff" style={styles.cardIcon} />
                         <Text style={styles.cardTitle}>Teachers</Text>
                         <Text style={styles.cardValue}>{teacher.length || 0}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.card} onPress={() => { navigation.navigate("Students"); }}>
+                    </View>
+                    <View style={styles.card}>
                         <Icon name="person" size={30} color="#fff" style={styles.cardIcon} />
                         <Text style={styles.cardTitle}>Students</Text>
                         <Text style={styles.cardValue}>{students.length || 0}</Text>
-                    </TouchableOpacity>
+                    </View>
                 </View>
             </View>
             <Text style={styles.sectionTitle}>Recent Activities</Text>
@@ -160,17 +160,14 @@ const AdminMainDashBoard = () => {
                 data={recentActivities}
                 ListHeaderComponent={renderHeader}
                 renderItem={({ item }) => (
-                    <View style={{ ...styles.attendanceCard, flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ ...styles.attendanceCard, flexDirection: 'row' }}>
                         <Image
                             style={styles.profileImage}
                             source={item.image ? { uri: item.image } : require('../../assets/Teachers/profile.png')} // Fallback in case the image fails to load
                         />
                         <View style={{ marginLeft: 10 }}>
-                            <Text style={styles.attendanceClass}>{item.name} {item.class && <Text style={styles.classTxt}> - {item.class}</Text>} </Text>
-                            {item.rollno ?
-                                <Text style={styles.attendanceDepartment}>Roll no: {item.rollno}</Text> :
-                                <Text style={styles.attendanceDepartment}>Email: {item.email}</Text>
-                            }
+                            <Text style={styles.attendanceClass}>{item.name} - <Text style={styles.classTxt}>{item.class}</Text></Text>
+                            <Text style={styles.attendanceDepartment}>Roll no: {item.rollno}</Text>
                             <Text style={styles.attendanceDepartment}>Department: {item.department}</Text>
                         </View>
                     </View>
@@ -216,8 +213,8 @@ const styles = StyleSheet.create({
         marginLeft: 10,
     },
     profileImage: {
-        width: 65,
-        height: 65,
+        width: 70,
+        height: 70,
         borderRadius: 50,
     },
     cardsRow: {
@@ -262,7 +259,7 @@ const styles = StyleSheet.create({
     },
     attendanceClass: {
         fontSize: 18,
-        fontWeight: '400',
+        fontWeight: '350',
         color: '#333',
         fontFamily: 'Signika-regular',
     },
