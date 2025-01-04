@@ -227,13 +227,13 @@ const StudentMainDashboard = ({ studentDetail }) => {
         barStyle="light-content"  // Text and icon color (light-content or dark-content)
       />
       <FlatList
-        showsVerticalScrollIndicator={false}
+      showsVerticalScrollIndicator={false}
         style={styles.mainList}
         ListHeaderComponent={renderView()}
         ListFooterComponent={
           (
             <FlatList
-              style={{ paddingBottom: 40 }}
+            style={{paddingBottom: 40}}
               showsVerticalScrollIndicator={false}
               data={enrolledSubjects}
               renderItem={({ item }) => renderSubjects(item)}
