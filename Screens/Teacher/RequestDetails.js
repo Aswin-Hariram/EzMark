@@ -235,6 +235,8 @@ const RequestDetails = () => {
                     style={{
                         flex: 1,
                         width: '100%',
+
+                        padding: 5,
                         height: 400,
                     }}
                     initialRegion={initialRegion} // Use initialRegion instead of region
@@ -290,7 +292,7 @@ const RequestDetails = () => {
                 ListEmptyComponent={<Text style={styles.noDataText}>No Pending Requests</Text>}
                 ListFooterComponent={
                     <View style={styles.historyContainer}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignContent: 'center', alignItems: 'c' }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignContent: 'center', alignItems: 'center',margin:10 }}>
                             <Text style={styles.sectionHeader}>Summary</Text>
                             <TouchableOpacity style={{ ...styles.icon, alignSelf: 'flex-end' }}>
                                 <Ionicons name="filter-outline" size={24} color={Colors.PRIMARY} />
@@ -313,7 +315,6 @@ const RequestDetails = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F9FAFB',
         marginTop: Platform.OS === 'ios' ? 0 : 25,
     },
     noDataText: {
@@ -461,7 +462,6 @@ const styles = StyleSheet.create({
     sectionHeader: {
         fontSize: 18,
         fontWeight: "bold",
-        margin: 10,
 
     },
     locationPin: {
