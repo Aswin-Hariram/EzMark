@@ -11,7 +11,6 @@ import {
   TouchableWithoutFeedback,
   Platform,
   ScrollView,
-  ScrollView,
 } from 'react-native';
 import { ActivityIndicator, Divider, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,13 +24,11 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import LottieView from 'lottie-react-native';
 
 const LoginScreen = ({ navigation }) => {
-const LoginScreen = ({ navigation }) => {
   const [selectedId, setSelectedId] = useState('1'); // Default selection set to "Student"
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-
 
 
   const radioButtons = useMemo(
@@ -87,7 +84,6 @@ const LoginScreen = ({ navigation }) => {
       setLoading(false);
     }
   };
-
 
 
 
@@ -200,14 +196,6 @@ const LoginScreen = ({ navigation }) => {
                 selectedId={selectedId}
               />
             </View>
-            <View style={styles.radioButtonContainer}>
-              <RadioGroup
-                layout="row"
-                radioButtons={radioButtons}
-                onPress={setSelectedId}
-                selectedId={selectedId}
-              />
-            </View>
 
             <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
               {loading ? (
@@ -216,19 +204,7 @@ const LoginScreen = ({ navigation }) => {
                 <Text style={styles.loginButtonText}>Login</Text>
               )}
             </TouchableOpacity>
-            <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-              {loading ? (
-                <ActivityIndicator size="small" color={"white"} />
-              ) : (
-                <Text style={styles.loginButtonText}>Login</Text>
-              )}
-            </TouchableOpacity>
 
-            <Text style={styles.signup}>
-              New to EzMark App, {' '}
-              <Text style={{ color: Colors.SECONDARY }}>Need Help?</Text>
-            </Text>
-          </ScrollView>
             <Text style={styles.signup}>
               New to EzMark App, {' '}
               <Text style={{ color: Colors.SECONDARY }}>Need Help?</Text>
@@ -258,7 +234,6 @@ const styles = StyleSheet.create({
   loginText: {
     fontSize: 30,
     marginBottom: 0,
-    fontFamily: 'sans-serif',
     fontFamily: 'sans-serif',
   },
   inputContainer: {
