@@ -23,7 +23,6 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import LottieView from 'lottie-react-native';
-import { StatusBar } from 'expo-status-bar';
 
 const LoginScreen = ({ navigation }) => {
 const LoginScreen = ({ navigation }) => {
@@ -114,7 +113,6 @@ const LoginScreen = ({ navigation }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <SafeAreaView style={{ justifyContent: 'center' }}>
-        
           <ScrollView showsVerticalScrollIndicator={false}>
             <LottieView style={styles.image} source={require('../assets/LoginAnimation.json')} autoPlay />
             <Text style={styles.loginText}>Login</Text>
@@ -164,12 +162,23 @@ const LoginScreen = ({ navigation }) => {
                   value={password}
                   onChangeText={setPassword}
                   right={
-                    <TextInput.Icon
-                      icon="eye"
+                    showPassword ?
+                      (
+                        <TextInput.Icon
+                          icon="eye"
+                          size={24}
+                          style={styles.iconStyle}
+                          onPress={() => setShowPassword(!showPassword)}
+                        />
+                      ):
+                      (
+                        <TextInput.Icon
+                      icon="eye-off"
                       size={24}
                       style={styles.iconStyle}
                       onPress={() => setShowPassword(!showPassword)}
                     />
+                      )
                   }
                   left={
                     <TextInput.Icon
