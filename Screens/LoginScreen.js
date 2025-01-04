@@ -23,6 +23,7 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import LottieView from 'lottie-react-native';
+import { StatusBar } from 'expo-status-bar';
 
 const LoginScreen = ({ navigation }) => {
   const [selectedId, setSelectedId] = useState('1'); // Default selection set to "Student"
@@ -109,73 +110,75 @@ const LoginScreen = ({ navigation }) => {
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <SafeAreaView style={{justifyContent:'center'}}>
-          <LottieView style={styles.image} source={require('../assets/LoginAnimation.json')} autoPlay />
-          <Text style={styles.loginText}>Login</Text>
-          <ScrollView>
-          <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <TextInput
-                style={styles.textInput}
-                placeholder="Email ID"
-                value={email}
-                activeOutlineColor={Colors.PRIMARY}
-                mode="outlined"
-                contentStyle={styles.textInputContent}
-                activeUnderlineColor={Colors.PRIMARY}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                left={
-                  <TextInput.Icon
-                    icon="email-outline"
-                    size={24}
-                    style={styles.iconStyle}
-                  />
-                }
-                right={
-                  email.length > 0 && (
+        <SafeAreaView style={{ justifyContent: 'center' }}>
+        
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <LottieView style={styles.image} source={require('../assets/LoginAnimation.json')} autoPlay />
+            <Text style={styles.loginText}>Login</Text>
+
+            <View style={styles.inputContainer}>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Email ID"
+                  value={email}
+                  activeOutlineColor={Colors.PRIMARY}
+                  mode="outlined"
+                  contentStyle={styles.textInputContent}
+                  activeUnderlineColor={Colors.PRIMARY}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  left={
                     <TextInput.Icon
-                      icon="close-circle"
+                      icon="email-outline"
                       size={24}
                       style={styles.iconStyle}
-                      onPress={() => setEmail('')}
                     />
-                  )
-                }
-              />
+                  }
+                  right={
+                    email.length > 0 && (
+                      <TextInput.Icon
+                        icon="close-circle"
+                        size={24}
+                        style={styles.iconStyle}
+                        onPress={() => setEmail('')}
+                      />
+                    )
+                  }
+                />
+              </View>
+              <Divider />
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Password"
+                  secureTextEntry={!showPassword}
+                  activeOutlineColor={Colors.PRIMARY}
+                  mode="outlined"
+                  contentStyle={styles.textInputContent}
+                  activeUnderlineColor={Colors.PRIMARY}
+                  value={password}
+                  onChangeText={setPassword}
+                  right={
+                    <TextInput.Icon
+                      icon="eye"
+                      size={24}
+                      style={styles.iconStyle}
+                      onPress={() => setShowPassword(!showPassword)}
+                    />
+                  }
+                  left={
+                    <TextInput.Icon
+                      icon="lock-outline"
+                      size={24}
+                      style={styles.iconStyle}
+                    />
+                  }
+                />
+              </View>
+              <Divider />
             </View>
-            <Divider />
-            <View style={styles.inputWrapper}>
-              <TextInput
-                style={styles.textInput}
-                placeholder="Password"
-                secureTextEntry={!showPassword}
-                activeOutlineColor={Colors.PRIMARY}
-                mode="outlined"
-                contentStyle={styles.textInputContent}
-                activeUnderlineColor={Colors.PRIMARY}
-                value={password}
-                onChangeText={setPassword}
-                right={
-                  <TextInput.Icon
-                    icon="eye"
-                    size={24}
-                    style={styles.iconStyle}
-                    onPress={() => setShowPassword(!showPassword)}
-                  />
-                }
-                left={
-                  <TextInput.Icon
-                    icon="lock-outline"
-                    size={24}
-                    style={styles.iconStyle}
-                  />
-                }
-              />
-            </View>
-            <Divider />
-          </View>
 
             <View style={styles.radioButtonContainer}>
               <RadioGroup
@@ -194,10 +197,10 @@ const LoginScreen = ({ navigation }) => {
               )}
             </TouchableOpacity>
 
-          <Text style={styles.signup}>
-            New to EzMark App, {' '}
-            <Text style={{ color: Colors.SECONDARY }}>Need Help?</Text>
-          </Text>
+            <Text style={styles.signup}>
+              New to EzMark App, {' '}
+              <Text style={{ color: Colors.SECONDARY }}>Need Help?</Text>
+            </Text>
           </ScrollView>
         </SafeAreaView>
       </KeyboardAvoidingView>
