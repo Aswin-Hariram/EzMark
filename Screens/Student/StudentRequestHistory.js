@@ -22,6 +22,7 @@ import {
   doc,
   getDocs,
   onSnapshot,
+  orderBy,
   query,
   updateDoc,
   where,
@@ -70,11 +71,6 @@ const StudentRequestHistory = ({ studentDetail }) => {
         firestore,
         `UserData/${studentDetail.id}/AttendanceRequests`
       );
-
-
-
-
-
       const attendanceQuery = query(
         attendanceRef,
         where("status", "==", "Requested"),
@@ -156,7 +152,7 @@ const StudentRequestHistory = ({ studentDetail }) => {
       console.error("Error updating Firestore:", err);
     } finally {
       setIsDUpdating(false);
-
+      Alert.alert('Success', 'Request Rejected Successfully');
     }
   };
   const handleCancel = async (item) => {
@@ -179,19 +175,27 @@ const StudentRequestHistory = ({ studentDetail }) => {
     );
 
     const unsubscribeRequested = onSnapshot(requestedQuery, (querySnapshot) => {
-      setRequestedData(querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        time: formatDate(doc.get("createdAt")),
-      })));
+      setRequestedData(
+        querySnapshot.docs
+          .map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+            time: formatDate(doc.get("createdAt")),
+          }))
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) // Sort by createdAt
+      );
     });
 
     const unsubscribeHistory = onSnapshot(historyQuery, (querySnapshot) => {
-      setHistoryData(querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        time: formatDate(doc.get("createdAt")),
-      })));
+      setHistoryData(
+        querySnapshot.docs
+          .map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+            time: formatDate(doc.get("createdAt")),
+          }))
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      );
     });
 
     return () => {
@@ -201,11 +205,9 @@ const StudentRequestHistory = ({ studentDetail }) => {
   }, [studentDetail]);
 
   useEffect(() => {
-
-    if (!studentDetail?.id) return; // Early return to avoid query execution
+    if (!studentDetail?.id) return;
 
     if (serchInp === "") {
-      // Reset to original data when search input is cleared
       const requestedQuery = query(
         collection(firestore, `UserData/${studentDetail.id}/AttendanceRequests`),
         where("status", "==", "Requested")
@@ -218,25 +220,32 @@ const StudentRequestHistory = ({ studentDetail }) => {
 
       getDocs(requestedQuery).then((querySnapshot) => {
         setRequestedData(
-          querySnapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-            time: formatDate(doc.get("createdAt")),
-          }))
+          querySnapshot.docs
+            .map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+              time: formatDate(doc.get("createdAt")),
+            }))
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) // Sort by createdAt
         );
       });
 
       getDocs(historyQuery).then((querySnapshot) => {
         setHistoryData(
-          querySnapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-            time: formatDate(doc.get("createdAt")),
-          }))
+          querySnapshot.docs
+            .map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+              time: formatDate(doc.get("createdAt")),
+            }))
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) // Sort by createdAt
         );
       });
     }
   }, [serchInp]);
+
+
+
 
   const renderPendingRequest = ({ item }) => (
     <TouchableOpacity
@@ -304,37 +313,34 @@ const StudentRequestHistory = ({ studentDetail }) => {
   );
 
   const applySort = (option) => {
-    setSortOption(option);
+    setSortOption(option); // Set the current sort option
 
-    if (option === "date") {
-      setRequestedData((prev) =>
-        [...prev].sort((a, b) => new Date(b.time) - new Date(a.time))
-      );
-      setHistoryData((prev) =>
-        [...prev].sort((a, b) => new Date(b.time) - new Date(a.time))
-      );
-    } else if (option === "Subject Name (ASC)") {
-      setRequestedData((prev) =>
-        [...prev].sort((a, b) => a.subjectName.localeCompare(b.subjectName))
-      );
-      setHistoryData((prev) =>
-        [...prev].sort((a, b) => a.subjectName.localeCompare(b.subjectName))
-      );
-    } else if (option === "Subject Name (DESC)") {
-      setRequestedData((prev) =>
-        [...prev].sort((a, b) => b.subjectName.localeCompare(a.subjectName))
-      );
-      setHistoryData((prev) =>
-        [...prev].sort((a, b) => b.subjectName.localeCompare(a.subjectName))
-      );
-    }
-    else if (option === "status") {
-      setHistoryData((prev) =>
-        [...prev].sort((a, b) => a.status.localeCompare(b.status))
-      );
-    }
-    setModalVisible(false);
+    const sortData = (data) => {
+      switch (option) {
+        case "date":
+          return data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Sort by date (newest first)
+        case "Subject Name (ASC)":
+          return data.sort((a, b) =>
+            (a.subjectName || "").localeCompare(b.subjectName || "")
+          ); // Sort by subject name ascending
+        case "Subject Name (DESC)":
+          return data.sort((a, b) =>
+            (b.subjectName || "").localeCompare(a.subjectName || "")
+          ); // Sort by subject name descending
+        case "status":
+          return data.sort((a, b) =>
+            (a.status || "").localeCompare(b.status || "")
+          ); // Sort by status alphabetically
+        default:
+          return data;
+      }
+    };
+
+    setRequestedData((prevData) => [...sortData(prevData)]);
+    setHistoryData((prevData) => [...sortData(prevData)]);
+    setModalVisible(false); // Close the modal after applying the sort
   };
+
   const renderModal = () => {
     const options = [
       { label: "Date", value: "date" },
@@ -538,7 +544,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 10,
     paddingTop: 15,
-    marginBottom:10,
+    marginBottom: 10,
     justifyContent: 'space-between',
     alignItems: 'center',
   },
@@ -566,7 +572,7 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     fontSize: 18,
-    color: Colors.PRIMARY,
+    color: Colors.SECONDARY,
     fontWeight: 'bold',
     marginVertical: 16,
   },

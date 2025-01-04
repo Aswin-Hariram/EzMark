@@ -256,12 +256,12 @@ const styles = StyleSheet.create({
         fontWeight: "bold",
         marginVertical: 8,
         marginHorizontal: 10,
-        color: "#003300",
+        color: Colors.SECONDARY,
     },
     progressChartContainer: {
         backgroundColor: "#ffffff",
         marginVertical: 5,
-        marginHorizontal: 5,
+        marginHorizontal: 8,
         borderRadius: 10,
         shadowColor: "#000",
         shadowOpacity: 0.1,
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
     classContainer: {
         padding: 15,
         marginVertical: 8,
-        marginHorizontal: 5,
+        marginHorizontal: 10,
         position: "relative",
         backgroundColor: "white",
         borderRadius: 8,
@@ -287,6 +287,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         marginBottom: 5,
         color: "black",
+        fontWeight: "500",
         fontFamily: "Metro-regular",
     },
     classDep: {

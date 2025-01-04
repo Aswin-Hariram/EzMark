@@ -64,7 +64,13 @@ const StudentMainDashboard = ({ studentDetail }) => {
                 }
               });
 
-              return { id: index, subject: sub, total: totalHrs, attended: completedHrs, percentage: (completedHrs / totalHrs) * 100 || 0 };
+              return {
+                id: index,
+                subject: sub,
+                total: totalHrs,
+                attended: completedHrs,
+                percentage: ((completedHrs / totalHrs) * 100 || 0).toFixed(1)
+              };
             }
           })
         );
@@ -205,7 +211,7 @@ const StudentMainDashboard = ({ studentDetail }) => {
   if (isLoading) {
     return (
       <SafeAreaView>
-       
+
         <View style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
           <LottieView source={require('../../assets/loadingPage.json')} autoPlay loop style={{ width: '70%', height: 100 }} />
         </View>
@@ -342,10 +348,10 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     paddingHorizontal: 10,
-    paddingTop:15,
+    paddingTop: 15,
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom:20,
+    marginBottom: 20,
   },
   headerText: {
     fontSize: 20,
@@ -361,6 +367,8 @@ const styles = StyleSheet.create({
   enrolledText: {
     fontSize: 22,
     fontFamily: 'Signika-regular',
+    fontWeight:500,
+    color:Colors.SECONDARY
   },
   percentageStyle: {
     fontSize: 16,

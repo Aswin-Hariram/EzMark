@@ -22,9 +22,9 @@ const Tab = createBottomTabNavigator(); // Declare Tab navigator here
 const Dashboard = () => {
 
     return (
-       
-         <AdminMainDashBoard />
-    
+
+        <AdminMainDashBoard />
+
     );
 };
 
@@ -33,35 +33,34 @@ const Dashboard = () => {
 
 const AdminDashboardScreen = () => {
     return (
-      
-            <Tab.Navigator
-                screenOptions={({ route }) => ({
-                    headerShown: false,
-                    tabBarIcon: ({ color, size }) => {
-                        let iconName;
 
-                        if (route.name === 'Dashboard') {
-                            iconName = 'dashboard';
-                        } else if (route.name === 'Teachers') {
-                            iconName = 'people';
-                        } else if (route.name === 'Students') {
-                            iconName = 'person';
-                        } else if (route.name === 'Classes') {
-                            iconName = 'class';
-                        }
+        <Tab.Navigator
+            screenOptions={({ route }) => ({
+                headerShown: false,
+                tabBarIcon: ({ color, size }) => {
+                    let iconName;
 
-                        return <Icon name={iconName} size={size} color={color} />;
-                    },
-                    tabBarActiveTintColor: Colors.SECONDARY,
-                    tabBarInactiveTintColor: 'gray',
-                })}
-            >
-                <Tab.Screen name="Dashboard" component={Dashboard} />
-                <Tab.Screen name="Teachers" component={ManageTeachers} />
-                <Tab.Screen name="Students" component={ManageStudents} />
-                {/* <Tab.Screen name="Classes" component={ManageClasses} /> */}
-            </Tab.Navigator>
-      
+                    if (route.name === 'Dashboard') {
+                        iconName = 'dashboard';
+                    } else if (route.name === 'Teachers') {
+                        iconName = 'people';
+                    } else if (route.name === 'Students') {
+                        iconName = 'person';
+                    } else if (route.name === 'Classes') {
+                        iconName = 'class';
+                    }
+
+                    return <Icon name={iconName} size={size} color={color} />;
+                },
+                tabBarActiveTintColor: Colors.SECONDARY,
+                tabBarInactiveTintColor: 'gray',
+            })}
+        >
+            <Tab.Screen name="Dashboard" component={Dashboard} />
+            <Tab.Screen name="Teachers" component={ManageTeachers} />
+            <Tab.Screen name="Students" component={ManageStudents} />
+        </Tab.Navigator>
+
     );
 };
 
@@ -74,7 +73,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#f8f9fa',
     },
     greetingSection: {
-       
+
     },
     greetingTitle: {
         fontSize: 20,
@@ -96,7 +95,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         color: '#333',
-        marginLeft: Platform.OS === 'android' ? 0 : 10, 
+        marginLeft: Platform.OS === 'android' ? 0 : 10,
         marginBottom: 10,
     },
     cardsRow: {

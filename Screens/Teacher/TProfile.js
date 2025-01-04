@@ -12,6 +12,7 @@ import React, { useEffect, useState } from 'react';
 import { Dropdown } from 'react-native-element-dropdown';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import AntDesign from '@expo/vector-icons/AntDesign';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import dp from "../../assets/Teachers/profile.png";
 import { ActivityIndicator, TextInput } from 'react-native-paper';
@@ -28,10 +29,11 @@ const TProfile = ({ teacher1, getTeachers1 }) => {
   const [selectedSubjects, setSelectedClasses] = useState([]);
   const [teacherName, setTeacherName] = useState(teacher?.name);
   const [teacherEmail, setTeacherEmail] = useState(teacher?.email);
+  const [teacherImage, setTeacherImage] = useState(teacher?.image);
   const [value, setValue] = useState(teacher?.department);
   const [teacherPassword, setTeacherPassword] = useState(teacher?.password);
   const [classData, setClassData] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const departmentDropdownData = [
     { label: 'Computer Science', value: 'Computer Science' },
@@ -49,6 +51,7 @@ const TProfile = ({ teacher1, getTeachers1 }) => {
       console.log("Teacher data is not available.");
       return; // Prevent further execution if teacher data is missing
     }
+    console.log("Teache Image", teacher);
 
     const fetchBasic = async () => {
       try {
@@ -202,12 +205,29 @@ const TProfile = ({ teacher1, getTeachers1 }) => {
         </View>
 
         <View style={styles.profileSection}>
-          {/* <Image style={styles.profileImage} source={dp} /> */}
-          <LottieView source={require("../../assets/avatar.json")} autoPlay loop style={styles.profileImage} />
+          {loading && (
+            <View style={styles.Lcontainer}>
+              <View style={styles.wrapper}>
+                <LottieView
+                  source={require('../../assets/avatar.json')}
+                  autoPlay
+                  loop
+                  style={styles.lottie}
+                />
+              </View>
+            </View>
+          )}
+          <Image
+            style={!loading ? styles.profileImage : { width: 0, height: 0 }}
+            source={teacherImage ? { uri: teacherImage } : dp}
+            onLoadEnd={() => setLoading(false)} // Once the image has loaded, stop loading
+            onError={() => setLoading(false)} // In case of an error, stop loading
+            defaultSource={dp} // Set a default image before loading starts
+          />
         </View>
-
+        <Text style={styles.classTitle}>Personal details</Text>
         <View style={styles.formSection}>
-          <Text style={styles.classTitle}>Personal details</Text>
+
           <TextInput
             label="Teacher Name"
             value={teacherName}
@@ -217,6 +237,13 @@ const TProfile = ({ teacher1, getTeachers1 }) => {
             activeOutlineColor={Colors.PRIMARY}
             style={styles.input}
             editable={false}
+            left={
+              <TextInput.Icon
+                icon="account-outline"
+                size={24}
+                style={styles.iconStyle}
+              />
+            }
           />
 
           <TextInput
@@ -228,23 +255,31 @@ const TProfile = ({ teacher1, getTeachers1 }) => {
             activeOutlineColor={Colors.PRIMARY}
             style={styles.input}
             editable={false}
+            left={
+              <TextInput.Icon
+                icon="email-outline"
+                size={24}
+                style={styles.iconStyle}
+              />
+            }
           />
 
-          <Dropdown
-            style={styles.dropdown}
-            placeholderStyle={styles.placeholderStyle}
-            selectedTextStyle={styles.selectedTextStyle}
-            inputSearchStyle={styles.inputSearchStyle}
-            iconStyle={styles.iconStyle}
-            data={departmentDropdownData}
-            labelField="label"
-            valueField="value"
-            search
-            maxHeight={300}
-            value={value}
-            disable
-            onChange={(item) => setValue(item.value)}
-          />
+          <View style={[styles.dropdownContainer]}>
+            <AntDesign name="book" size={24} color="black" />
+            <Dropdown
+              style={styles.dropdown}
+              data={departmentDropdownData}
+              labelField="label"
+              valueField="value"
+              search
+              placeholder="Select Department"
+              disable
+              value={value}
+              onChange={(item) => setValue(item.value)}
+            />
+          </View>
+
+
         </View>
 
         <View style={styles.classesSection}>
@@ -255,11 +290,6 @@ const TProfile = ({ teacher1, getTeachers1 }) => {
                 <View key={chip} style={styles.chipWrapper}>
                   <TouchableOpacity
                     style={selectedSubjects.includes(chip) ? styles.selectedChip : styles.chip}
-                  // onPress={() => {
-                  //   setSelectedClasses((prev) =>
-                  //     prev.includes(chip) ? prev.filter((subject) => subject !== chip) : [...prev, chip]
-                  //   );
-                  // }}
                   >
                     <Text style={selectedSubjects.includes(chip) ? styles.selectedChipText : styles.chipText}>
                       {chip}
@@ -277,6 +307,7 @@ const TProfile = ({ teacher1, getTeachers1 }) => {
           style={[styles.updateButton, loading && { opacity: 0.7 }]}
           onPress={handleLogout}
           disabled={loading}
+
         >
           {loading ? (
             <ActivityIndicator size="small" color="white" />
@@ -315,46 +346,56 @@ const styles = StyleSheet.create({
   },
   backText: {
     marginLeft: 4,
-    color: "black",
+    color: Colors.PRIMARY,
     fontSize: 16,
+
   },
   icon: {
     marginLeft: 16,
   },
-  headerText: {
-    marginLeft: 10,
-    fontWeight: 'bold',
-    fontSize: 18,
-  },
   profileSection: {
     alignItems: 'center',
     marginVertical: 5,
+
   },
   profileImage: {
-    width: 250,
-    height: 150,
-    borderRadius: 50,
-    objectFit: 'scale-down'
+    width: 125,
+    height: 125,
+    borderRadius: 75,
   },
   formSection: {
-    marginVertical: 20,
+    marginTop:15,
+  },
+  iconStyle: {
+    marginRight: 10, // Space between icon and dropdown
   },
   input: {
     marginBottom: 10,
     backgroundColor: 'white',
   },
-  classTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  dropdown: {
+  dropdownContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     height: 50,
     borderColor: Colors.PRIMARY,
     borderWidth: 1,
     borderRadius: 8,
+    paddingHorizontal: 10, // Adjusted for better spacing
+    marginBottom: 15,
+    backgroundColor: 'white',
+  },
+  classTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: Colors.SECONDARY,
+    marginTop:20,
+  },
+  dropdown: {
+    flex: 1, // Ensures dropdown takes remaining space
+    height: '100%', // Matches the container height
     paddingHorizontal: 8,
-    marginVertical: 10,
+    backgroundColor: 'white',
+    fontSize: 16,
   },
   placeholderStyle: {
     fontSize: 16,
@@ -365,10 +406,6 @@ const styles = StyleSheet.create({
   },
   inputSearchStyle: {
     fontSize: 14,
-  },
-  iconStyle: {
-    width: 20,
-    height: 20,
   },
   chipContainer: {
     flexDirection: 'row',
@@ -410,7 +447,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   updateButton: {
-    backgroundColor: Colors.PRIMARY,
+    backgroundColor: Colors.SECONDARY,
     height: 50,
     borderRadius: 10,
     justifyContent: 'center',

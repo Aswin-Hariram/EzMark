@@ -1,18 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Platform, Image, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Platform, Image, Alert,  } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { TextInput } from 'react-native-paper';
 import { Dropdown } from 'react-native-element-dropdown';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Colors } from '../../assets/Colors';
+import * as ImagePicker from 'expo-image-picker';
 import { auth, firestore } from '../../Config/FirebaseConfig';
 import { addDoc, collection, doc, getDoc, setDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import PasswordTextInput from '../../Components/PasswordTextInput';
+import { s3 } from '../../Config/awsConfig';
+import { ActivityIndicator } from 'react-native-paper';
 
 const AddTeacher = () => {
-    const {getTeachers} = useRoute().params
+    const { getTeachers } = useRoute().params
     const [teacherName, setTeacherName] = useState('');
     const [teacherEmail, setTeacherEmail] = useState('');
     const [teacherDepartment, setTeacherDepartment] = useState(null);
@@ -32,7 +36,9 @@ const AddTeacher = () => {
     const [classes, setClasses] = useState([]);
     const [selectedSubjects, setSelectedSubjects] = useState([]);
     const [selectedClasses, setSelectedClasses] = useState([]);
+    const [showPassword, setShowPassword] = useState(false);
     const navigation = useNavigation();
+    const [imgUrl, setImageUrl] = useState('');
 
     useEffect(() => {
         const fetchBasicData = async () => {
@@ -50,12 +56,44 @@ const AddTeacher = () => {
                     }
                 }
             } catch (error) {
-                console.error('Error fetching basic data:', error);
+                console.log('Error fetching basic data:', error);
                 Alert.alert('Error', 'Failed to load classes.');
             }
         };
         fetchBasicData();
     }, []);
+
+    const uploadImageToS3 = async (uri) => {
+        try {
+            const fileName = uri.split('/').pop();
+            const fileType = fileName.split('.').pop();
+
+            const file = {
+                uri,
+                name: teacherEmail,
+                type: `image/${fileType}`,
+            };
+
+            const buffer = await fetch(file.uri).then((res) => res.arrayBuffer());
+            const bufferData = Buffer.from(buffer);
+
+            const params = {
+                Bucket: 'ezmarkbucket',
+                Key: `teachers/${fileName}`,
+                Body: bufferData,
+                ContentType: file.type,
+            };
+
+            const data = await s3.upload(params).promise();
+            const imageUrl = data.Location;
+            setImageUrl(imageUrl);
+            return imageUrl;
+        } catch (error) {
+            console.error('Error uploading image:', error.message);
+            Alert.alert('Error', 'Failed to upload image.');
+            return null;
+        }
+    };
 
     const handleSaveTeacher = async () => {
         if (!teacherName || !teacherEmail || !teacherDepartment) {
@@ -73,12 +111,17 @@ const AddTeacher = () => {
             return cls ? cls.label : null;
         }).filter(Boolean);
 
+        const imageUrl = await uploadImageToS3(teacherImage);
+        if (!imageUrl) {
+            setProcessing(false);
+            return;
+        }
         const newTeacher = {
             id: Date.now().toString(),
             name: teacherName,
             email: teacherEmail.toLowerCase(),
             department: teacherDepartment,
-            image: teacherImage,
+            image: imageUrl,
             subjects: selectedSubjectLabels,
             classes: selectedClassLabels,
             type: 'Teacher',
@@ -86,12 +129,13 @@ const AddTeacher = () => {
         };
 
         try {
-            await setDoc(doc(firestore, 'UserData', newTeacher.id), newTeacher);
+
             await createUserWithEmailAndPassword(auth, teacherEmail, teacherPassword || 'defaultPassword123');
+            await setDoc(doc(firestore, 'UserData', newTeacher.id), newTeacher);
             Alert.alert('Success', 'Teacher added successfully!');
-          
+
         } catch (error) {
-            console.error('Error saving teacher data:', error);
+            console.log('Error saving teacher data:', error);
             Alert.alert('Error', 'Failed to save teacher data.');
         } finally {
             setLoading(false);
@@ -101,14 +145,20 @@ const AddTeacher = () => {
     };
 
     const pickImage = async () => {
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: 'images',
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 1,
-        });
-        if (!result.canceled) {
-            setTeacherImage(result.assets[0].uri);
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: 'images',
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 1,
+            });
+
+            if (!result.canceled && result.assets) {
+                setTeacherImage(result.assets[0].uri);
+            }
+        } catch (error) {
+            console.error('Error picking image:', error.message);
+            Alert.alert('Error', 'Failed to pick an image.');
         }
     };
 
@@ -116,10 +166,11 @@ const AddTeacher = () => {
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollView}>
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => navigation.goBack()}>
-                        <Ionicons name="arrow-back" size={28} color="black" />
+                    <TouchableOpacity style={styles.leftIcon} onPress={() => navigation.goBack()}>
+                        <Ionicons name="chevron-back-outline" size={24} color={Colors.PRIMARY} />
+                        <Text style={styles.backText}>Add Teacher</Text>
                     </TouchableOpacity>
-                    <Text style={styles.headerText}>Add Teacher</Text>
+
                 </View>
 
                 <View style={styles.imageSection}>
@@ -141,6 +192,23 @@ const AddTeacher = () => {
                         outlineColor="#153448"
                         activeOutlineColor="#153448"
                         style={styles.inputField}
+                        left={
+                            <TextInput.Icon
+                                icon="account-outline"
+                                size={24}
+                                style={styles.iconStyle}
+                            />
+                        }
+                        right={
+                            teacherName.length > 0 && (
+                                <TextInput.Icon
+                                    icon="close-circle"
+                                    size={24}
+                                    style={styles.iconStyle}
+                                    onPress={() => setTeacherName('')}
+                                />
+                            )
+                        }
                     />
                     <TextInput
                         label="Teacher Email"
@@ -151,23 +219,72 @@ const AddTeacher = () => {
                         activeOutlineColor="#153448"
                         keyboardType="email-address"
                         style={styles.inputField}
+                        left={
+                            <TextInput.Icon
+                                icon="email-outline"
+                                size={24}
+                                style={styles.iconStyle}
+                            />
+                        }
+                        right={
+                            teacherEmail.length > 0 && (
+                                <TextInput.Icon
+                                    icon="close-circle"
+                                    size={24}
+                                    style={styles.iconStyle}
+                                    onPress={() => setTeacherEmail('')}
+                                />
+                            )
+                        }
                     />
-                    <PasswordTextInput
-                        value={teacherPassword}
-                        onChangeText={setTeacherPassword}
-                        placeholder="Enter your password"
-                        lockIconSource={require('../../assets/Login/lock.png')}
-                        style={styles.input}
-                    />
-                    <Dropdown
-                        style={styles.dropdown}
-                        placeholderStyle={styles.placeholderStyle}
-                        selectedTextStyle={styles.selectedTextStyle}
-                        data={departments}
-                        labelField="label"
-                        valueField="value"
-                        onChange={(item) => setTeacherDepartment(item.value)}
-                    />
+
+
+                    <View style={styles.inputWrapper}>
+                        <TextInput
+                            style={styles.textInput}
+                            label="Password"
+                            secureTextEntry={!showPassword}
+                            activeOutlineColor={Colors.PRIMARY}
+                            mode="outlined"
+                            contentStyle={styles.textInputContent}
+                            activeUnderlineColor={Colors.PRIMARY}
+                            value={teacherPassword}
+                            onChangeText={setTeacherPassword}
+                            right={
+                                <TextInput.Icon
+                                    icon="eye"
+                                    size={24}
+                                    style={styles.iconStyle}
+                                    onPress={() => setShowPassword(!showPassword)}
+                                />
+                            }
+                            left={
+                                <TextInput.Icon
+                                    icon="lock-outline"
+                                    size={24}
+                                    style={styles.iconStyle}
+                                />
+                            }
+                        />
+                    </View>
+                    <View style={[styles.dropdownContainer]}>
+                        <MaterialIcons
+                            name="domain"
+                            size={24}
+                            color={Colors.PRIMARY}
+                            style={styles.iconStyle}
+                        />
+                        <Dropdown
+                            style={[styles.dropdown]}
+                            data={departments}
+                            labelField="label"
+                            valueField="value"
+                            search
+                            placeholder="Select Department"
+                            value={teacherDepartment}
+                            onChange={(item) => setTeacherDepartment(item.value)}
+                        />
+                    </View>
                 </View>
 
                 <View style={styles.chipSection}>
@@ -197,7 +314,7 @@ const AddTeacher = () => {
                     )}
                 </TouchableOpacity>
             </ScrollView>
-        </SafeAreaView>
+        </SafeAreaView >
     );
 };
 
@@ -212,18 +329,44 @@ const styles = StyleSheet.create({
         paddingBottom: 20,
     },
     header: {
+        height: 60,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    leftIcon: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginVertical: Platform.OS === 'android' ? 5 : 4,
     },
-    headerText: {
-        marginLeft: 10,
-        fontWeight: 'bold',
-        fontSize: 18,
+    backText: {
+        marginLeft: 4,
+        color: "black",
+        fontSize: 16,
+    },
+    rightIcons: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    icon: {
+        marginLeft: 16,
     },
     imageSection: {
         alignItems: 'center',
         marginBottom: 20,
+    },
+    iconStyle: {
+        marginRight: 10, // Space between icon and dropdown
+    },
+    dropdownContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        height: 50,
+        borderColor: Colors.PRIMARY,
+        borderWidth: 1,
+        borderRadius: 8,
+        paddingHorizontal: 10, // Adjusted for better spacing
+        marginBottom: 15,
+        backgroundColor: 'white',
     },
     imagePicker: {
         width: 120,
@@ -240,6 +383,11 @@ const styles = StyleSheet.create({
         height: '100%',
         borderRadius: 60,
     },
+    imagePlaceholder: {
+        color: '#6c757d',
+        fontSize: 16,
+        textAlign: 'center',
+    },
     placeholderStyle: {
         fontSize: 16,
         color: 'gray',
@@ -252,12 +400,11 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     dropdown: {
-        height: 50,
-        borderColor: Colors.PRIMARY,
-        borderWidth: 1,
-        borderRadius: 8,
+        flex: 1, // Ensures dropdown takes remaining space
+        height: '100%', // Matches the container height
         paddingHorizontal: 8,
-        marginVertical: 10,
+        backgroundColor: 'white',
+        fontSize: 16,
     },
     chipSection: {
         marginVertical: 15,
@@ -306,6 +453,26 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
     },
+    inputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 10,
+    },
+    inputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 15,
+    },
+    textInput: {
+        flex: 1,
+        height: 50,
+        fontSize: 16,
+        backgroundColor: 'white',
+        justifyContent: 'center',
+    },
+
 });
 
 export default AddTeacher;

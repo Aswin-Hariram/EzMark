@@ -137,7 +137,7 @@ const TeacherHistory = ({ teacherDetail }) => {
       await deleteDoc(doc(firestore, `UserData/${teacherDetail.id}/AttendanceRequests`, item.id));
 
       setLoadingDId(null);
-      Alert.alert('Completed', 'The attendance request has been successfully completed.');
+      Alert.alert('Deleted', 'The attendance request has been successfully deleted.');
     } catch (error) {
       console.error(error.message);
       setLoadingDId(null); // Stop loading on error
@@ -166,6 +166,7 @@ const TeacherHistory = ({ teacherDetail }) => {
         time: formatDate(doc.get("createdAt")),
         percentage: ((doc.get("totalNumberOfStudents") - doc.get("pendingNumberOfStudents")) / doc.get("totalNumberOfStudents")) * 100
       }));
+      temp.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setRequestedData(temp);
     });
 
@@ -176,7 +177,7 @@ const TeacherHistory = ({ teacherDetail }) => {
         time: formatDate(doc.get("createdAt")),
         percentage: ((doc.get("totalNumberOfStudents") - doc.get("pendingNumberOfStudents")) / doc.get("totalNumberOfStudents")) * 100
       }));
-
+      temp.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setHistoryData(temp);
     });
 
@@ -210,6 +211,7 @@ const TeacherHistory = ({ teacherDetail }) => {
           time: formatDate(doc.get("createdAt")),
           percentage: ((doc.get("totalNumberOfStudents") - doc.get("pendingNumberOfStudents")) / doc.get("totalNumberOfStudents")) * 100
         }));
+        temp.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setRequestedData(temp);
       });
 
@@ -220,7 +222,7 @@ const TeacherHistory = ({ teacherDetail }) => {
           time: formatDate(doc.get("createdAt")),
           percentage: ((doc.get("totalNumberOfStudents") - doc.get("pendingNumberOfStudents")) / doc.get("totalNumberOfStudents")) * 100
         }));
-
+        temp.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setHistoryData(temp);
       });
 
@@ -284,7 +286,7 @@ const TeacherHistory = ({ teacherDetail }) => {
           </View>
           <View style={styles.classContainer}>
             <Text style={{ ...styles.classText, marginRight: 5, fontSize: 18 }}>{item.class || 'N/A'}</Text>
-            <Text style={{ ...styles.classText, fontSize: 14,fontWeight:'normal' }}>{` ( ${item.subjectName} )`}</Text>
+            <Text style={{ ...styles.classText, fontSize: 14, fontWeight: 'normal' }}>{` ( ${item.subjectName} )`}</Text>
           </View>
           <Text style={styles.dateText}>{item.time || 'Unknown Date'}</Text>
         </View>
@@ -297,10 +299,10 @@ const TeacherHistory = ({ teacherDetail }) => {
 
     if (option === "date") {
       setRequestedData((prev) =>
-        [...prev].sort((a, b) => new Date(b.time) - new Date(a.time))
+        [...prev].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       );
       setHistoryData((prev) =>
-        [...prev].sort((a, b) => new Date(b.time) - new Date(a.time))
+        [...prev].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       );
     } else if (option === "Class") {
       setRequestedData((prev) =>
@@ -562,7 +564,7 @@ const styles = StyleSheet.create({
   },
   backText: {
     marginLeft: 4,
-    color: "black",
+    color: Colors.PRIMARY,
     fontSize: 16,
   },
   rightIcons: {
@@ -577,7 +579,7 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     fontSize: 18,
-    color: '#333',
+    color: Colors.SECONDARY,
     marginVertical: 16,
     fontWeight: 'bold',
   },
@@ -614,7 +616,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     alignItems: 'center',
   },
-  
+
   classText: {
     fontSize: 18,
     color: '#333',

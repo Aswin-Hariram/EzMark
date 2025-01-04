@@ -145,20 +145,34 @@ const SProfile = ({ student }) => {
 
         <View style={styles.formSection}>
           <TextInput
-            label="Student Name"
+            label="Name"
             value={studentName}
             onChangeText={setStudentName}
             mode="outlined"
             style={styles.input}
             editable={false}
+            left={
+              <TextInput.Icon
+                icon="account-outline"
+                size={24}
+                style={styles.iconStyle}
+              />
+            }
           />
           <TextInput
-            label="Student Email"
+            label="Email"
             value={studentEmail}
             onChangeText={setStudentEmail}
             mode="outlined"
             style={styles.input}
             editable={false}
+            left={
+              <TextInput.Icon
+                icon="email-outline"
+                size={24}
+                style={styles.iconStyle}
+              />
+            }
           />
           <TextInput
             label="Roll No"
@@ -167,6 +181,13 @@ const SProfile = ({ student }) => {
             mode="outlined"
             style={styles.input}
             editable={false}
+            left={
+              <TextInput.Icon
+                icon="numeric"
+                size={24}
+                style={styles.iconStyle}
+              />
+            }
           />
           <TextInput
             label="Department"
@@ -175,6 +196,13 @@ const SProfile = ({ student }) => {
             mode="outlined"
             style={styles.input}
             editable={false}
+            left={
+              <TextInput.Icon
+                icon="domain"
+                size={24}
+                style={styles.iconStyle}
+              />
+            }
           />
           <TextInput
             label="Class"
@@ -183,6 +211,13 @@ const SProfile = ({ student }) => {
             mode="outlined"
             style={styles.input}
             editable={false}
+            left={
+              <TextInput.Icon
+                icon="domain"
+                size={24}
+                style={styles.iconStyle}
+              />
+            }
           />
           {/* <Dropdown
             style={styles.dropdown}
@@ -328,6 +363,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     marginBottom: 15,
   },
+  iconStyle: {
+    marginRight: 10, // Space between icon and dropdown
+  },
   dropdown: {
     height: 50,
     borderColor: '#153448',
@@ -338,7 +376,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   updateButton: {
-    backgroundColor: Colors.PRIMARY,
+    backgroundColor: Colors.SECONDARY,
     height: 50,
     borderRadius: 10,
     justifyContent: 'center',

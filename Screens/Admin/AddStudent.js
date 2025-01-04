@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Platform, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { ActivityIndicator, TextInput } from 'react-native-paper';
+import { ActivityIndicator, Icon, TextInput } from 'react-native-paper';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import AntDesign from '@expo/vector-icons/AntDesign';
 import * as ImagePicker from 'expo-image-picker';
 import { Dropdown } from 'react-native-element-dropdown';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -29,7 +31,7 @@ const AddStudent = () => {
     const [subjectsSelected, setSubjectsSelected] = useState([])
     const [processing, setProcessing] = useState(false);
     const [imgUrl, setImageUrl] = useState('');
-
+    const [showPassword, setShowPassword] = useState(false);
     const departmentDropdownData = [
         { label: 'Computer Science', value: 'Computer Science' },
         { label: 'Mechanical Engineering', value: 'Mechanical Engineering' },
@@ -145,7 +147,7 @@ const AddStudent = () => {
     const pickImage = async () => {
         try {
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                mediaTypes: 'images',
                 allowsEditing: true,
                 aspect: [1, 1],
                 quality: 1,
@@ -187,7 +189,7 @@ const AddStudent = () => {
                 rollno: studentRollno,
                 password: studentPassword,
                 type: 'Student',
-                subjects:subjectsSelected
+                subjects: subjectsSelected
             };
 
             saveToFirestore(newStudent);
@@ -198,10 +200,11 @@ const AddStudent = () => {
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollView}>
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => navigation.goBack()}>
-                        <Ionicons name="arrow-back" size={28} color="black" />
+                    <TouchableOpacity style={styles.leftIcon} onPress={() => navigation.goBack()}>
+                        <Ionicons name="chevron-back-outline" size={24} color={Colors.PRIMARY} />
+                        <Text style={styles.backText}>Add Student</Text>
                     </TouchableOpacity>
-                    <Text style={styles.headerText}>Add Student</Text>
+
                 </View>
 
                 <View style={styles.imageSection}>
@@ -223,6 +226,23 @@ const AddStudent = () => {
                         activeOutlineColor={Colors.PRIMARY}
                         outlineColor={Colors.SECONDARY}
                         style={styles.inputField}
+                        left={
+                            <TextInput.Icon
+                                icon="account-outline"
+                                size={24}
+                                style={styles.iconStyle}
+                            />
+                        }
+                        right={
+                            studentName.length > 0 && (
+                                <TextInput.Icon
+                                    icon="close-circle"
+                                    size={24}
+                                    style={styles.iconStyle}
+                                    onPress={() => setStudentName('')}
+                                />
+                            )
+                        }
                     />
                     <TextInput
                         label="Student Email"
@@ -233,6 +253,24 @@ const AddStudent = () => {
                         outlineColor={Colors.SECONDARY}
                         keyboardType="email-address"
                         style={styles.inputField}
+                        autoCapitalize="none"
+                        left={
+                            <TextInput.Icon
+                                icon="email-outline"
+                                size={24}
+                                style={styles.iconStyle}
+                            />
+                        }
+                        right={
+                            studentEmail.length > 0 && (
+                                <TextInput.Icon
+                                    icon="close-circle"
+                                    size={24}
+                                    style={styles.iconStyle}
+                                    onPress={() => setStudentEmail('')}
+                                />
+                            )
+                        }
                     />
                     <TextInput
                         label="Roll Number"
@@ -242,43 +280,102 @@ const AddStudent = () => {
                         activeOutlineColor={Colors.PRIMARY}
                         outlineColor={Colors.SECONDARY}
                         style={styles.inputField}
+                        left={
+                            <TextInput.Icon
+                                icon="numeric"
+                                size={24}
+                                style={styles.iconStyle}
+                            />
+                        }
+                        right={
+                            studentRollno.length > 0 && (
+                                <TextInput.Icon
+                                    icon="close-circle"
+                                    size={24}
+                                    style={styles.iconStyle}
+                                    onPress={() => setStudentRollno('')}
+                                />
+                            )
+                        }
                     />
-                    <Dropdown
-                        style={styles.dropdown}
-                        data={departmentDropdownData}
-                        labelField="label"
-                        valueField="value"
-                        activeColor={Colors.PRIMARY}
-                        placeholder="Select Department"
-                        value={studentDepartment}
-                        onChange={(item) => setStudentDepartment(item.value)}
-                    />
-                    <Dropdown
-                        style={styles.dropdown}
-                        data={classes}
-                        labelField="label"
-                        valueField="value"
-                        search
-                        placeholder="Select Class"
-                        value={studentClass}
-                        onChange={(item) => setStudentClass(item.value)}
-                    />
-                    <View style={{ marginBottom: 15 }}>
-                        <PasswordTextInput
-                            value={studentPassword}
-                            onChangeText={setStudentPassword}
-                            placeholder="Enter Password"
+
+                    <View style={[styles.dropdownContainer]}>
+                        <MaterialIcons
+                            name="domain"
+                            size={24}
+                            color={Colors.PRIMARY}
+                            style={styles.iconStyle}
+                        />
+                        <Dropdown
+                            style={[styles.dropdown]}
+                            data={departmentDropdownData}
+                            labelField="label"
+                            valueField="value"
+                            search
+                            placeholder="Select Department"
+                            value={studentDepartment}
+                            onChange={(item) => setStudentDepartment(item.value)}
                         />
                     </View>
-                    <Dropdown
-                        style={styles.dropdown}
-                        data={subjects}
-                        labelField="label"
-                        valueField="value"
-                        search
-                        placeholder="Select Subjects"
-                        onChange={(item) => setSubjectsSelected([...subjectsSelected, item.value])}
-                    />
+                    <View style={[styles.dropdownContainer]}>
+                        <MaterialIcons
+                            name="domain"
+                            size={24}
+                            color={Colors.PRIMARY}
+                            style={styles.iconStyle}
+                        />
+                        <Dropdown
+                            style={styles.dropdown}
+                            data={classes}
+                            labelField="label"
+                            valueField="value"
+                            search
+                            placeholder="Select Class"
+                            value={studentClass}
+                            onChange={(item) => setStudentClass(item.value)}
+                        />
+                    </View>
+
+                    <View style={styles.inputWrapper}>
+                        <TextInput
+                            style={styles.textInput}
+                            label="Password"
+                            secureTextEntry={!showPassword}
+                            activeOutlineColor={Colors.PRIMARY}
+                            mode="outlined"
+                            contentStyle={styles.textInputContent}
+                            activeUnderlineColor={Colors.PRIMARY}
+                            value={studentPassword}
+                            onChangeText={setStudentPassword}
+                            right={
+                                <TextInput.Icon
+                                    icon="eye"
+                                    size={24}
+                                    style={styles.iconStyle}
+                                    onPress={() => setShowPassword(!showPassword)}
+                                />
+                            }
+                            left={
+                                <TextInput.Icon
+                                    icon="lock-outline"
+                                    size={24}
+                                    style={styles.iconStyle}
+                                />
+                            }
+                        />
+                    </View>
+                    <View style={[styles.dropdownContainer]}>
+                        <AntDesign name="book" size={24} color="black" />
+                        <Dropdown
+                            style={styles.dropdown}
+                            data={subjects}
+                            labelField="label"
+                            valueField="value"
+                            search
+                            placeholder="Select Subjects"
+                            onChange={(item) => setSubjectsSelected([...subjectsSelected, item.value])}
+                        />
+                    </View>
                     <View style={styles.classesSection}>
                         <Text style={styles.classTitle}>Enrolled Subjects</Text>
                         <View style={styles.chipContainer}>
@@ -298,7 +395,7 @@ const AddStudent = () => {
                                                         }
                                                     },
                                                     {
-                                                        text:"No",
+                                                        text: "No",
                                                     }
                                                 ])
                                             }}
@@ -345,15 +442,26 @@ const styles = StyleSheet.create({
         paddingBottom: 20,
     },
     header: {
+        height: 60,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    leftIcon: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 20,
     },
-    headerText: {
-        marginLeft: 10,
-        fontWeight: 'bold',
-        fontSize: 22,
-        color: '#153448',
+    backText: {
+        marginLeft: 4,
+        color: "black",
+        fontSize: 16,
+    },
+    rightIcons: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    icon: {
+        marginLeft: 16,
     },
     imageSection: {
         alignItems: 'center',
@@ -385,18 +493,30 @@ const styles = StyleSheet.create({
     inputField: {
         backgroundColor: 'white',
         borderColor: Colors.PRIMARY,
-        marginBottom: 15,
+        marginBottom: 10,
         borderRadius: 10,
         fontSize: 16,
         paddingLeft: 10,
+
     },
-    dropdown: {
+    dropdownContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
         height: 50,
         borderColor: Colors.PRIMARY,
         borderWidth: 1,
         borderRadius: 8,
-        paddingHorizontal: 8,
+        paddingHorizontal: 10, // Adjusted for better spacing
         marginBottom: 15,
+        backgroundColor: 'white',
+    },
+    iconStyle: {
+        marginRight: 10, // Space between icon and dropdown
+    },
+    dropdown: {
+        flex: 1, // Ensures dropdown takes remaining space
+        height: '100%', // Matches the container height
+        paddingHorizontal: 8,
         backgroundColor: 'white',
         fontSize: 16,
     },
@@ -486,6 +606,19 @@ const styles = StyleSheet.create({
         color: 'gray',
         textAlign: 'center',
         marginTop: 20,
+    },
+    inputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 15,
+    },
+    textInput: {
+        flex: 1,
+        height: 50,
+        fontSize: 16,
+        backgroundColor: 'white',
+        justifyContent: 'center',
     },
 });
 
