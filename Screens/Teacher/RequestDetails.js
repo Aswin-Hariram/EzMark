@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, FlatList, Alert, Platform, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, FlatList, Alert, Modal, TouchableWithoutFeedback, Platform, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CPB from '../../Components/CPB';
 import { Colors } from '../../assets/Colors';
@@ -8,14 +8,16 @@ import { firestore } from '../../Config/FirebaseConfig';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import MapView, { Marker } from 'react-native-maps';
 import dp from "../../assets/Teachers/profile.png"
-import { TextInput } from 'react-native-paper';
+import { TextInput, RadioButton } from 'react-native-paper';
 
 const RequestDetails = () => {
     const { requestDetails = {}, type = '', teacherDetail } = useRoute()?.params || {};
     const [requestedData, setRequestedData] = useState([requestDetails]);
     const [loadingId, setLoadingId] = useState(null);
     const [loadingDId, setLoadingDId] = useState(null);
-    const [summaryData, setHistoryData] = useState([]);
+    const [summaryData, setHistoryData] = useState(requestDetails.enrolledStudents);
+    const [sortOption, setSortOption] = useState("No Filter");
+    const [modalVisible, setModalVisible] = useState(false)
     const navigation = useNavigation();
 
 
@@ -153,8 +155,8 @@ const RequestDetails = () => {
             </View>
             {type !== 'History' && (
                 <View style={styles.requestActionsRow}>
-                    <TouchableOpacity style={styles.cancelButton}  disabled={loadingDId === item.id} onPress={()=>{handleCancel(requestDetails)}} >
-                    <Text style={styles.buttonTextSecondary}>{loadingDId === item.id ? 'Deleting...' : 'Delete'}</Text>
+                    <TouchableOpacity style={styles.cancelButton} disabled={loadingDId === item.id} onPress={() => { handleCancel(requestDetails) }} >
+                        <Text style={styles.buttonTextSecondary}>{loadingDId === item.id ? 'Deleting...' : 'Delete'}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.closeButton}
@@ -264,6 +266,73 @@ const RequestDetails = () => {
             </View>
         );
     };
+
+    const applySort = (option) => {
+        setSortOption(option);
+
+        if (option === "No Filter") {
+            console.log("Data=>", requestDetails)
+            setHistoryData(requestDetails.enrolledStudents);
+        } else {
+            console.log("Data=>", requestDetails)
+            const filteredData = requestDetails.enrolledStudents.filter(
+                (student) => student.status === option
+            );
+            setHistoryData(filteredData);
+        }
+        setModalVisible(false);
+    };
+
+    const renderModal = () => {
+
+        const options = [
+            { label: "Requested", value: "Requested" },
+            { label: "Completed", value: "Completed" },
+            { label: "Closed", value: "Closed" },
+            { label: "Rejected", value: "Rejected" },
+            { label: "No Filter", value: "No Filter" },
+        ];
+
+        return (
+            <Modal
+                visible={modalVisible}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+                    <View style={styles.modalContainer}>
+                        <TouchableWithoutFeedback>
+                            <View style={styles.modalContent}>
+                                <Text style={styles.modalTitle}>Sort By</Text>
+                                {options.map((option) => (
+                                    <TouchableOpacity
+                                        key={option.value}
+                                        style={styles.radioOption}
+                                        onPress={() => applySort(option.value)}
+                                    >
+                                        <Text style={styles.optionText}>{option.label}</Text>
+                                        <RadioButton
+                                            color={Colors.SECONDARY}
+                                            value={option.value}
+                                            status={sortOption === option.value ? "checked" : "unchecked"}
+                                            onPress={() => applySort(option.value)}
+                                        />
+                                    </TouchableOpacity>
+                                ))}
+                                <TouchableOpacity
+                                    style={styles.cancelButtonModal}
+                                    onPress={() => setModalVisible(false)}
+                                >
+                                    <Text style={styles.cancelTextModal}>Close</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </TouchableWithoutFeedback>
+                    </View>
+                </TouchableWithoutFeedback>
+            </Modal>
+        );
+    };
     return (
         <SafeAreaView style={styles.container}>
             <FlatList
@@ -292,19 +361,20 @@ const RequestDetails = () => {
                 ListEmptyComponent={<Text style={styles.noDataText}>No Pending Requests</Text>}
                 ListFooterComponent={
                     <View style={styles.historyContainer}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignContent: 'center', alignItems: 'center',margin:10 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignContent: 'center', alignItems: 'center', margin: 10 }}>
                             <Text style={styles.sectionHeader}>Summary</Text>
-                            <TouchableOpacity style={{ ...styles.icon, alignSelf: 'flex-end' }}>
+                            <TouchableOpacity style={{ ...styles.icon, alignSelf: 'flex-end' }} onPress={() => { setModalVisible(true); }}>
                                 <Ionicons name="filter-outline" size={24} color={Colors.PRIMARY} />
                             </TouchableOpacity>
                         </View>
                         <FlatList
-                            data={requestDetails.enrolledStudents}
+                            data={summaryData}
                             renderItem={renderSummary}
                             keyExtractor={(item) => `history-${item.id}`}
                             ListEmptyComponent={<Text style={styles.noDataText}>No Data Available</Text>}
                         />
                         {renderMap(requestDetails.enrolledStudents)}
+                        {renderModal()}
                     </View>
                 }
             />
@@ -349,7 +419,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         padding: 16,
         borderRadius: 10,
-        marginVertical: 10,
+        marginVertical: 5,
         shadowColor: '#000',
         shadowOpacity: 0.1,
         shadowRadius: 4,
@@ -494,6 +564,62 @@ const styles = StyleSheet.create({
         color: '#333',
         marginTop: 5,
         textAlign: 'center',
+    },
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'flex-end',
+        backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    },
+    modalContent: {
+        backgroundColor: 'white',
+        borderTopLeftRadius: 40,
+        borderTopRightRadius: 40,
+        padding: 20,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        alignSelf: 'center',
+        marginBottom: 15,
+    },
+    radioOption: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginVertical: 10,
+        justifyContent: 'space-between',
+    },
+    radioButton: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        borderWidth: 2,
+        borderColor: Colors.PRIMARY,
+        marginRight: 10,
+    },
+    radioButtonSelected: {
+        backgroundColor: Colors.PRIMARY,
+    },
+    optionText: {
+        fontSize: 16,
+    },
+    applyButtonModal: {
+        backgroundColor: Colors.SECONDARY,
+        padding: 15,
+        borderRadius: 8,
+        marginTop: 20,
+    },
+    applyButtonTextModal: {
+        color: "#fff",
+        textAlign: "center",
+        fontWeight: "bold",
+    },
+    cancelButtonModal: {
+        marginTop: 10,
+        alignItems: "center",
+    },
+    cancelTextModal: {
+        color: Colors.SECONDARY,
+        fontSize: 16,
     },
 });
 export default RequestDetails;

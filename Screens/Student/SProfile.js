@@ -114,10 +114,11 @@ const SProfile = ({ student }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{flexDirection:'row'}}>
           <Ionicons name="chevron-back-outline" size={24} color={Colors.PRIMARY} />
+          <Text style={styles.headerText}>Profile</Text>
         </TouchableOpacity>
-        <Text style={styles.headerText}>Profile</Text>
+        
       </View>
       <ScrollView showsVerticalScrollIndicator={false}>
 

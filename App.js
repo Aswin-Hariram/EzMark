@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
@@ -5,10 +6,8 @@ import { Text, View } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useState, useEffect } from 'react';
 
-// Import your screens
-import HomeScreen from './Screens/HomeScreen';
+// Import Screens
 import LoginScreen from './Screens/LoginScreen';
 import AdminDashboardScreen from './Screens/Admin/AdminDashboardScreen';
 import ManageTeachers from './Screens/Admin/ManageTeachers';
@@ -29,32 +28,44 @@ import IntroScreen from './Screens/IntroScreen';
 import ClassSummary from './Screens/Teacher/ClassSummary';
 
 // Import assets
-import fonts from './assets/Signika.ttf';
-import fonts1 from './assets/Fonts/Metrophobic-Regular.ttf';
+import SignikaFont from './assets/Signika.ttf';
+import MetrophobicFont from './assets/Fonts/Metrophobic-Regular.ttf';
 import { Colors } from './assets/Colors';
 
 export default function App() {
+  // Font loading
   const [fontsLoaded, error] = useFonts({
-    Signika: fonts,
-    Metro: fonts1,
+    Signika: SignikaFont,
+    Metro: MetrophobicFont,
   });
 
+  // State for app initialization/loading
   const [loading, setLoading] = useState(true);
-  const [initialRoute, setInitialRoute] = useState('Login');
 
   useEffect(() => {
-    const checkAuthState = async () => {
+    const initializeApp = async () => {
       try {
-        const user = await AsyncStorage.getItem('user');
-        setInitialRoute(user ? 'Home' : 'Login');
+        const userData = await AsyncStorage.getItem('userData');
+        // Any other initialization logic here
+        console.log('User data:', userData);
       } catch (err) {
-        console.error('Error fetching user data', err);
+        console.error('Error during app initialization:', err);
       } finally {
         setLoading(false);
       }
     };
-    checkAuthState();
+
+    initializeApp();
   }, []);
+
+  if (error) {
+    console.error('Error loading fonts:', error);
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Error loading fonts</Text>
+      </View>
+    );
+  }
 
   if (!fontsLoaded) {
     return (
@@ -75,11 +86,10 @@ export default function App() {
   const Stack = createNativeStackNavigator();
 
   const RootStack = () => (
-    <Stack.Navigator initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="IntroScreen" component={IntroScreen} />
       <Stack.Screen name="AdminDashboardScreen" component={AdminDashboardScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="ManageTeacher" component={ManageTeachers} />
       <Stack.Screen name="TeacherProfile" component={TeacherProfile} />
       <Stack.Screen name="StudentProfile" component={StudentProfile} />
