@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import LottieView from 'lottie-react-native';
 import { auth } from '../Config/FirebaseConfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { StatusBar } from 'expo-status-bar';
 
 const IntroScreen = ({ navigation }) => {
   const [nxtRoute, setNxtRoute] = useState(null);
@@ -51,6 +52,7 @@ const IntroScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+     <StatusBar barStyle="light-content" />
       <LottieView
         style={styles.lottie}
         source={require('./Animation/LoginAnimation.json')}
