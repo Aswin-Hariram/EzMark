@@ -39,3 +39,38 @@ Clone the repository:
 ```bash
 git clone https://github.com/your-username/ezmark.git
 cd ezmark
+npm install
+```
+## Firestore Configuration
+1. Navigate to Config/firestore.js.
+2. Update the file with your Firestore credentials:
+
+```bash
+export const firestoreConfig = {  
+    apiKey: "your-api-key",  
+    authDomain: "your-auth-domain",  
+    projectId: "your-project-id",  
+    storageBucket: "your-storage-bucket",  
+    messagingSenderId: "your-messaging-sender-id",  
+    appId: "your-app-id",  
+};  
+```
+## AWS Configuration
+1. Navigate to Config/aws.js.
+2. Add your AWS credentials:
+
+```bash
+export const awsConfig = {  
+    region: "your-region",  
+    accessKeyId: "your-access-key-id",  
+    secretAccessKey: "your-secret-access-key",  
+    rekognitionBucket: "your-s3-bucket-name",  
+    rekognitionCollectionId: "your-collection-id",  
+};  
+```
+## Run the App
+Start the development server:
+```bash
+npm run start  
+```
+
