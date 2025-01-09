@@ -23,31 +23,45 @@ The app allows:
 - **AWS S3**: Image storage service for handling facial images.
 
 ---
-## Images
+## Images 
 
-![Simulator Screenshot - iPhone 16 Plus - 2025-01-09 at 10 00 28](https://github.com/user-attachments/assets/5a3aa25f-6d5a-4d11-b1ae-bdfd66351e1d)
-![Simulator Screenshot - iPhone 16 Plus - 2025-01-09 at 10 00 37](https://github.com/user-attachments/assets/392e44fa-2dbd-4871-ba5e-a4a053271e90)
+### **Intro Screens**
+<div style="display: flex; overflow-x: scroll; gap: 5px;">
+  <img src="https://github.com/user-attachments/assets/54387d7e-9102-4c68-91f6-940f38514145" width="250">
+  <img src="https://github.com/user-attachments/assets/6b257d6c-27cf-47a9-a4a5-56e2e65c1350" width="250">
+</div>
 
-### Student
-![Simulator Screenshot - iPhone 16 Plus - 2025-01-09 at 10 00 48](https://github.com/user-attachments/assets/0e2a4a11-378a-4826-8d1a-188b8965fb05) ![Simul![Simulator Screenshot - iPhone 16 Plus - 2025-01-09 at 10 01 16](https://github.com/user-attachments/assets/98e4571e-56d2-48a8-8ba3-e5bd6881f88c)
-![Simulator Screenshot - iPhone 16 Plus - 2025-01-09 at 10 01 16](https://github.com/user-attachments/assets/c123b00d-707f-4426-88b7-e0a4e5cac8a3)
-![Simulator Screenshot - iPhone 16 Plus - 2025-01-09 at 10 03 49](https://github.com/user-attachments/assets/68ba0bee-2968-42ef-addc-8a06cafa2f70)
-![Simulator Screenshot - iPhone 16 Plus - 2025-01-09 at 10 04 41](https://github.com/user-attachments/assets/3914e289-47ba-45c7-bc68-488f4b9390e1)
+---
 
-### Teacher
+### **Student Screens**
+<div style="display: flex; overflow-x: scroll; gap: 5px;">
+  <img src="https://github.com/user-attachments/assets/0e2a4a11-378a-4826-8d1a-188b8965fb05" width="250">
+  <img src="https://github.com/user-attachments/assets/98e4571e-56d2-48a8-8ba3-e5bd6881f88c" width="250">
+  <img src="https://github.com/user-attachments/assets/c123b00d-707f-4426-88b7-e0a4e5cac8a3" width="250">
+  <img src="https://github.com/user-attachments/assets/68ba0bee-2968-42ef-addc-8a06cafa2f70" width="250">
+  <img src="https://github.com/user-attachments/assets/3914e289-47ba-45c7-bc68-488f4b9390e1" width="250">
+</div>
 
-![Simulator Screenshot - iPhone 16 Plus - 2025-01-09 at 10 05 18](https://github.com/user-attachments/assets/90efb435-b723-4243-9403-694afaee87f2)
-![Simulator Screenshot - iPhone 16 Plus - 2025-01-09 at 10 05 23](https://github.com/user-attachments/assets/8932b751-6971-46c3-997c-8cae6f49490b)
-![Simulator Screenshot - iPhone 16 Plus - 2025-01-09 at 10 06 09](https://github.com/user-attachments/assets/e445cffe-a8d6-4355-a6d4-b483bf703412)
-![Simulator Screenshot - iPhone 16 Plus - 2025-01-09 at 10 06 20](https://github.com/user-attachments/assets/4912624d-74b4-4d66-8dec-1a0a2a26c6e9)
-![Simulator Screenshot - iPhone 16 Plus - 2025-01-09 at 10 06 29](https://github.com/user-attachments/assets/70bfbb09-86ad-4193-afa5-a40cc97ef7a0)
+---
 
 
-### Admin
+### **Teacher Screens**
+<div style="display: flex; overflow-x: scroll; gap: 10px;">
+  <img src="https://github.com/user-attachments/assets/90efb435-b723-4243-9403-694afaee87f2" width="300">
+  <img src="https://github.com/user-attachments/assets/8932b751-6971-46c3-997c-8cae6f49490b" width="300">
+  <img src="https://github.com/user-attachments/assets/e445cffe-a8d6-4355-a6d4-b483bf703412" width="300">
+  <img src="https://github.com/user-attachments/assets/4912624d-74b4-4d66-8dec-1a0a2a26c6e9" width="300">
+  <img src="https://github.com/user-attachments/assets/70bfbb09-86ad-4193-afa5-a40cc97ef7a0" width="300">
+</div>
 
-![Simulator Screenshot - iPhone 16 Plus - 2025-01-09 at 10 02 22](https://github.com/user-attachments/assets/0a037ac2-17ca-419a-b6b9-239092186ae5)
-![Simulator Screenshot - iPhone 16 Plus - 2025-01-09 at 10 02 52](https://github.com/user-attachments/assets/63ba0391-ebd3-463a-8cab-070029a663d2)
-![Simulator Screenshot - iPhone 16 Plus - 2025-01-09 at 10 02 27](https://github.com/user-attachments/assets/fb01d0a2-31c8-4f6b-ae6a-aef8ce96fd10)
+---
+
+### **Admin Screens**
+<div style="display: flex; overflow-x: scroll; gap: 10px;">
+  <img src="https://github.com/user-attachments/assets/0a037ac2-17ca-419a-b6b9-239092186ae5" width="300">
+  <img src="https://github.com/user-attachments/assets/63ba0391-ebd3-463a-8cab-070029a663d2" width="300">
+  <img src="https://github.com/user-attachments/assets/fb01d0a2-31c8-4f6b-ae6a-aef8ce96fd10" width="300">
+</div>
 
 ---
 
@@ -73,27 +87,47 @@ npm install
 2. Update the file with your Firestore credentials:
 
 ```bash
-export const firestoreConfig = {  
-    apiKey: "your-api-key",  
-    authDomain: "your-auth-domain",  
-    projectId: "your-project-id",  
-    storageBucket: "your-storage-bucket",  
-    messagingSenderId: "your-messaging-sender-id",  
-    appId: "your-app-id",  
-};  
+
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import { initializeAuth, getReactNativePersistence, getAuth } from 'firebase/auth';
+import { getFirestore } from "firebase/firestore";
+import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
+
+const firebaseConfig = {
+  apiKey: "your-apiKey",
+  authDomain: "your-authDomain",
+  projectId: "your-projectId",
+  storageBucket: "your-storageBucket",
+  messagingSenderId: "your-messagingSenderId",
+  appId: "your-appId",
+  measurementId: "your-measurementId"
+};
+
+export const app = initializeApp(firebaseConfig);
+export const analytics = getAnalytics(app);
+export const firestore = getFirestore(app);
+export const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(ReactNativeAsyncStorage)
+
+})
+ 
 ```
 ## AWS Configuration
 1. Navigate to Config/aws.js.
 2. Add your AWS credentials:
 
 ```bash
-export const awsConfig = {  
-    region: "your-region",  
-    accessKeyId: "your-access-key-id",  
-    secretAccessKey: "your-secret-access-key",  
-    rekognitionBucket: "your-s3-bucket-name",  
-    rekognitionCollectionId: "your-collection-id",  
-};  
+import AWS from 'aws-sdk';
+
+AWS.config.update({
+    accessKeyId: 'your-access-key',
+    secretAccessKey: 'your-secretAccessKey',
+    region: 'your-aws-region',
+});
+
+export const s3 = new AWS.S3();
+export const rekognition = new AWS.Rekognition();
 ```
 ## Run the App
 Start the development server:
