@@ -26,42 +26,54 @@ The app allows:
 ## Images 
 
 ### **Intro Screens**
-<div style="display: flex; overflow-x: scroll; gap: 5px;">
-  <img src="https://github.com/user-attachments/assets/54387d7e-9102-4c68-91f6-940f38514145" width="250">
-  <img src="https://github.com/user-attachments/assets/6b257d6c-27cf-47a9-a4a5-56e2e65c1350" width="250">
-</div>
+<table>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/54387d7e-9102-4c68-91f6-940f38514145" width="200"></td>
+    <td><img src="https://github.com/user-attachments/assets/6b257d6c-27cf-47a9-a4a5-56e2e65c1350" width="200"></td>
+  </tr>
+</table>
+
 
 ---
 
 ### **Student Screens**
-<div style="display: flex; overflow-x: scroll; gap: 5px;">
-  <img src="https://github.com/user-attachments/assets/0e2a4a11-378a-4826-8d1a-188b8965fb05" width="250">
-  <img src="https://github.com/user-attachments/assets/98e4571e-56d2-48a8-8ba3-e5bd6881f88c" width="250">
-  <img src="https://github.com/user-attachments/assets/c123b00d-707f-4426-88b7-e0a4e5cac8a3" width="250">
-  <img src="https://github.com/user-attachments/assets/68ba0bee-2968-42ef-addc-8a06cafa2f70" width="250">
-  <img src="https://github.com/user-attachments/assets/3914e289-47ba-45c7-bc68-488f4b9390e1" width="250">
-</div>
+<table>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/0e2a4a11-378a-4826-8d1a-188b8965fb05" width="200"></td>
+    <td><img src="https://github.com/user-attachments/assets/91975f08-61fe-4fb7-952e-6c8827f25d5a" width="200"></td>
+    <td><img src="https://github.com/user-attachments/assets/68ba0bee-2968-42ef-addc-8a06cafa2f70" width="200"></td>
+    <td><img src="https://github.com/user-attachments/assets/3914e289-47ba-45c7-bc68-488f4b9390e1" width="200"></td>
+    <td><img src="https://github.com/user-attachments/assets/98e4571e-56d2-48a8-8ba3-e5bd6881f88c" width="200"></td>
+  </tr>
+</table>
+
 
 ---
 
 
 ### **Teacher Screens**
-<div style="display: flex; overflow-x: scroll; gap: 10px;">
-  <img src="https://github.com/user-attachments/assets/90efb435-b723-4243-9403-694afaee87f2" width="300">
-  <img src="https://github.com/user-attachments/assets/8932b751-6971-46c3-997c-8cae6f49490b" width="300">
-  <img src="https://github.com/user-attachments/assets/e445cffe-a8d6-4355-a6d4-b483bf703412" width="300">
-  <img src="https://github.com/user-attachments/assets/4912624d-74b4-4d66-8dec-1a0a2a26c6e9" width="300">
-  <img src="https://github.com/user-attachments/assets/70bfbb09-86ad-4193-afa5-a40cc97ef7a0" width="300">
-</div>
+<table>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/90efb435-b723-4243-9403-694afaee87f2" width="200"></td>
+    <td><img src="https://github.com/user-attachments/assets/8932b751-6971-46c3-997c-8cae6f49490b" width="200"></td>
+    <td><img src="https://github.com/user-attachments/assets/e445cffe-a8d6-4355-a6d4-b483bf703412" width="200"></td>
+    <td><img src="https://github.com/user-attachments/assets/4912624d-74b4-4d66-8dec-1a0a2a26c6e9" width="200"></td>
+    <td><img src="https://github.com/user-attachments/assets/70bfbb09-86ad-4193-afa5-a40cc97ef7a0" width="200"></td>
+  </tr>
+</table>
+
 
 ---
 
 ### **Admin Screens**
-<div style="display: flex; overflow-x: scroll; gap: 10px;">
-  <img src="https://github.com/user-attachments/assets/0a037ac2-17ca-419a-b6b9-239092186ae5" width="300">
-  <img src="https://github.com/user-attachments/assets/63ba0391-ebd3-463a-8cab-070029a663d2" width="300">
-  <img src="https://github.com/user-attachments/assets/fb01d0a2-31c8-4f6b-ae6a-aef8ce96fd10" width="300">
-</div>
+<table>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/0a037ac2-17ca-419a-b6b9-239092186ae5" width="200"></td>
+    <td><img src="https://github.com/user-attachments/assets/63ba0391-ebd3-463a-8cab-070029a663d2" width="200"></td>
+    <td><img src="https://github.com/user-attachments/assets/fb01d0a2-31c8-4f6b-ae6a-aef8ce96fd10" width="200"></td>
+  </tr>
+</table>
+
 
 ---
 
