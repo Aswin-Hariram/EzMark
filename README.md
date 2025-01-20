@@ -1,5 +1,5 @@
 # EzMark - React Native App
-
+**[⬇️ Download Now - Android Version](https://www.upload-apk.com/en/5QC5YplxNAh59Ae)**
 
 
 EzMark is a React Native application for managing attendance in a seamless and secure way.  
