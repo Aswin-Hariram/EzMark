@@ -100,49 +100,49 @@ const AddTeacher = () => {
             return Alert.alert('Missing Fields', 'Please fill out all fields.');
         }
         setLoading(true);
-
+    
         const selectedSubjectLabels = selectedSubjects.map((id) => {
             const subject = subjects.find((subject) => subject.id === id);
             return subject ? subject.label : null;
         }).filter(Boolean);
-
+    
         const selectedClassLabels = selectedClasses.map((id) => {
             const cls = classes.find((cls) => cls.id === id);
             return cls ? cls.label : null;
         }).filter(Boolean);
-
-        const imageUrl = await uploadImageToS3(teacherImage);
-        if (!imageUrl) {
-            setProcessing(false);
-            return;
+    
+        let imageUrl = ''; // Default to empty string
+    
+        if (teacherImage) {
+            imageUrl = await uploadImageToS3(teacherImage) || ''; // Upload if image exists
         }
+    
         const newTeacher = {
             id: Date.now().toString(),
             name: teacherName,
             email: teacherEmail.toLowerCase(),
             department: teacherDepartment,
-            image: imageUrl,
+            image: imageUrl, // Optional profile pic
             subjects: selectedSubjectLabels,
             classes: selectedClassLabels,
             type: 'Teacher',
             password: teacherPassword || 'Test123',
         };
-
+    
         try {
-
             await createUserWithEmailAndPassword(auth, teacherEmail, teacherPassword || 'defaultPassword123');
             await setDoc(doc(firestore, 'UserData', newTeacher.id), newTeacher);
             Alert.alert('Success', 'Teacher added successfully!');
-
         } catch (error) {
             console.log('Error saving teacher data:', error);
             Alert.alert('Error', 'Failed to save teacher data.');
         } finally {
             setLoading(false);
-            getTeachers()
+            getTeachers();
             navigation.goBack();
         }
     };
+    
 
     const pickImage = async () => {
         try {

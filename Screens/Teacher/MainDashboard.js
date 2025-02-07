@@ -35,11 +35,12 @@ const MainDashboard = ({ teacherDetail }) => {
         strokeWidth: 1,
         barPercentage: 0.5,
         propsForLabels: {
-            fontSize: 14,
+            fontSize: 10, // Reduce font size
             fontWeight: "bold",
             color: "blue",
         },
     };
+
 
     const generateShades = (baseColor, count) => {
         const shades = [];
@@ -51,6 +52,13 @@ const MainDashboard = ({ teacherDetail }) => {
             shades.push(`rgba(${r}, ${g}, ${b}, ${shadeFactor})`);
         }
         return shades;
+    };
+    const normalizeData = (data) => {
+        const total = data.reduce((sum, item) => sum + item.population, 0);
+        return data.map(item => ({
+            ...item,
+            population: total === 0 ? 1 : item.population, // Avoids empty chart issues
+        }));
     };
 
     const countClassOccurrences = (requests) => {
@@ -68,8 +76,9 @@ const MainDashboard = ({ teacherDetail }) => {
             };
         });
 
-        setData(newData);
+        setData(normalizeData(newData));
     };
+    
 
     const fetchClassAndSubject = async () => {
         try {
@@ -127,19 +136,21 @@ const MainDashboard = ({ teacherDetail }) => {
             </View>
 
             <Text style={styles.sectionTitle}>Overview</Text>
-            {allRequests.length>0 ? (
+            {allRequests.length > 0 ? (
                 <View style={styles.progressChartContainer}>
                     <PieChart
                         data={data}
-                        width={Dimensions.get("window").width - 80}
-                        height={220}
+                        width={Math.min(Dimensions.get("window").width - 100, 300)} // Reduce width
+                        height={180} // Reduce height
                         chartConfig={chartConfig}
                         accessor="population"
                         backgroundColor="transparent"
-                        paddingLeft="15"
+                        paddingLeft="10"
                         absolute
                     />
+
                 </View>
+
             ) : (
                 <View style={{ justifyContent: 'center', alignItems: 'center', marginTop: 20 }}>
                     <Text>No Data found</Text>
@@ -151,7 +162,7 @@ const MainDashboard = ({ teacherDetail }) => {
 
     const renderClassItem = ({ item }) => (
         console.log("teacherDetail", teacherDetail),
-        <TouchableOpacity onPress={() => { navi.navigate("ClassSummary", { className: item, teacherDetail:teacherDetail }); }}>
+        <TouchableOpacity onPress={() => { navi.navigate("ClassSummary", { className: item, teacherDetail: teacherDetail }); }}>
             <View style={styles.classContainer}>
                 <View>
                     <Text style={styles.className}>{item}</Text>
@@ -164,7 +175,7 @@ const MainDashboard = ({ teacherDetail }) => {
 
     return (
         <SafeAreaView style={{ flex: 1 }}>
-            
+
             <FlatList
                 showsVerticalScrollIndicator={false}
                 data={classes}
@@ -261,13 +272,19 @@ const styles = StyleSheet.create({
     },
     progressChartContainer: {
         backgroundColor: "#ffffff",
-        marginVertical: 5,
-        marginHorizontal: 8,
+        marginVertical: 10,
+        marginHorizontal: 10,
         borderRadius: 10,
         shadowColor: "#000",
         shadowOpacity: 0.1,
         shadowRadius: 5,
         elevation: 5,
+        width: "90%", // Ensure proper width
+        alignSelf: "center",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 10,
+        overflow: "hidden", // Prevents overflow
     },
     classContainer: {
         padding: 15,
@@ -296,7 +313,7 @@ const styles = StyleSheet.create({
         marginBottom: 5,
         color: "black",
         fontFamily: "Metro-regular",
-        color:Colors.SECONDARY
+        color: Colors.SECONDARY
     },
     detailsText: {
         fontSize: 14,

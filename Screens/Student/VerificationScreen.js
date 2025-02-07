@@ -42,7 +42,7 @@ const VerificationScreen = () => {
             );
             return manipResult.uri;
         } catch (error) {
-            console.error('Image compression error:', error);
+            console.log('Image compression error:', error);
             throw error;
         }
     };
@@ -51,55 +51,76 @@ const VerificationScreen = () => {
         try {
             return await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
         } catch (error) {
-            console.error('Error converting image to Base64:', error);
+            console.log('Error converting image to Base64:', error);
             throw error;
         }
     };
-
-    const compareFaces = async (selfieUri, targetImageUrl) => {
-        try {
-            if (!selfieUri || !targetImageUrl) {
-                throw new Error('Please provide both images!');
-            }
-
-            setIsProcessing(true);
-
-            // Compress the selfie image
-            const compressedSelfieUri = await compressImage(selfieUri);
-            const selfieBytes = await convertToBase64(compressedSelfieUri);
-
-            // Fetch target image as ArrayBuffer
-            const response = await fetch(targetImageUrl);
-            const targetBytes = await response.arrayBuffer();
-
-            const params = {
-                SourceImage: { Bytes: new Uint8Array(Buffer.from(selfieBytes, 'base64')) },
-                TargetImage: { Bytes: new Uint8Array(targetBytes) },
-                SimilarityThreshold: 70,
-            };
-
-            // Use Promise-based call
-            const rekognitionPromise = rekognition.compareFaces(params).promise();
-            const data = await rekognitionPromise;
-
-            if (data.FaceMatches && data.FaceMatches.length > 0) {
-                const score = data.FaceMatches[0].Similarity.toFixed(2);
-                setSimilarityScore(score);
-                setIsPicVerified(true);
-                // Alert.alert('Success', `Faces match with ${score}% similarity!`);
-            } else {
-                setSimilarityScore(0);
-                setIsPicVerified(false);
-                Alert.alert('No Match', 'Faces do not match.');
-            }
-        } catch (error) {
-            console.error('Comparison Error:', error);
-            Alert.alert('Error', error.message || 'Failed to compare faces.');
-        } finally {
-            setIsProcessing(false);
+const getCachedImage = async (url) => {
+    try {
+        const fileUri = FileSystem.cacheDirectory + url.split('/').pop();
+        const fileInfo = await FileSystem.getInfoAsync(fileUri);
+        
+        if (fileInfo.exists) {
+            return fileUri;
+        } else {
+            const downloaded = await FileSystem.downloadAsync(url, fileUri);
+            return downloaded.uri;
         }
-    };
+    } catch (error) {
+        console.log('Error caching image:', error);
+        return url; // Fallback to URL if cache fails
+    }
+};
 
+const compareFaces = async (selfieUri, targetImageUrl) => {
+    let startTime = Date.now();  
+    try {
+        console.log("Starting face comparison...");
+     
+
+        setIsProcessing(true);
+        const compressedSelfieUri = await compressImage(selfieUri);
+        console.log("Selfie compressed in:", Date.now() - startTime, "ms");
+
+        const cachedTargetImageUri = await getCachedImage(targetImageUrl);
+        console.log("Target image cached in:", Date.now() - startTime, "ms");
+
+        const [selfieBytes, targetBytes] = await Promise.all([
+            convertToBase64(compressedSelfieUri),
+            convertToBase64(cachedTargetImageUri)
+        ]);
+        console.log("Base64 conversion completed in:", Date.now() - startTime, "ms");
+
+        const params = {
+            SourceImage: { Bytes: new Uint8Array(Buffer.from(selfieBytes, 'base64')) },
+            TargetImage: { Bytes: new Uint8Array(Buffer.from(targetBytes, 'base64')) },
+            SimilarityThreshold: 70,
+        };
+
+        const rekognitionPromise = rekognition.compareFaces(params).promise();
+        const data = await rekognitionPromise;
+        console.log("AWS Rekognition response received in:", Date.now() - startTime, "ms");
+
+        if (data.FaceMatches && data.FaceMatches.length > 0) {
+            const score = data.FaceMatches[0].Similarity.toFixed(2);
+            setSimilarityScore(score);
+            setIsPicVerified(true);
+        } else {
+            setSimilarityScore(0);
+            setIsPicVerified(false);
+            Alert.alert('No Match', 'Faces do not match.');
+        }
+    } catch (error) {
+        console.log('Comparison Error:', error);
+        Alert.alert('Error', error.message || 'Failed to compare faces.');
+    } finally {
+        console.log("Total time taken:", Date.now() - startTime, "ms");  // Ensure startTime is defined
+        setIsProcessing(false);
+    }
+};
+
+
+    
 
     const handleSelfie = async () => {
         try {
@@ -114,7 +135,7 @@ const VerificationScreen = () => {
             }
 
             const result = await ImagePicker.launchCameraAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                mediaTypes: ['images'],
                 allowsEditing: false,
                 aspect: [4, 3],
                 quality: 1,
@@ -129,7 +150,7 @@ const VerificationScreen = () => {
             }
         } catch (error) {
             setIsProcessing(false);
-            console.error('Selfie Capture Error:', error);
+            console.log('Selfie Capture Error:', error);
             Alert.alert('Error', 'Failed to capture selfie.');
         }
     };
@@ -267,7 +288,7 @@ const VerificationScreen = () => {
 
             console.log("Firestore updates completed successfully.");
         } catch (err) {
-            console.error("Error updating Firestore:", err);
+            console.log("Error updating Firestore:", err);
         } finally {
             setIsUpdating(false)
             setModalVisible(false)
@@ -307,7 +328,7 @@ const VerificationScreen = () => {
 
             }
         } catch (error) {
-            console.error('Error creating request:', error);
+            console.log('Error creating request:', error);
             Alert.alert('Error', 'Failed to create attendance request. Please try again later.');
         }
         finally {
