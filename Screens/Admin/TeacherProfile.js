@@ -1,257 +1,251 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  Image,
-  TouchableOpacity,
-  ScrollView,
-  Platform,
-  Alert,
-} from 'react-native';
-import React, { useEffect, useState } from 'react';
-import { Dropdown } from 'react-native-element-dropdown';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import dp from "../../assets/Teachers/profile.png";
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { ActivityIndicator, TextInput } from 'react-native-paper';
+import { Dropdown } from 'react-native-element-dropdown';
+import { deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Colors } from '../../assets/Colors';
-import { deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
-import { auth, firestore } from '../../Config/FirebaseConfig';
-import { getFunctions, httpsCallable } from "firebase/functions";
-import LottieView from 'lottie-react-native';
+import { firestore } from '../../Config/FirebaseConfig';
+import {
+  createDropdownItems,
+  departmentOptions,
+  getInstitutionData,
+  saveInstitutionData,
+} from './institutionData';
 
-const TeacherProfile = ({ teacher1, getTeachers1 }) => {
-  const route = useRoute();
-  const { teacher = teacher1, getTeachers = getTeachers1 } = route.params || {};
+const TeacherProfile = () => {
   const navigation = useNavigation();
-  const [selectedSubjects, setSelectedClasses] = useState([]);
-  const [teacherName, setTeacherName] = useState(teacher.name);
-  const [teacherEmail, setTeacherEmail] = useState(teacher.email);
-  const [value, setValue] = useState(teacher.department);
-  const [teacherPassword, setTeacherPassword] = useState(teacher.password);
-  const [classData, setClassData] = useState([]);
+  const route = useRoute();
+  const teacher = route.params?.teacher;
+  const getTeachers = route.params?.getTeachers;
+  const [teacherName, setTeacherName] = useState(teacher?.name || '');
+  const [teacherEmail, setTeacherEmail] = useState(teacher?.email || '');
+  const [department, setDepartment] = useState(teacher?.department || null);
+  const [availableClasses, setAvailableClasses] = useState([]);
+  const [availableSubjects, setAvailableSubjects] = useState([]);
+  const [selectedClasses, setSelectedClasses] = useState(teacher?.classes || []);
+  const [selectedSubjects, setSelectedSubjects] = useState(teacher?.subjects || []);
   const [loading, setLoading] = useState(false);
 
-  const departmentDropdownData = [
-    { label: 'Computer Science', value: 'Computer Science' },
-    { label: 'Mechanical Engineering', value: 'Mechanical Engineering' },
-    { label: 'Civil Engineering', value: 'Civil Engineering' },
-    { label: 'Electrical Engineering', value: 'Electrical Engineering' },
-    { label: 'Electronics & Communication', value: 'Electronics & Communication' },
-    { label: 'Information Technology', value: 'Information Technology' },
-    { label: 'Chemical Engineering', value: 'Chemical Engineering' },
-    { label: 'Biotechnology', value: 'Biotechnology' },
-  ];
-
   useEffect(() => {
-    const fetchBasic = async () => {
+    const loadInstitution = async () => {
       try {
-        const docRef = doc(firestore, 'BasicData', 'Data');
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data.Class) {
-            setClassData(data.Class);
-            setSelectedClasses(teacher.classes);
-          }
-        }
+        const institution = await getInstitutionData();
+        setAvailableClasses(institution.classes);
+        setAvailableSubjects(institution.subjects);
       } catch (error) {
-        console.error('Error fetching document:', error);
+        console.log('Error loading teacher profile context:', error);
       }
     };
-    fetchBasic();
+
+    loadInstitution();
   }, []);
 
-  const updateTeacherInFirestore = async (updatedTeacher) => {
-    try {
-      const teacherRef = doc(firestore, 'UserData', teacher.id); // Assuming email as unique identifier
-      await updateDoc(teacherRef, updatedTeacher);
+  const classItems = useMemo(() => createDropdownItems(availableClasses), [availableClasses]);
+  const subjectItems = useMemo(() => createDropdownItems(availableSubjects), [availableSubjects]);
 
-    } catch (error) {
-      console.error('Error updating teacher in Firestore:', error);
-      alert('Failed to update teacher details.');
-    }
-    finally {
-      alert('Teacher details updated successfully.');
-      getTeachers()
-      navigation.goBack()
-    }
+  const toggleValue = (value, setter) => {
+    setter((previous) =>
+      previous.includes(value)
+        ? previous.filter((item) => item !== value)
+        : [...previous, value]
+    );
   };
 
-  const deleteFromFirestore = () => {
-    setLoading(true);
-    deleteDoc(doc(firestore, "UserData", teacher.id))
-      .then(() => {
-        alert("Teacher deleted successfully")
-      })
-      .catch((error) => {
-        alert("Error", error.message)
-      })
-      .finally(() => {
-        setLoading(false)
-        getTeachers()
-        navigation.goBack()
-      })
-  }
-  const handleDelete = () => {
-    Alert.alert("Alert", "Do you want to delete Teacher, Are you sure?", [
-      {
-        text: "Yes",
-        onPress: () => { deleteFromFirestore() }
-      },
-      {
-        text: "No",
-        onPress: () => { }
-      }
-    ])
-  }
-
-  const updateTeacherPassword = async (email, newPassword) => {
-    const functions = getFunctions();
-    try {
-      const updatePassword = httpsCallable(functions, "updateTeacherPassword");
-      const result = await updatePassword({ email, newPassword });
-      if (result.data.success) {
-        updateTeacherInFirestore({
-          name: teacherName,
-          email: teacherEmail,
-          password: teacherPassword,
-          department: value,
-          classes: selectedSubjects.length > 0 ? selectedSubjects : teacher.classes,
-        });
-      }
-    } catch (error) {
-      console.error("Error updating password:", error);
-      alert("Failed to update the password. " + error.message);
-    }
-  };
-
-  const validateAndCreateUpdatedTeacher = async () => {
-    if (!teacherName.trim() || !teacherEmail.trim() || !teacherPassword.trim()) {
-      alert('All fields are required. Please fill in the missing details.');
+  const handleUpdate = async () => {
+    if (!teacher?.id || !teacherName.trim() || !teacherEmail.trim()) {
+      Alert.alert('Missing Fields', 'Teacher name and email are required.');
       return;
     }
 
-    setLoading(true); // Start loading
-
-    const updatedTeacher = {
-      name: teacherName,
-      email: teacherEmail,
-      password: teacherPassword,
-      department: value,
-      classes: selectedSubjects.length > 0 ? selectedSubjects : teacher.classes,
-    };
+    setLoading(true);
 
     try {
-      if (teacher.password !== teacherPassword) {
-        await updateTeacherPassword(teacherEmail, teacherPassword);
-      } else {
-        await updateTeacherInFirestore(updatedTeacher);
+      const institution = await getInstitutionData();
+      const nextClassDetails = institution.classDetails.map((classItem) => {
+        const renamedTeachers = (classItem.teachers || []).map((item) => (item === teacher.name ? teacherName.trim() : item));
+        const withoutTeacher = renamedTeachers.filter((item) => item !== teacher.name && item !== teacherName.trim());
+        const shouldBeAssigned = selectedClasses.includes(classItem.name);
+        const wasAdvisor = classItem.advisor === teacher.name || classItem.advisor === teacherName.trim();
+
+        return {
+          ...classItem,
+          advisor: wasAdvisor ? (shouldBeAssigned ? teacherName.trim() : '') : classItem.advisor,
+          teachers: shouldBeAssigned ? [...withoutTeacher, teacherName.trim()] : withoutTeacher,
+        };
+      });
+
+      await updateDoc(doc(firestore, 'UserData', teacher.id), {
+        name: teacherName.trim(),
+        email: teacherEmail.trim().toLowerCase(),
+        department: department || '',
+        classes: selectedClasses,
+        subjects: selectedSubjects,
+      });
+      await saveInstitutionData({
+        classes: institution.classes,
+        subjects: institution.subjects,
+        classDetails: nextClassDetails,
+      });
+      Alert.alert('Success', 'Teacher updated successfully.');
+      if (typeof getTeachers === 'function') {
+        await getTeachers();
       }
+      navigation.goBack();
     } catch (error) {
-      console.error('Error updating teacher:', error);
-      alert('Failed to update teacher details. Please try again.');
+      console.log('Error updating teacher:', error);
+      Alert.alert('Error', error.message || 'Failed to update teacher.');
     } finally {
-      setLoading(false); // End loading
+      setLoading(false);
     }
+  };
+
+  const handleDelete = () => {
+    if (!teacher?.id) {
+      return;
+    }
+
+    Alert.alert('Delete Teacher', `Delete ${teacher.name}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          setLoading(true);
+          try {
+            const institution = await getInstitutionData();
+            const nextClassDetails = institution.classDetails.map((classItem) => ({
+              ...classItem,
+              advisor: classItem.advisor === teacher.name ? '' : classItem.advisor,
+              teachers: (classItem.teachers || []).filter((item) => item !== teacher.name),
+            }));
+
+            await deleteDoc(doc(firestore, 'UserData', teacher.id));
+            await saveInstitutionData({
+              classes: institution.classes,
+              subjects: institution.subjects,
+              classDetails: nextClassDetails,
+            });
+            Alert.alert('Success', 'Teacher deleted successfully.');
+            if (typeof getTeachers === 'function') {
+              await getTeachers();
+            }
+            navigation.goBack();
+          } catch (error) {
+            console.log('Error deleting teacher:', error);
+            Alert.alert('Error', error.message || 'Failed to delete teacher.');
+          } finally {
+            setLoading(false);
+          }
+        },
+      },
+    ]);
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-        <TouchableOpacity style={styles.leftIcon} onPress={()=>{navigation.goBack()}}>
+          <TouchableOpacity style={styles.backAction} onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back-outline" size={24} color={Colors.PRIMARY} />
-            <Text style={styles.backText}>Edit Profile</Text>
+            <Text style={styles.backText}>Edit Teacher</Text>
           </TouchableOpacity>
-          <View style={styles.rightIcons}>
-            <TouchableOpacity style={styles.icon}>
-              <Ionicons name="ellipsis-vertical" size={22} color={Colors.PRIMARY} />
-            </TouchableOpacity>
-            
-          </View>
+          <TouchableOpacity style={styles.deleteIcon} onPress={handleDelete}>
+            <MaterialIcons name="delete-outline" size={22} color="#B14141" />
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.profileSection}>
-          {/* <Image style={styles.profileImage} source={dp} /> */}
-          <LottieView source={require("../../assets/avatar.json")} autoPlay loop style={styles.profileImage} />
+        <View style={styles.heroCard}>
+          <Text style={styles.heroTitle}>{teacher?.name || 'Teacher Profile'}</Text>
+          <Text style={styles.heroSubtitle}>
+            Update department ownership, class allocation, and subject coverage.
+          </Text>
         </View>
 
-        <View style={styles.formSection}>
-          <Text style={styles.classTitle}>Personal details</Text>
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Profile Details</Text>
           <TextInput
             label="Teacher Name"
             value={teacherName}
             onChangeText={setTeacherName}
             mode="outlined"
-            outlineColor={Colors.PRIMARY}
             activeOutlineColor={Colors.PRIMARY}
+            outlineColor={Colors.SECONDARY}
             style={styles.input}
+            left={<TextInput.Icon icon="account-outline" />}
           />
-
           <TextInput
             label="Teacher Email"
             value={teacherEmail}
             onChangeText={setTeacherEmail}
             mode="outlined"
-            outlineColor={Colors.PRIMARY}
+            autoCapitalize="none"
             activeOutlineColor={Colors.PRIMARY}
+            outlineColor={Colors.SECONDARY}
             style={styles.input}
+            left={<TextInput.Icon icon="email-outline" />}
           />
-
-          <Dropdown
-            style={styles.dropdown}
-            placeholderStyle={styles.placeholderStyle}
-            selectedTextStyle={styles.selectedTextStyle}
-            inputSearchStyle={styles.inputSearchStyle}
-            iconStyle={styles.iconStyle}
-            data={departmentDropdownData}
-            labelField="label"
-            valueField="value"
-            search
-            maxHeight={300}
-            value={value}
-            onChange={(item) => setValue(item.value)}
-          />
+          <View style={styles.dropdownContainer}>
+            <MaterialIcons name="domain" size={22} color={Colors.PRIMARY} />
+            <Dropdown
+              style={styles.dropdown}
+              data={departmentOptions}
+              labelField="label"
+              valueField="value"
+              search
+              placeholder="Select Department"
+              value={department}
+              onChange={(item) => setDepartment(item.value)}
+            />
+          </View>
         </View>
 
-        <View style={styles.classesSection}>
-          <Text style={styles.classTitle}>Enrolled Classes</Text>
-          <View style={styles.chipContainer}>
-            {classData.length > 0 ? (
-              classData.map((chip) => (
-                <View key={chip} style={styles.chipWrapper}>
-                  <TouchableOpacity
-                    style={selectedSubjects.includes(chip) ? styles.selectedChip : styles.chip}
-                    onPress={() => {
-                      setSelectedClasses((prev) =>
-                        prev.includes(chip) ? prev.filter((subject) => subject !== chip) : [...prev, chip]
-                      );
-                    }}
-                  >
-                    <Text style={selectedSubjects.includes(chip) ? styles.selectedChipText : styles.chipText}>
-                      {chip}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              ))
-            ) : (
-              <Text style={styles.noChipsText}>No Classes Available</Text>
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Assigned Classes</Text>
+          <View style={styles.chipWrap}>
+            {classItems.length ? classItems.map((item) => (
+              <TouchableOpacity
+                key={item.value}
+                style={selectedClasses.includes(item.value) ? styles.selectedChip : styles.chip}
+                onPress={() => toggleValue(item.value, setSelectedClasses)}
+              >
+                <Text style={selectedClasses.includes(item.value) ? styles.selectedChipText : styles.chipText}>
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            )) : (
+              <Text style={styles.emptyText}>No classes available yet.</Text>
             )}
           </View>
         </View>
 
-        <TouchableOpacity
-          style={[styles.updateButton, loading && { opacity: 0.7 }]}
-          onPress={validateAndCreateUpdatedTeacher}
-          disabled={loading}
-          onLongPress={handleDelete}
-        >
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Assigned Subjects</Text>
+          <View style={styles.chipWrap}>
+            {subjectItems.length ? subjectItems.map((item) => (
+              <TouchableOpacity
+                key={item.value}
+                style={selectedSubjects.includes(item.value) ? styles.selectedChip : styles.chip}
+                onPress={() => toggleValue(item.value, setSelectedSubjects)}
+              >
+                <Text style={selectedSubjects.includes(item.value) ? styles.selectedChipText : styles.chipText}>
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            )) : (
+              <Text style={styles.emptyText}>No subjects available yet.</Text>
+            )}
+          </View>
+        </View>
+
+        <TouchableOpacity style={styles.saveButton} onPress={handleUpdate} disabled={loading}>
           {loading ? (
-            <ActivityIndicator size="small" color="white" />
+            <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text style={styles.updateButtonText}>Update Teacher</Text>
+            <Text style={styles.saveButtonText}>Update Teacher</Text>
           )}
         </TouchableOpacity>
       </ScrollView>
@@ -259,27 +253,22 @@ const TeacherProfile = ({ teacher1, getTeachers1 }) => {
   );
 };
 
-export default TeacherProfile;
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
-    paddingTop: Platform.OS==='android'?10:0,
-    paddingHorizontal:10
+    backgroundColor: '#F4F7FB',
+  },
+  content: {
+    padding: 18,
+    paddingBottom: 30,
   },
   header: {
-    height: 60,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 5,
+    marginBottom: 16,
   },
-  leftIcon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  rightIcons: {
+  backAction: {
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -287,109 +276,101 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     color: Colors.PRIMARY,
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
-  icon: {
-    marginLeft: 16,
-  },
-  headerText: {
-    marginLeft: 10,
-    fontWeight: 'bold',
-    fontSize: 18,
-  },
-  profileSection: {
+  deleteIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FCECEC',
     alignItems: 'center',
-    marginVertical: 5,
+    justifyContent: 'center',
   },
-  profileImage: {
-    width: 250,
-    height: 150,
-    borderRadius: 50,
-    objectFit:'scale-down'
+  heroCard: {
+    backgroundColor: Colors.PRIMARY,
+    borderRadius: 28,
+    padding: 22,
+    marginBottom: 16,
   },
-  formSection: {
-    marginVertical: 20,
+  heroTitle: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '800',
+    marginBottom: 8,
+  },
+  heroSubtitle: {
+    color: '#D8E2EC',
+    lineHeight: 20,
+  },
+  sectionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 18,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: Colors.PRIMARY,
+    marginBottom: 10,
   },
   input: {
-    marginBottom: 10,
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
+    marginBottom: 12,
   },
-  classTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
+  dropdownContainer: {
+    borderWidth: 1,
+    borderColor: '#D7E0EA',
+    borderRadius: 16,
+    minHeight: 56,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    flexDirection: 'row',
   },
   dropdown: {
-    height: 50,
-    borderColor: Colors.PRIMARY,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    marginVertical: 10,
+    flex: 1,
+    marginLeft: 10,
   },
-  placeholderStyle: {
-    fontSize: 16,
-    color: 'gray',
-  },
-  selectedTextStyle: {
-    fontSize: 16,
-  },
-  inputSearchStyle: {
-    fontSize: 14,
-  },
-  iconStyle: {
-    width: 20,
-    height: 20,
-  },
-  chipContainer: {
+  chipWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
-    marginVertical: 20,
-  },
-  chipWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    margin: 5,
+    gap: 10,
   },
   chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    backgroundColor: '#EEEEEE',
-    borderColor: Colors.SECONDARY,
-    borderWidth: 0.5,
-    borderRadius: 20,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: '#EDF3F8',
   },
   selectedChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    backgroundColor: Colors.SECONDARY,
-    borderRadius: 20,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: Colors.PRIMARY,
   },
   chipText: {
-    fontSize: 14,
-    color: 'black',
+    color: '#355164',
+    fontWeight: '600',
   },
   selectedChipText: {
-    fontSize: 14,
-    color: 'white',
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
-  noChipsText: {
-    fontSize: 16,
-    color: 'gray',
-    textAlign: 'center',
-    marginTop: 20,
+  emptyText: {
+    color: '#728292',
   },
-  updateButton: {
+  saveButton: {
+    height: 54,
+    borderRadius: 18,
     backgroundColor: Colors.PRIMARY,
-    height: 50,
-    borderRadius: 10,
-    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
+    justifyContent: 'center',
   },
-  updateButtonText: {
-    fontSize: 18,
-    color: 'white',
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 16,
   },
 });
+
+export default TeacherProfile;

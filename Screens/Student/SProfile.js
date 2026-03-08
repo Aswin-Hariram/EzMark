@@ -1,312 +1,118 @@
-import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
-import dp from "../../assets/Teachers/profile.png";
-import { ActivityIndicator, TextInput } from 'react-native-paper';
-import { Colors } from '../../assets/Colors';
-import { Dropdown } from 'react-native-element-dropdown';
-import { deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
-import { auth, firestore } from '../../Config/FirebaseConfig';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import LottieView from 'lottie-react-native';
+import { useNavigation } from '@react-navigation/native';
+import { ActivityIndicator, TextInput } from 'react-native-paper';
+import dp from '../../assets/Teachers/profile.png';
+import { Colors } from '../../assets/Colors';
+import { auth } from '../../Config/FirebaseConfig';
 
 const SProfile = ({ student }) => {
   const navigation = useNavigation();
+  const [loadingImage, setLoadingImage] = useState(Boolean(student?.image));
+  const [loggingOut, setLoggingOut] = useState(false);
 
-  const [studentName, setStudentName] = useState(student?.name || '');
-  const [studentEmail, setStudentEmail] = useState(student?.email || '');
-  const [studentDepartment, setStudentDepartment] = useState(student?.department || '');
-  const [studentRollNo, setStudentRollNo] = useState(student?.rollno || '');
-  const [classes, setClasses] = useState([]);
-  const [subjects, setSubjects] = useState([])
-  const [subjectsSelected, setSubjectsSelected] = useState(student?.subjects || []);
-  const [studentClass, setStudentClass] = useState(student?.class || '');
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [studentImage, setStudentImage] = useState(student?.image || dp);
-  const [loading, setLoading] = useState(true);
+  const studentStats = useMemo(() => ({
+    subjectCount: student?.subjects?.length || 0,
+    className: student?.class || 'Class pending',
+    department: student?.department || 'Department pending',
+  }), [student?.class, student?.department, student?.subjects?.length]);
 
-
-  // useEffect(() => {
-  //   const fetchClasses = async () => {
-  //     try {
-  //       const docRef = doc(firestore, 'BasicData', 'Data');
-  //       const docSnap = await getDoc(docRef);
-  //       if (docSnap.exists()) {
-  //         const data = docSnap.data();
-  //         if (data.Class) {
-  //           setClasses(data.Class.map((cls) => ({ label: cls, value: cls })));
-  //         }
-  //       } else {
-  //         console.warn("No classes data found");
-  //       }
-  //     } catch (error) {
-  //       console.error('Error fetching classes:', error);
-  //       Alert.alert('Error', 'Failed to load classes.');
-  //     }
-  //   };
-  //   fetchClasses();
-  // }, []);
-
-  // const validateInput = () => {
-  //   const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
-  //   if (!studentName || !studentEmail || !studentDepartment || !studentClass || !studentRollNo) {
-  //     Alert.alert('Error', 'Please fill out all fields.');
-  //     return false;
-  //   }
-  //   if (!emailRegex.test(studentEmail)) {
-  //     Alert.alert('Invalid Email', 'Please enter a valid email address.');
-  //     return false;
-  //   }
-  //   return true;
-  // };
-
-  // const handleUpdate = async () => {
-  //   if (!validateInput() || !student?.id) return;
-
-  //   setIsUpdating(true);
-  //   const updatedStudent = {
-  //     name: studentName,
-  //     email: studentEmail,
-  //     department: studentDepartment,
-  //     rollno: studentRollNo,
-  //     class: studentClass,
-  //   };
-
-  //   try {
-  //     const studentRef = doc(firestore, 'UserData', student.id);
-  //     await updateDoc(studentRef, updatedStudent);
-  //     Alert.alert('Success', 'Student details updated successfully.');
-  //     navigation.goBack();
-  //   } catch (error) {
-  //     console.error('Error updating student:', error);
-  //     Alert.alert('Error', 'Failed to update student details.');
-  //   } finally {
-  //     setIsUpdating(false);
-  //   }
-  // };
-
-  // const handleDelete = () => {
-  //   if (!student?.id) return;
-  //   Alert.alert("Alert", "Do you want to delete student? Are you sure?", [
-  //     {
-  //       text: "Yes",
-  //       onPress: async () => {
-  //         setIsUpdating(true);
-  //         try {
-  //           await deleteDoc(doc(firestore, "UserData", student.id));
-  //           Alert.alert("Success", "Student deleted successfully");
-  //           navigation.goBack();
-  //         } catch (error) {
-  //           console.error('Error deleting student:', error);
-  //           Alert.alert("Error", "Failed to delete student.");
-  //         } finally {
-  //           setIsUpdating(false);
-  //         }
-  //       },
-  //     },
-  //     {
-  //       text: "No",
-  //     },
-  //   ]);
-  // };
+  const handleLogout = () => {
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Yes',
+        onPress: async () => {
+          try {
+            setLoggingOut(true);
+            await auth.signOut();
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Login' }],
+            });
+          } finally {
+            setLoggingOut(false);
+          }
+        },
+      },
+    ]);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{flexDirection:'row'}}>
-          <Ionicons name="chevron-back-outline" size={24} color={Colors.PRIMARY} />
-          <Text style={styles.headerText}>Profile</Text>
-        </TouchableOpacity>
-        
-      </View>
-      <ScrollView showsVerticalScrollIndicator={false}>
-
-
-        <View style={styles.profileSection}>
-        
-          {loading && (
-            <View style={styles.Lcontainer}>
-              <View style={styles.wrapper}>
-                <LottieView
-                  source={require('../../assets/avatar.json')}
-                  autoPlay
-                  loop
-                  style={styles.lottie}
-                />
-              </View>
-            </View>
-          )}
-          <Image
-            style={!loading ? styles.profileImage : { width: 0, height: 0 }}
-            source={{ uri: studentImage }}
-            onLoadEnd={() => setLoading(false)}
-            onError={() => setLoading(false)} // Fallback in case the image fails to load
-          />
-        </View>
-
-        <View style={styles.formSection}>
-        <Text style={styles.classTitle}>Personal Details</Text>
-          <TextInput
-            label="Name"
-            value={studentName}
-            onChangeText={setStudentName}
-            mode="outlined"
-            style={styles.input}
-            editable={false}
-            left={
-              <TextInput.Icon
-                icon="account-outline"
-                size={24}
-                style={styles.iconStyle}
-              />
-            }
-          />
-          <TextInput
-            label="Email"
-            value={studentEmail}
-            onChangeText={setStudentEmail}
-            mode="outlined"
-            style={styles.input}
-            editable={false}
-            left={
-              <TextInput.Icon
-                icon="email-outline"
-                size={24}
-                style={styles.iconStyle}
-              />
-            }
-          />
-          <TextInput
-            label="Roll No"
-            value={studentRollNo}
-            onChangeText={setStudentRollNo}
-            mode="outlined"
-            style={styles.input}
-            editable={false}
-            left={
-              <TextInput.Icon
-                icon="numeric"
-                size={24}
-                style={styles.iconStyle}
-              />
-            }
-          />
-          <TextInput
-            label="Department"
-            value={studentDepartment}
-            onChangeText={setStudentRollNo}
-            mode="outlined"
-            style={styles.input}
-            editable={false}
-            left={
-              <TextInput.Icon
-                icon="domain"
-                size={24}
-                style={styles.iconStyle}
-              />
-            }
-          />
-          <TextInput
-            label="Class"
-            value={studentClass}
-            onChangeText={setStudentRollNo}
-            mode="outlined"
-            style={styles.input}
-            editable={false}
-            left={
-              <TextInput.Icon
-                icon="domain"
-                size={24}
-                style={styles.iconStyle}
-              />
-            }
-          />
-          {/* <Dropdown
-            style={styles.dropdown}
-            data={classes}
-            labelField="label"
-            valueField="value"
-            placeholder="Select Class"
-            value={studentClass}
-            disable={true}
-          /> */}
-
-          {/* <Dropdown
-            style={styles.dropdown}
-            data={subjects}
-            labelField="label"
-            valueField="value"
-            search
-            placeholder="Select Subjects"
-            onChange={(item) => setSubjectsSelected([...subjectsSelected, item.value])}
-          /> */}
-          <View style={styles.classesSection}>
-            <Text style={styles.classTitle}>Enrolled Subjects</Text>
-            <View style={styles.chipContainer}>
-              {subjectsSelected.length > 0 ? (
-                subjectsSelected.map((chip) => (
-                  <View key={chip} style={styles.chipWrapper}>
-                    <TouchableOpacity
-
-                      style={styles.chip}
-                    // onPress={() => {
-                    //   Alert.alert("Alert", `Do you want to remove ${chip}`, [
-                    //     {
-                    //       text: "Yes",
-                    //       onPress: () => {
-                    //         setSubjectsSelected((prev) =>
-                    //           prev.includes(chip) ? prev.filter((subject) => subject !== chip) : [...prev, chip]
-                    //         );
-                    //       }
-                    //     },
-                    //     {
-                    //       text: "No",
-                    //     }
-                    //   ])
-                    // }}
-                    >
-                      <Text style={styles.chipText}>
-                        {chip}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                ))
-              ) : (
-                <Text style={styles.noChipsText}>No Classes Available</Text>
-              )}
-            </View>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backAction} onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-back-outline" size={24} color={Colors.PRIMARY} />
+            <Text style={styles.backText}>Profile</Text>
+          </TouchableOpacity>
+          <View style={styles.headerIcon}>
+            <MaterialIcons name="verified-user" size={20} color={Colors.PRIMARY} />
           </View>
         </View>
 
-        <TouchableOpacity
-          style={[styles.updateButton, isUpdating && { opacity: 0.7 }]}
-          onPress={() => {
-            Alert.alert("Logout", "Are you sure you want to logout?", [
-              {
-                text: "No",
-                onPress: () => console.log("Cancel Pressed"),
-              }, {
-                text: "Yes",
-                onPress: () => {
-                  auth.signOut()
-                    .then(() => {
-                      navigation.reset({
-                        index: 0,
-                        routes: [{ name: 'Login' }],
-                      })
-                    });
-                }
-              }
-            ], { cancelable: true });
+        <View style={styles.heroCard}>
+          <View style={styles.avatarShell}>
+            {loadingImage ? (
+              <View style={styles.avatarLoader}>
+                <LottieView source={require('../../assets/avatar.json')} autoPlay loop style={styles.avatarLottie} />
+              </View>
+            ) : null}
+            <Image
+              style={loadingImage ? styles.hiddenImage : styles.profileImage}
+              source={student?.image ? { uri: student.image } : dp}
+              onLoadEnd={() => setLoadingImage(false)}
+              onError={() => setLoadingImage(false)}
+              defaultSource={dp}
+            />
+          </View>
+          <Text style={styles.studentName}>{student?.name || 'Student'}</Text>
+          <Text style={styles.studentMeta}>{student?.email}</Text>
+          <Text style={styles.studentMetaSecondary}>{studentStats.className} • {student?.rollno}</Text>
+        </View>
 
-          }}
-          disabled={isUpdating}
-        >
-          {isUpdating ? (
-            <ActivityIndicator size="small" color="white" />
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Department</Text>
+            <Text style={styles.statValue}>{studentStats.department}</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Subjects</Text>
+            <Text style={styles.statValue}>{studentStats.subjectCount}</Text>
+          </View>
+        </View>
+
+        <View style={styles.infoCard}>
+          <Text style={styles.sectionTitle}>Personal Information</Text>
+          <TextInput label="Name" value={student?.name || ''} mode="outlined" style={styles.input} editable={false} />
+          <TextInput label="Email" value={student?.email || ''} mode="outlined" style={styles.input} editable={false} />
+          <TextInput label="Roll No" value={student?.rollno || ''} mode="outlined" style={styles.input} editable={false} />
+          <TextInput label="Department" value={studentStats.department} mode="outlined" style={styles.input} editable={false} />
+          <TextInput label="Class" value={studentStats.className} mode="outlined" style={styles.input} editable={false} />
+        </View>
+
+        <View style={styles.infoCard}>
+          <Text style={styles.sectionTitle}>Enrolled Subjects</Text>
+          <View style={styles.subjectWrap}>
+            {(student?.subjects || []).length ? student.subjects.map((subject) => (
+              <View key={subject} style={styles.subjectChip}>
+                <Text style={styles.subjectChipText}>{subject}</Text>
+              </View>
+            )) : (
+              <Text style={styles.emptyText}>No subjects assigned yet.</Text>
+            )}
+          </View>
+        </View>
+
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} disabled={loggingOut}>
+          {loggingOut ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={styles.updateButtonText}>Logout</Text>
+            <Text style={styles.logoutButtonText}>Logout</Text>
           )}
         </TouchableOpacity>
       </ScrollView>
@@ -314,132 +120,154 @@ const SProfile = ({ student }) => {
   );
 };
 
-export default SProfile;
-
 const styles = StyleSheet.create({
-  Lcontainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  wrapper: {
-    width: 250, // Set desired dimensions
-    height: 170,
-    overflow: 'hidden', // Ensures content doesn't spill out
-  },
-  lottie: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-    alignSelf: 'center', // Centers the animation in its container
-  },
   container: {
     flex: 1,
-    backgroundColor: 'white',
-    padding: 10,
-    paddingTop: Platform.OS === 'ios' ? 0 : 15,
+    backgroundColor: '#EFF4F8',
+  },
+  content: {
+    padding: 18,
+    paddingBottom: 30,
   },
   header: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  headerText: {
-    marginLeft: 8,
+  backAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backText: {
+    marginLeft: 4,
     color: Colors.PRIMARY,
+    fontWeight: '700',
     fontSize: 16,
-    fontWeight: 'bold',
   },
-  profileSection: {
+  headerIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
-    marginVertical: 20,
+    justifyContent: 'center',
+  },
+  heroCard: {
+    backgroundColor: '#102B3C',
+    borderRadius: 30,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  avatarShell: {
+    width: 132,
+    height: 132,
+    marginBottom: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarLoader: {
+    width: 132,
+    height: 132,
+    borderRadius: 66,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+  avatarLottie: {
+    width: 132,
+    height: 132,
+  },
+  hiddenImage: {
+    width: 0,
+    height: 0,
   },
   profileImage: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
+    width: 132,
+    height: 132,
+    borderRadius: 66,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
   },
-  formSection: {
-    marginHorizontal: 5,
+  studentName: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '800',
+  },
+  studentMeta: {
+    color: '#D8E2EC',
+    marginTop: 6,
+  },
+  studentMetaSecondary: {
+    color: '#AFC2D0',
+    marginTop: 6,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 18,
+  },
+  statLabel: {
+    color: '#738393',
+    fontWeight: '600',
+  },
+  statValue: {
+    color: Colors.PRIMARY,
+    fontSize: 18,
+    fontWeight: '800',
+    marginTop: 8,
+  },
+  infoCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 18,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    color: Colors.PRIMARY,
+    fontWeight: '800',
+    fontSize: 18,
+    marginBottom: 12,
   },
   input: {
-    backgroundColor: 'white',
-    marginBottom: 15,
+    backgroundColor: '#FFFFFF',
+    marginBottom: 12,
   },
-  iconStyle: {
-    marginRight: 10, // Space between icon and dropdown
+  subjectWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
   },
-  dropdown: {
-    height: 50,
-    borderColor: '#153448',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    marginBottom: 15,
-    backgroundColor: 'white',
+  subjectChip: {
+    backgroundColor: '#EAF0F5',
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
-  updateButton: {
-    backgroundColor: Colors.SECONDARY,
-    height: 50,
-    borderRadius: 10,
-    justifyContent: 'center',
+  subjectChipText: {
+    color: Colors.PRIMARY,
+    fontWeight: '700',
+  },
+  emptyText: {
+    color: '#758594',
+  },
+  logoutButton: {
+    backgroundColor: '#C74646',
+    borderRadius: 18,
+    paddingVertical: 15,
     alignItems: 'center',
-    marginTop: 5,
   },
-  updateButtonText: {
-    fontSize: 18,
-    color: 'white',
-  },
-  classesSection: {
-    marginBottom: 15,
-  },
-  classTitle: {
-    fontSize: 19,
-    fontWeight: '600',
-    color: '#153448',
-    marginBottom: 10,
-  },
-  chipContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap', // Ensures chips wrap to the next line only when necessary
-    justifyContent: 'flex-start', // Aligns chips at the start
-    alignItems: 'center', // Aligns chips vertically
-  },
-
-  chipWrapper: {
-    marginBottom: 10,
-    marginRight: 3,
-    flexShrink: 0,
-    flexDirection: 'row',
-    alignItems: 'center',// Prevents individual chips from shrinking
-  },
-  chipText: {
-    fontSize: 14,
-    color: 'black',
-    textAlign: 'center', // Ensures text alignment is consistent
-  },
-  selectedChipText: {
-    fontSize: 14,
-    color: 'white',
-    textAlign: 'center',
-  },
-
-  chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    backgroundColor: '#EEEEEE',
-    borderColor: Colors.SECONDARY,
-    borderWidth: 0.5,
-    borderRadius: 20,
-  },
-  chipText: {
-    fontSize: 14,
-    color: 'black',
-  },
-  noChipsText: {
+  logoutButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
     fontSize: 16,
-    color: 'gray',
-    textAlign: 'center',
-    marginTop: 20,
   },
 });
+
+export default SProfile;

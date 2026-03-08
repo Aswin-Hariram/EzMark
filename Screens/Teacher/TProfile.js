@@ -1,461 +1,324 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  Image,
-  TouchableOpacity,
-  ScrollView,
-  Platform,
-  Alert,
-} from 'react-native';
-import React, { useEffect, useState } from 'react';
-import { Dropdown } from 'react-native-element-dropdown';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import AntDesign from '@expo/vector-icons/AntDesign';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import dp from "../../assets/Teachers/profile.png";
-import { ActivityIndicator, TextInput } from 'react-native-paper';
-import { Colors } from '../../assets/Colors';
-import { deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
-import { auth, firestore } from '../../Config/FirebaseConfig';
-import { getFunctions, httpsCallable } from "firebase/functions";
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import LottieView from 'lottie-react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { ActivityIndicator } from 'react-native-paper';
+import dp from '../../assets/Teachers/profile.png';
+import { Colors } from '../../assets/Colors';
+import { auth } from '../../Config/FirebaseConfig';
+import { getInstitutionData } from '../Admin/institutionData';
 
 const TProfile = ({ teacher1, getTeachers1 }) => {
   const route = useRoute();
-  const { teacher = teacher1, getTeachers = getTeachers1 } = route.params || {};
   const navigation = useNavigation();
-  const [selectedSubjects, setSelectedClasses] = useState([]);
-  const [teacherName, setTeacherName] = useState(teacher?.name);
-  const [teacherEmail, setTeacherEmail] = useState(teacher?.email);
-  const [teacherImage, setTeacherImage] = useState(teacher?.image);
-  const [value, setValue] = useState(teacher?.department);
-  const [teacherPassword, setTeacherPassword] = useState(teacher?.password);
-  const [classData, setClassData] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const departmentDropdownData = [
-    { label: 'Computer Science', value: 'Computer Science' },
-    { label: 'Mechanical Engineering', value: 'Mechanical Engineering' },
-    { label: 'Civil Engineering', value: 'Civil Engineering' },
-    { label: 'Electrical Engineering', value: 'Electrical Engineering' },
-    { label: 'Electronics & Communication', value: 'Electronics & Communication' },
-    { label: 'Information Technology', value: 'Information Technology' },
-    { label: 'Chemical Engineering', value: 'Chemical Engineering' },
-    { label: 'Biotechnology', value: 'Biotechnology' },
-  ];
+  const { teacher = teacher1, getTeachers = getTeachers1 } = route.params || {};
+  const [loadingImage, setLoadingImage] = useState(Boolean(teacher?.image));
+  const [institutionData, setInstitutionData] = useState({ classes: [], subjects: [] });
 
   useEffect(() => {
-    if (!teacher) {
-      console.log("Teacher data is not available.");
-      return; // Prevent further execution if teacher data is missing
-    }
-    console.log("Teache Image", teacher);
-
-    const fetchBasic = async () => {
+    const loadInstitution = async () => {
       try {
-        const docRef = doc(firestore, 'BasicData', 'Data');
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data.Class) {
-            setClassData(data.Class);
-            setSelectedClasses(teacher.classes || []); // Safeguard against missing classes
-          }
-        }
+        const data = await getInstitutionData();
+        setInstitutionData(data);
       } catch (error) {
-        console.log('Error fetching document:', error);
+        console.log('Error loading teacher profile context:', error);
       }
     };
-    fetchBasic();
-  }, [teacher]);
 
-  const updateTeacherInFirestore = async (updatedTeacher) => {
-    try {
-      const teacherRef = doc(firestore, 'UserData', teacher.id); // Assuming email as unique identifier
-      await updateDoc(teacherRef, updatedTeacher);
-    } catch (error) {
-      console.log('Error updating teacher in Firestore:', error);
-      alert('Failed to update teacher details.');
-    }
-    finally {
-      alert('Teacher details updated successfully.');
-      getTeachers();
-      navigation.goBack();
-    }
-  };
+    loadInstitution();
+  }, []);
 
-  const deleteFromFirestore = () => {
-    setLoading(true);
-    deleteDoc(doc(firestore, "UserData", teacher.id))
-      .then(() => {
-        alert("Teacher deleted successfully");
-      })
-      .catch((error) => {
-        alert("Error", error.message);
-      })
-      .finally(() => {
-        setLoading(false);
-        getTeachers();
-        navigation.goBack();
-      });
-  }
+  const profileStats = useMemo(() => ({
+    classCount: teacher?.classes?.length || 0,
+    subjectCount: teacher?.subjects?.length || 0,
+    department: teacher?.department || 'Not assigned',
+  }), [teacher?.classes?.length, teacher?.department, teacher?.subjects?.length]);
 
-  const handleDelete = () => {
-    Alert.alert("Alert", "Do you want to delete Teacher, Are you sure?", [
-      {
-        text: "Yes",
-        onPress: () => { deleteFromFirestore() }
-      },
-      {
-        text: "No",
-        onPress: () => { }
-      }
-    ])
-  }
-
-  const updateTeacherPassword = async (email, newPassword) => {
-    const functions = getFunctions();
-    try {
-      const updatePassword = httpsCallable(functions, "updateTeacherPassword");
-      const result = await updatePassword({ email, newPassword });
-      if (result.data.success) {
-        updateTeacherInFirestore({
-          name: teacherName,
-          email: teacherEmail,
-          password: teacherPassword,
-          department: value,
-          classes: selectedSubjects.length > 0 ? selectedSubjects : teacher.classes,
-        });
-      }
-    } catch (error) {
-      console.log("Error updating password:", error);
-      alert("Failed to update the password. " + error.message);
-    }
-  };
-
-  const validateAndCreateUpdatedTeacher = async () => {
-    if (!teacherName.trim() || !teacherEmail.trim() || !teacherPassword.trim()) {
-      alert('All fields are required. Please fill in the missing details.');
+  const handleLogout = () => {
+    if (!auth.currentUser) {
       return;
     }
 
-    setLoading(true); // Start loading
-
-    const updatedTeacher = {
-      name: teacherName,
-      email: teacherEmail,
-      password: teacherPassword,
-      department: value,
-      classes: selectedSubjects.length > 0 ? selectedSubjects : teacher.classes,
-    };
-
-    try {
-      if (teacher.password !== teacherPassword) {
-        await updateTeacherPassword(teacherEmail, teacherPassword);
-      } else {
-        await updateTeacherInFirestore(updatedTeacher);
-      }
-    } catch (error) {
-      console.log('Error updating teacher:', error);
-      alert('Failed to update teacher details. Please try again.');
-    } finally {
-      setLoading(false); // End loading
-    }
-  };
-
-  const handleLogout = () => {
-    if (auth.currentUser) {
-      Alert.alert("Logout", "Are you sure you want to logout?", [
-        {
-          text: "No",
-          onPress: () => console.log("Cancel Pressed"),
-        }, {
-          text: "Yes",
-          onPress: () => {
-            auth.signOut()
-              .then(() => {
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: 'Login' }],
-                })
-              });
-          }
-        }
-      ], { cancelable: true });
-    } else {
-      console.log("User is not authenticated");
-    }
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Yes',
+        onPress: () => {
+          auth.signOut().then(() => {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Login' }],
+            });
+          });
+        },
+      },
+    ]);
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.leftIcon} onPress={() => { navigation.goBack() }}>
+          <TouchableOpacity style={styles.backAction} onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back-outline" size={24} color={Colors.PRIMARY} />
             <Text style={styles.backText}>Profile</Text>
           </TouchableOpacity>
-          <View style={styles.rightIcons}>
-            <TouchableOpacity style={styles.icon}>
-              {/* <Ionicons name="ellipsis-vertical" size={22} color={Colors.PRIMARY} /> */}
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.editAction} onPress={() => navigation.navigate('TeacherProfile', { teacher, getTeachers })}>
+            <MaterialIcons name="edit" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.profileSection}>
-          {loading && (
-            <View style={styles.Lcontainer}>
-              <View style={styles.wrapper}>
-                <LottieView
-                  source={require('../../assets/avatar.json')}
-                  autoPlay
-                  loop
-                  style={styles.lottie}
-                />
+        <View style={styles.heroCard}>
+          <View style={styles.profileVisual}>
+            {loadingImage ? (
+              <View style={styles.lottieShell}>
+                <LottieView source={require('../../assets/avatar.json')} autoPlay loop style={styles.avatarLottie} />
               </View>
-            </View>
-          )}
-          <Image
-            style={!loading ? styles.profileImage : { width: 0, height: 0 }}
-            source={teacherImage ? { uri: teacherImage } : dp}
-            onLoadEnd={() => setLoading(false)} // Once the image has loaded, stop loading
-            onError={() => setLoading(false)} // In case of an error, stop loading
-            defaultSource={dp} // Set a default image before loading starts
-          />
-        </View>
-        <Text style={styles.classTitle}>Personal details</Text>
-        <View style={styles.formSection}>
-
-          <TextInput
-            label="Teacher Name"
-            value={teacherName}
-            onChangeText={setTeacherName}
-            mode="outlined"
-            outlineColor={Colors.PRIMARY}
-            activeOutlineColor={Colors.PRIMARY}
-            style={styles.input}
-            editable={false}
-            left={
-              <TextInput.Icon
-                icon="account-outline"
-                size={24}
-                style={styles.iconStyle}
-              />
-            }
-          />
-
-          <TextInput
-            label="Teacher Email"
-            value={teacherEmail}
-            onChangeText={setTeacherEmail}
-            mode="outlined"
-            outlineColor={Colors.PRIMARY}
-            activeOutlineColor={Colors.PRIMARY}
-            style={styles.input}
-            editable={false}
-            left={
-              <TextInput.Icon
-                icon="email-outline"
-                size={24}
-                style={styles.iconStyle}
-              />
-            }
-          />
-
-          <View style={[styles.dropdownContainer]}>
-            <AntDesign name="book" size={24} color="black" />
-            <Dropdown
-              style={styles.dropdown}
-              data={departmentDropdownData}
-              labelField="label"
-              valueField="value"
-              search
-              placeholder="Select Department"
-              disable
-              value={value}
-              onChange={(item) => setValue(item.value)}
+            ) : null}
+            <Image
+              style={loadingImage ? styles.hiddenImage : styles.profileImage}
+              source={teacher?.image ? { uri: teacher.image } : dp}
+              onLoadEnd={() => setLoadingImage(false)}
+              onError={() => setLoadingImage(false)}
+              defaultSource={dp}
             />
           </View>
-
-
+          <Text style={styles.teacherName}>{teacher?.name || 'Teacher'}</Text>
+          <Text style={styles.teacherMeta}>{teacher?.email}</Text>
+          <Text style={styles.teacherDept}>{profileStats.department}</Text>
         </View>
 
-        <View style={styles.classesSection}>
-          <Text style={styles.classTitle}>Enrolled Classes</Text>
-          <View style={styles.chipContainer}>
-            {classData.length > 0 ? (
-              classData.map((chip) => (
-                <View key={chip} style={styles.chipWrapper}>
-                  <TouchableOpacity
-                    style={selectedSubjects.includes(chip) ? styles.selectedChip : styles.chip}
-                  >
-                    <Text style={selectedSubjects.includes(chip) ? styles.selectedChipText : styles.chipText}>
-                      {chip}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              ))
-            ) : (
-              <Text style={styles.noChipsText}>No Classes Available</Text>
+        <View style={styles.metricRow}>
+          <View style={styles.metricCard}>
+            <Text style={styles.metricValue}>{profileStats.classCount}</Text>
+            <Text style={styles.metricLabel}>Classes</Text>
+          </View>
+          <View style={styles.metricCard}>
+            <Text style={styles.metricValue}>{profileStats.subjectCount}</Text>
+            <Text style={styles.metricLabel}>Subjects</Text>
+          </View>
+        </View>
+
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Assigned Classes</Text>
+          <View style={styles.chipWrap}>
+            {(teacher?.classes || []).length ? teacher.classes.map((item) => (
+              <View key={item} style={styles.primaryChip}>
+                <Text style={styles.primaryChipText}>{item}</Text>
+              </View>
+            )) : (
+              <Text style={styles.emptyText}>No classes assigned.</Text>
             )}
           </View>
         </View>
 
-        <TouchableOpacity
-          style={[styles.updateButton, loading && { opacity: 0.7 }]}
-          onPress={handleLogout}
-          disabled={loading}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Owned Subjects</Text>
+          <View style={styles.chipWrap}>
+            {(teacher?.subjects || []).length ? teacher.subjects.map((item) => (
+              <View key={item} style={styles.secondaryChip}>
+                <Text style={styles.secondaryChipText}>{item}</Text>
+              </View>
+            )) : (
+              <Text style={styles.emptyText}>No subjects assigned.</Text>
+            )}
+          </View>
+        </View>
 
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color="white" />
-          ) : (
-            <Text style={styles.updateButtonText}>Logout</Text>
-          )}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Institution Snapshot</Text>
+          <View style={styles.snapshotRow}>
+            <Text style={styles.snapshotLabel}>Available classes</Text>
+            <Text style={styles.snapshotValue}>{institutionData.classes.length}</Text>
+          </View>
+          <View style={styles.snapshotRow}>
+            <Text style={styles.snapshotLabel}>Available subjects</Text>
+            <Text style={styles.snapshotValue}>{institutionData.subjects.length}</Text>
+          </View>
+        </View>
+
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutButtonText}>Logout</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
-export default TProfile;
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
-    paddingTop: Platform.OS === 'android' ? 10 : 0,
-    paddingHorizontal: 10
+    backgroundColor: '#F4F7FB',
+  },
+  content: {
+    padding: 18,
+    paddingBottom: 30,
   },
   header: {
-    height: 60,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 5,
+    marginBottom: 16,
   },
-  leftIcon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  rightIcons: {
+  backAction: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   backText: {
     marginLeft: 4,
     color: Colors.PRIMARY,
+    fontWeight: '700',
     fontSize: 16,
-
   },
-  icon: {
-    marginLeft: 16,
-  },
-  profileSection: {
+  editAction: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: Colors.PRIMARY,
     alignItems: 'center',
-    marginVertical: 5,
-
+    justifyContent: 'center',
+  },
+  heroCard: {
+    backgroundColor: Colors.PRIMARY,
+    borderRadius: 28,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  profileVisual: {
+    width: 132,
+    height: 132,
+    marginBottom: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lottieShell: {
+    width: 132,
+    height: 132,
+    borderRadius: 66,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarLottie: {
+    width: 132,
+    height: 132,
+  },
+  hiddenImage: {
+    width: 0,
+    height: 0,
   },
   profileImage: {
-    width: 125,
-    height: 125,
-    borderRadius: 75,
+    width: 132,
+    height: 132,
+    borderRadius: 66,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
   },
-  formSection: {
-    marginTop:15,
+  teacherName: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
-  iconStyle: {
-    marginRight: 10, // Space between icon and dropdown
+  teacherMeta: {
+    marginTop: 6,
+    color: '#D7E1EA',
   },
-  input: {
-    marginBottom: 10,
-    backgroundColor: 'white',
+  teacherDept: {
+    marginTop: 6,
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
-  dropdownContainer: {
+  metricRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    height: 50,
-    borderColor: Colors.PRIMARY,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10, // Adjusted for better spacing
-    marginBottom: 15,
-    backgroundColor: 'white',
+    gap: 10,
+    marginBottom: 16,
   },
-  classTitle: {
+  metricCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    paddingVertical: 18,
+    paddingHorizontal: 14,
+  },
+  metricValue: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: Colors.PRIMARY,
+  },
+  metricLabel: {
+    marginTop: 4,
+    color: '#738393',
+  },
+  sectionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 18,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    color: Colors.PRIMARY,
+    fontWeight: '800',
     fontSize: 18,
-    fontWeight: 'bold',
-    color: Colors.SECONDARY,
-    marginTop:20,
+    marginBottom: 12,
   },
-  dropdown: {
-    flex: 1, // Ensures dropdown takes remaining space
-    height: '100%', // Matches the container height
-    paddingHorizontal: 8,
-    backgroundColor: 'white',
-    fontSize: 16,
-  },
-  placeholderStyle: {
-    fontSize: 16,
-    color: 'gray',
-  },
-  selectedTextStyle: {
-    fontSize: 16,
-  },
-  inputSearchStyle: {
-    fontSize: 14,
-  },
-  chipContainer: {
+  chipWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
-    marginVertical: 20,
+    gap: 10,
   },
-  chipWrapper: {
+  primaryChip: {
+    backgroundColor: '#EAF0F5',
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  primaryChipText: {
+    color: Colors.PRIMARY,
+    fontWeight: '700',
+  },
+  secondaryChip: {
+    backgroundColor: '#EEF5F0',
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  secondaryChipText: {
+    color: '#286846',
+    fontWeight: '700',
+  },
+  snapshotRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEF3F6',
+  },
+  snapshotLabel: {
+    color: '#738393',
+  },
+  snapshotValue: {
+    color: Colors.PRIMARY,
+    fontWeight: '700',
+  },
+  emptyText: {
+    color: '#738393',
+  },
+  logoutButton: {
+    backgroundColor: '#C74646',
+    borderRadius: 18,
+    paddingVertical: 15,
     alignItems: 'center',
-    margin: 5,
   },
-  chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    backgroundColor: '#EEEEEE',
-    borderColor: Colors.SECONDARY,
-    borderWidth: 0.5,
-    borderRadius: 20,
-  },
-  selectedChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    backgroundColor: Colors.SECONDARY,
-    borderRadius: 20,
-  },
-  chipText: {
-    fontSize: 14,
-    color: 'black',
-  },
-  selectedChipText: {
-    fontSize: 14,
-    color: 'white',
-  },
-  noChipsText: {
+  logoutButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
     fontSize: 16,
-    color: 'gray',
-    textAlign: 'center',
-    marginTop: 20,
-  },
-  updateButton: {
-    backgroundColor: Colors.SECONDARY,
-    height: 50,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  updateButtonText: {
-    fontSize: 18,
-    color: 'white',
   },
 });
+
+export default TProfile;

@@ -1,724 +1,664 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View, Text, StyleSheet, TouchableOpacity, SafeAreaView, FlatList, Alert, Platform, Modal, TextInput as RNTextInput,
-  TouchableWithoutFeedback,
-  Pressable
-} from 'react-native';
-import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, FlatList, Modal, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import Feather from '@expo/vector-icons/Feather';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import LottieView from 'lottie-react-native';
+import { useNavigation } from '@react-navigation/native';
+import { collection, deleteDoc, doc, getDocs, onSnapshot, query, updateDoc, where } from 'firebase/firestore';
 import CPB from '../../Components/CPB';
 import { Colors } from '../../assets/Colors';
-import { collection, deleteDoc, doc, getDocs, onSnapshot, query, updateDoc, where } from 'firebase/firestore';
 import { firestore } from '../../Config/FirebaseConfig';
-import { format } from 'date-fns';
-import AntDesign from '@expo/vector-icons/AntDesign';
-import { useNavigation } from '@react-navigation/native';
-import { FAB, RadioButton, TextInput } from 'react-native-paper';
+
+const formatDate = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return 'Invalid date';
+  }
+
+  return date.toLocaleDateString(undefined, {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
+const sortRequestList = (items, sortOption) => {
+  const nextItems = [...items];
+
+  if (sortOption === 'Class') {
+    return nextItems.sort((a, b) => (a.class || '').localeCompare(b.class || ''));
+  }
+  if (sortOption === 'Subject') {
+    return nextItems.sort((a, b) => (a.subjectName || '').localeCompare(b.subjectName || ''));
+  }
+  if (sortOption === 'Completion') {
+    return nextItems.sort((a, b) => (b.percentage || 0) - (a.percentage || 0));
+  }
+
+  return nextItems.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+};
 
 const TeacherHistory = ({ teacherDetail }) => {
-  const [requestedData, setRequestedData] = useState([]);
-  const [loadingId, setLoadingId] = useState(null);
-  const [loadingDId, setLoadingDId] = useState(null); // Track loading for specific item
-  const [historyData, setHistoryData] = useState([]);
   const navigation = useNavigation();
-  const [modalVisible, setModalVisible] = useState(false)
-  const [sortOption, setSortOption] = useState("date");
-  const [searchVisible, setSearchVisible] = useState(false)
-
-  const [serchInp, setSearchInp] = useState('')
-
-  const formatDate = (isoString) => {
-    const date = new Date(isoString);
-    if (isNaN(date)) return 'Invalid Date'; // Return a fallback if the date is invalid
-    return format(date, "dd MMM yyyy EEE");
-  };
-
-  const handleComplete = async (item) => {
-    try {
-      setLoadingId(item.id); // Start loading for specific item
-
-      const studentQuery = query(
-        collection(firestore, "UserData"),
-        where("class", "==", item.class || ""),
-        where("type", "==", "Student")
-      );
-
-      const querySnapshot = await getDocs(studentQuery);
-
-      if (querySnapshot.empty) {
-        Alert.alert('No Students Found', `No students enrolled in class: ${item.class}`);
-        setLoadingId(null); // Stop loading if no students found
-        return;
-      }
-
-      for (const userDoc of querySnapshot.docs) {
-        const reqQuery = query(
-          collection(firestore, `UserData/${userDoc.id}/AttendanceRequests`),
-          where("status", "==", "Requested"),
-          where("createdAt", "==", item.createdAt),
-          where("class", "==", item.class),
-          where("createdBy", "==", item.createdBy),
-          where("subjectName", "==", item.subjectName)
-        );
-
-        const snap = await getDocs(reqQuery);
-
-        for (const req of snap.docs) {
-          await updateDoc(doc(firestore, `UserData/${userDoc.id}/AttendanceRequests`, req.id), {
-            status: "Closed"
-          });
-        }
-      }
-      const enrolledstudents = item.enrolledStudents
-      enrolledstudents.forEach(student => {
-        console.log(student.status)
-        if (student.status === "Requested") {
-          student.status = "Closed";
-
-        }
-      });
-      console.log(enrolledstudents)
-      await updateDoc(doc(firestore, `UserData/${teacherDetail.id}/AttendanceRequests`, item.id), {
-        status: "Closed",
-        enrolledStudents: enrolledstudents,
-
-      });
-
-      setLoadingId(null);
-      Alert.alert('Completed', 'The attendance request has been successfully completed.');
-    } catch (error) {
-      console.error(error.message);
-      setLoadingId(null); // Stop loading on error
-    }
-
-
-  };
-  const handleCancel = async (item) => {
-    try {
-      setLoadingDId(item.id); // Start loading for specific item
-      console.log("Item=>", item)
-      const studentQuery = query(
-        collection(firestore, "UserData"),
-        where("class", "==", item.class || ""),
-        where("type", "==", "Student")
-      );
-
-      const querySnapshot = await getDocs(studentQuery);
-
-      if (querySnapshot.empty) {
-        Alert.alert('No Students Found', `No students enrolled in class: ${item.class}`);
-        setLoadingId(null); // Stop loading if no students found
-        return;
-      }
-
-      for (const userDoc of querySnapshot.docs) {
-        const reqQuery = query(
-          collection(firestore, `UserData/${userDoc.id}/AttendanceRequests`),
-          where("status", "==", "Requested"),
-          where("createdAt", "==", item.createdAt),
-          where("class", "==", item.class),
-          where("createdBy", "==", item.createdBy),
-          where("subjectName", "==", item.subjectName)
-        );
-
-        const snap = await getDocs(reqQuery);
-
-        for (const req of snap.docs) {
-          await deleteDoc(doc(firestore, `UserData/${userDoc.id}/AttendanceRequests`, req.id));
-        }
-      }
-      const enrolledstudents = item.enrolledStudents
-      enrolledstudents.forEach(student => {
-        console.log(student.status)
-        if (student.status === "Requested") {
-          student.status = "Closed";
-        }
-      });
-      console.log(enrolledstudents)
-      await deleteDoc(doc(firestore, `UserData/${teacherDetail.id}/AttendanceRequests`, item.id));
-
-      setLoadingDId(null);
-      Alert.alert('Deleted', 'The attendance request has been successfully deleted.');
-    } catch (error) {
-      console.error(error.message);
-      setLoadingDId(null); // Stop loading on error
-    }
-
-
-  };
+  const [pendingRequests, setPendingRequests] = useState([]);
+  const [historyRequests, setHistoryRequests] = useState([]);
+  const [activeTab, setActiveTab] = useState('Pending');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortOption, setSortOption] = useState('Newest');
+  const [modalVisible, setModalVisible] = useState(false);
+  const [loadingId, setLoadingId] = useState(null);
+  const [loadingDeleteId, setLoadingDeleteId] = useState(null);
 
   useEffect(() => {
-    if (!teacherDetail?.id) return;
+    if (!teacherDetail?.id) {
+      return undefined;
+    }
 
-    const q = query(
+    const pendingQuery = query(
       collection(firestore, `UserData/${teacherDetail.id}/AttendanceRequests`),
-      where("status", "==", "Requested")
+      where('status', '==', 'Requested')
     );
 
     const historyQuery = query(
       collection(firestore, `UserData/${teacherDetail.id}/AttendanceRequests`),
-      where("status", "!=", "Requested")
+      where('status', '!=', 'Requested')
     );
 
-    const unsubscribeRequested = onSnapshot(q, (querySnapshot) => {
-      const temp = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        time: formatDate(doc.get("createdAt")),
-        percentage: ((doc.get("totalNumberOfStudents") - doc.get("pendingNumberOfStudents")) / doc.get("totalNumberOfStudents")) * 100
-      }));
-      temp.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      setRequestedData(temp);
+    const unsubscribePending = onSnapshot(pendingQuery, (snapshot) => {
+      const records = snapshot.docs.map((item) => {
+        const data = item.data();
+        const total = Number(data.totalNumberOfStudents || 0);
+        const pending = Number(data.pendingNumberOfStudents || 0);
+
+        return {
+          id: item.id,
+          ...data,
+          displayDate: formatDate(data.createdAt),
+          percentage: total ? ((total - pending) / total) * 100 : 0,
+        };
+      });
+
+      setPendingRequests(sortRequestList(records, sortOption));
     });
 
-    const unsubscribeHistory = onSnapshot(historyQuery, (querySnapshot) => {
-      const temp = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        time: formatDate(doc.get("createdAt")),
-        percentage: ((doc.get("totalNumberOfStudents") - doc.get("pendingNumberOfStudents")) / doc.get("totalNumberOfStudents")) * 100
-      }));
-      temp.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      setHistoryData(temp);
+    const unsubscribeHistory = onSnapshot(historyQuery, (snapshot) => {
+      const records = snapshot.docs.map((item) => {
+        const data = item.data();
+        const total = Number(data.totalNumberOfStudents || 0);
+        const pending = Number(data.pendingNumberOfStudents || 0);
+
+        return {
+          id: item.id,
+          ...data,
+          displayDate: formatDate(data.createdAt),
+          percentage: total ? ((total - pending) / total) * 100 : 0,
+        };
+      });
+
+      setHistoryRequests(sortRequestList(records, sortOption));
     });
 
     return () => {
-      unsubscribeRequested();
+      unsubscribePending();
       unsubscribeHistory();
-      applySort(sortOption);
     };
-  }, [teacherDetail]);
-  useEffect(() => {
+  }, [sortOption, teacherDetail?.id]);
 
-    if (!teacherDetail?.id) return; // Early return to avoid query execution
+  const handleComplete = async (item) => {
+    try {
+      setLoadingId(item.id);
 
-    if (serchInp === "") {
-
-
-      const q = query(
-        collection(firestore, `UserData/${teacherDetail.id}/AttendanceRequests`),
-        where("status", "==", "Requested")
+      const studentQuery = query(
+        collection(firestore, 'UserData'),
+        where('class', '==', item.class || ''),
+        where('type', '==', 'Student')
       );
 
-      const historyQuery = query(
-        collection(firestore, `UserData/${teacherDetail.id}/AttendanceRequests`),
-        where("status", "!=", "Requested")
+      const querySnapshot = await getDocs(studentQuery);
+      if (querySnapshot.empty) {
+        Alert.alert('No Students Found', `No students enrolled in class: ${item.class}`);
+        return;
+      }
+
+      for (const userDoc of querySnapshot.docs) {
+        const reqQuery = query(
+          collection(firestore, `UserData/${userDoc.id}/AttendanceRequests`),
+          where('status', '==', 'Requested'),
+          where('createdAt', '==', item.createdAt),
+          where('class', '==', item.class),
+          where('createdBy', '==', item.createdBy),
+          where('subjectName', '==', item.subjectName)
+        );
+
+        const snap = await getDocs(reqQuery);
+        await Promise.all(
+          snap.docs.map((requestDoc) =>
+            updateDoc(doc(firestore, `UserData/${userDoc.id}/AttendanceRequests`, requestDoc.id), {
+              status: 'Closed',
+            })
+          )
+        );
+      }
+
+      const updatedStudents = (item.enrolledStudents || []).map((student) =>
+        student.status === 'Requested' ? { ...student, status: 'Closed' } : student
       );
 
-      const unsubscribeRequested = onSnapshot(q, (querySnapshot) => {
-        const temp = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          time: formatDate(doc.get("createdAt")),
-          percentage: ((doc.get("totalNumberOfStudents") - doc.get("pendingNumberOfStudents")) / doc.get("totalNumberOfStudents")) * 100
-        }));
-        temp.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        setRequestedData(temp);
+      await updateDoc(doc(firestore, `UserData/${teacherDetail.id}/AttendanceRequests`, item.id), {
+        status: 'Closed',
+        enrolledStudents: updatedStudents,
       });
 
-      const unsubscribeHistory = onSnapshot(historyQuery, (querySnapshot) => {
-        const temp = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          time: formatDate(doc.get("createdAt")),
-          percentage: ((doc.get("totalNumberOfStudents") - doc.get("pendingNumberOfStudents")) / doc.get("totalNumberOfStudents")) * 100
-        }));
-        temp.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        setHistoryData(temp);
-      });
-
-      return () => {
-        unsubscribeRequested();
-        unsubscribeHistory();
-        applySort(sortOption);
-      };
+      Alert.alert('Completed', 'Attendance request closed successfully.');
+    } catch (error) {
+      console.log('Error completing request:', error);
+      Alert.alert('Error', error.message || 'Failed to close request.');
+    } finally {
+      setLoadingId(null);
     }
-  }, [serchInp]);
-
-
-  const renderPendingRequest = ({ item }) => (
-
-    <TouchableOpacity key={item.id} style={styles.requestCardContainer} onPress={() => {
-      navigation.navigate("RequestDetails", { requestDetails: item, type: "Pending", teacherDetail: teacherDetail })
-    }}>
-
-      <View style={styles.requestCard}>
-        <View style={styles.requestDetails}>
-          <View style={styles.requestedContainer}>
-            <Text style={styles.label}>Requested</Text>
-          </View>
-          <View style={styles.classContainer}>
-            <Text style={{ ...styles.classText, marginRight: 5 }}>{item.class || 'N/A'}</Text>
-            <Text style={{ ...styles.classText, fontSize: 15 }}>{` ( ${item.subjectName} )`}</Text>
-          </View>
-          <Text style={styles.dateText}>{item.time || 'Unknown Date'}</Text>
-        </View>
-        <CPB percentage={item.percentage || 0} size={80} strokeWidth={6} color={Colors.SECONDARY} tsize={item.percentage >= 100 ? 16 : 18} />
-      </View>
-      <View style={styles.requestActionsRow}>
-        <TouchableOpacity style={styles.cancelButton}
-          onPress={() => { handleCancel(item) }}
-          disabled={loadingDId === item.id}
-        >
-          <Text style={styles.buttonTextSecondary}>{loadingDId === item.id ? 'Deleting...' : 'Delete'}</Text>
-
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={() => handleComplete(item)}
-          disabled={loadingId === item.id}
-        >
-          <Text style={styles.buttonText}>
-            {loadingId === item.id ? 'Completing...' : 'Complete'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
-  );
-
-  const renderHistory = ({ item }) => (
-    <TouchableOpacity key={item.id} style={styles.requestCardContainer} onPress={() => {
-      navigation.navigate("RequestDetails", { requestDetails: item, type: "History" })
-    }}>
-      <View style={styles.requestCard}>
-        <View style={styles.requestDetails}>
-          <View style={styles.requestedContainer}>
-            <Text style={styles.label}>{item.status}</Text>
-          </View>
-          <View style={styles.classContainer}>
-            <Text style={{ ...styles.classText, marginRight: 5, fontSize: 18 }}>{item.class || 'N/A'}</Text>
-            <Text style={{ ...styles.classText, fontSize: 14, fontWeight: 'normal' }}>{` ( ${item.subjectName} )`}</Text>
-          </View>
-          <Text style={styles.dateText}>{item.time || 'Unknown Date'}</Text>
-        </View>
-        <CPB percentage={item.percentage || 0} size={65} strokeWidth={4} tsize={14} color={Colors.SECONDARY} />
-      </View>
-    </TouchableOpacity>
-  );
-  const applySort = (option) => {
-    setSortOption(option);
-
-    if (option === "date") {
-      setRequestedData((prev) =>
-        [...prev].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      );
-      setHistoryData((prev) =>
-        [...prev].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      );
-    } else if (option === "Class") {
-      setRequestedData((prev) =>
-        [...prev].sort((a, b) => a.class.localeCompare(b.class))
-      );
-      setHistoryData((prev) =>
-        [...prev].sort((a, b) => a.class.localeCompare(b.class))
-      );
-
-    }
-    else if (option === "Subject Name (ASC)") {
-      setRequestedData((prev) =>
-        [...prev].sort((a, b) => a.subjectName.localeCompare(b.subjectName))
-      );
-      setHistoryData((prev) =>
-        [...prev].sort((a, b) => a.subjectName.localeCompare(b.subjectName))
-      );
-
-    } else if (option === "Subject Name (DESC)") {
-      setRequestedData((prev) =>
-        [...prev].sort((a, b) => b.subjectName.localeCompare(a.subjectName))
-      );
-      setHistoryData((prev) =>
-        [...prev].sort((a, b) => b.subjectName.localeCompare(a.subjectName))
-      );
-    }
-    else if (option === "status") {
-      setHistoryData((prev) =>
-        [...prev].sort((a, b) => a.status.localeCompare(b.status))
-      );
-    }
-    setModalVisible(false);
   };
-  const renderModal = () => {
-    const options = [
-      { label: "Date", value: "date" },
-      { label: "Class", value: "Class" },
-      { label: "Subject Name (ASC)", value: "Subject Name (ASC)" },
-      { label: "Subject Name (DESC)", value: "Subject Name (DESC)" },
-      { label: "Status", value: "status" },
-    ];
 
-    return (
-      <Modal
-        visible={modalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
+  const handleCancel = async (item) => {
+    try {
+      setLoadingDeleteId(item.id);
+
+      const studentQuery = query(
+        collection(firestore, 'UserData'),
+        where('class', '==', item.class || ''),
+        where('type', '==', 'Student')
+      );
+
+      const querySnapshot = await getDocs(studentQuery);
+      if (querySnapshot.empty) {
+        Alert.alert('No Students Found', `No students enrolled in class: ${item.class}`);
+        return;
+      }
+
+      for (const userDoc of querySnapshot.docs) {
+        const reqQuery = query(
+          collection(firestore, `UserData/${userDoc.id}/AttendanceRequests`),
+          where('status', '==', 'Requested'),
+          where('createdAt', '==', item.createdAt),
+          where('class', '==', item.class),
+          where('createdBy', '==', item.createdBy),
+          where('subjectName', '==', item.subjectName)
+        );
+
+        const snap = await getDocs(reqQuery);
+        await Promise.all(
+          snap.docs.map((requestDoc) =>
+            deleteDoc(doc(firestore, `UserData/${userDoc.id}/AttendanceRequests`, requestDoc.id))
+          )
+        );
+      }
+
+      await deleteDoc(doc(firestore, `UserData/${teacherDetail.id}/AttendanceRequests`, item.id));
+      Alert.alert('Deleted', 'Attendance request deleted successfully.');
+    } catch (error) {
+      console.log('Error deleting request:', error);
+      Alert.alert('Error', error.message || 'Failed to delete request.');
+    } finally {
+      setLoadingDeleteId(null);
+    }
+  };
+
+  const activeList = activeTab === 'Pending' ? pendingRequests : historyRequests;
+
+  const filteredList = useMemo(() => {
+    const queryText = searchQuery.trim().toLowerCase();
+    const searched = activeList.filter((item) =>
+      `${item.class} ${item.subjectName} ${item.createdBy} ${item.status}`.toLowerCase().includes(queryText)
+    );
+
+    return sortRequestList(searched, sortOption);
+  }, [activeList, searchQuery, sortOption]);
+
+  const summary = useMemo(() => ({
+    pending: pendingRequests.length,
+    history: historyRequests.length,
+    avgCompletion: activeList.length
+      ? Math.round(activeList.reduce((sum, item) => sum + (item.percentage || 0), 0) / activeList.length)
+      : 0,
+  }), [activeList, historyRequests.length, pendingRequests.length]);
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <FlatList
+        data={filteredList}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.requestCard}
+            onPress={() => navigation.navigate('RequestDetails', {
+              requestDetails: item,
+              type: activeTab === 'Pending' ? 'Pending' : 'History',
+              teacherDetail,
+            })}
+          >
+            <View style={styles.requestTopRow}>
+              <View style={styles.requestCopy}>
+                <View style={activeTab === 'Pending' ? styles.badgeLive : styles.badgeHistory}>
+                  <Text style={activeTab === 'Pending' ? styles.badgeTextLive : styles.badgeTextHistory}>
+                    {item.status}
+                  </Text>
+                </View>
+                <Text style={styles.requestTitle}>{item.class} • {item.subjectName}</Text>
+                <Text style={styles.requestSubtitle}>{item.displayDate}</Text>
+              </View>
+              <CPB
+                percentage={item.percentage || 0}
+                size={70}
+                strokeWidth={6}
+                tsize={14}
+                color={Colors.SECONDARY}
+              />
+            </View>
+
+            <View style={styles.metaRow}>
+              <Text style={styles.metaText}>{item.totalNumberOfStudents || 0} students</Text>
+              <Text style={styles.metaText}>{item.pendingNumberOfStudents || 0} pending</Text>
+            </View>
+
+            {activeTab === 'Pending' ? (
+              <View style={styles.actionRow}>
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => handleCancel(item)}
+                  disabled={loadingDeleteId === item.id}
+                >
+                  <Text style={styles.deleteButtonText}>
+                    {loadingDeleteId === item.id ? 'Deleting...' : 'Delete'}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.completeButton}
+                  onPress={() => handleComplete(item)}
+                  disabled={loadingId === item.id}
+                >
+                  <Text style={styles.completeButtonText}>
+                    {loadingId === item.id ? 'Completing...' : 'Complete'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+          </TouchableOpacity>
+        )}
+        ListHeaderComponent={
+          <View>
+            <View style={styles.heroCard}>
+              <View style={styles.heroHeader}>
+                <View style={styles.heroCopy}>
+                  <Text style={styles.heroTitle}>Request Control</Text>
+                  <Text style={styles.heroSubtitle}>
+                    Watch live attendance progress and close sessions without digging through lists.
+                  </Text>
+                </View>
+                <LottieView
+                  source={require('../../assets/createReq.json')}
+                  autoPlay
+                  loop
+                  style={styles.heroAnimation}
+                />
+              </View>
+            </View>
+
+            <View style={styles.metricRow}>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricValue}>{summary.pending}</Text>
+                <Text style={styles.metricLabel}>Pending</Text>
+              </View>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricValue}>{summary.history}</Text>
+                <Text style={styles.metricLabel}>History</Text>
+              </View>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricValue}>{summary.avgCompletion}%</Text>
+                <Text style={styles.metricLabel}>Avg Progress</Text>
+              </View>
+            </View>
+
+            <View style={styles.tabRow}>
+              {['Pending', 'History'].map((tab) => (
+                <TouchableOpacity
+                  key={tab}
+                  style={activeTab === tab ? styles.activeTab : styles.inactiveTab}
+                  onPress={() => setActiveTab(tab)}
+                >
+                  <Text style={activeTab === tab ? styles.activeTabText : styles.inactiveTabText}>
+                    {tab}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.controlsRow}>
+              <View style={styles.searchBar}>
+                <Feather name="search" size={18} color={Colors.SECONDARY} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search class or subject"
+                  placeholderTextColor="#738393"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+              </View>
+              <TouchableOpacity style={styles.filterButton} onPress={() => setModalVisible(true)}>
+                <MaterialIcons name="tune" size={22} color={Colors.PRIMARY} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>No requests found</Text>
+            <Text style={styles.emptySubtitle}>Create a request to start tracking attendance progress.</Text>
+          </View>
+        }
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      />
+
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate('CreateRequest', { teacherDetail })}
       >
+        <MaterialIcons name="add" size={26} color="#FFFFFF" />
+      </TouchableOpacity>
+
+      <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => setModalVisible(false)}>
         <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
-          <View style={styles.modalContainer}>
+          <View style={styles.modalBackdrop}>
             <TouchableWithoutFeedback>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Sort By</Text>
-                {options.map((option) => (
+              <View style={styles.modalCard}>
+                <Text style={styles.modalTitle}>Sort Requests</Text>
+                {['Newest', 'Class', 'Subject', 'Completion'].map((item) => (
                   <TouchableOpacity
-                    key={option.value}
-                    style={styles.radioOption}
-                    onPress={() => applySort(option.value)}
+                    key={item}
+                    style={styles.modalOption}
+                    onPress={() => {
+                      setSortOption(item);
+                      setModalVisible(false);
+                    }}
                   >
-                    <Text style={styles.optionText}>{option.label}</Text>
-                    <RadioButton
-                      color={Colors.SECONDARY}
-                      value={option.value}
-                      status={sortOption === option.value ? "checked" : "unchecked"}
-                      onPress={() => applySort(option.value)}
-                    />
+                    <Text style={styles.modalOptionText}>{item}</Text>
+                    <View style={sortOption === item ? styles.radioActive : styles.radioInactive} />
                   </TouchableOpacity>
                 ))}
-                <TouchableOpacity
-                  style={styles.cancelButtonModal}
-                  onPress={() => setModalVisible(false)}
-                >
-                  <Text style={styles.cancelTextModal}>Close</Text>
-                </TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-    );
-  };
-
-  const handleSort = () => {
-    setModalVisible(true)
-  }
-  const handleSearchByDate = () => {
-
-  }
-
-  const handleSearch = () => {
-    const lowercasedSearch = serchInp.toLowerCase();
-
-    // Filter requestedData
-    const filteredRequestedData = requestedData.filter(
-      (item) =>
-        item.subjectName?.toLowerCase().includes(lowercasedSearch) ||
-        item.createdBy?.toLowerCase().includes(lowercasedSearch)
-    );
-
-    // Filter historyData
-    const filteredHistoryData = historyData.filter(
-      (item) =>
-        item.subjectName?.toLowerCase().includes(lowercasedSearch) ||
-        item.createdBy?.toLowerCase().includes(lowercasedSearch) ||
-        item.status?.toLowerCase().includes(lowercasedSearch)
-    );
-
-    setRequestedData(filteredRequestedData);
-    setHistoryData(filteredHistoryData);
-  };
-  const handleSearchInputChange = (text) => {
-    setSearchInp(text);
-    clearTimeout(searchTimeout.current);
-    searchTimeout.current = setTimeout(handleSearch, 500); // Debounce search by 500ms
-  };
-
-  return (
-    <SafeAreaView style={styles.container}>
-      <FlatList
-      showsVerticalScrollIndicator={false}
-        style={{ paddingHorizontal: 13 }}
-        data={requestedData}
-        renderItem={renderPendingRequest}
-        keyExtractor={(item) => `pending-${item.id}`}
-        ListHeaderComponent={
-          <>
-            <View style={styles.header}>
-              <TouchableOpacity style={styles.leftIcon} onPress={() => navigation.goBack()}>
-                <Ionicons name="chevron-back-outline" size={24} color={Colors.PRIMARY} />
-                <Text style={styles.backText}>Back</Text>
-              </TouchableOpacity>
-              <View style={styles.rightIcons}>
-                <TouchableOpacity style={styles.icon} onPress={() => { setSearchVisible(true) }} >
-                  <Ionicons name="search-outline" size={24} color={Colors.PRIMARY} />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.icon} onPress={handleSearchByDate}>
-                  <AntDesign name="calendar" size={24} color="black" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.icon} onPress={handleSort}>
-                  <Ionicons name="filter-outline" size={24} color={Colors.PRIMARY} />
-                </TouchableOpacity>
-              </View>
-
-            </View>
-            {
-              searchVisible && (
-                <View style={styles.searchBox}>
-                  <RNTextInput
-                    style={styles.input}
-                    placeholder="Type here to search"
-                    onChange={(e) => {
-                      setSearchInp(e.nativeEvent.text); // Update state with the text from the input
-                      handleSearch(); // Perform search filtering
-                    }}
-                    value={serchInp}
-
-                  />
-                  <TouchableOpacity onPress={() => { setSearchVisible(false) }}>
-                    <Text style={styles.text}>Close</Text>
-                  </TouchableOpacity>
-                </View>
-              )
-            }
-            <View style={styles.contentContainer}>
-              <Text style={styles.sectionHeader}>Pending Request</Text>
-            </View>
-          </>
-        }
-        ListEmptyComponent={<Text style={styles.noDataText}>No Pending Requests</Text>}
-        ListFooterComponent={
-          <>
-            <View style={styles.historyContainer}>
-              <Text style={styles.sectionHeader}>History</Text>
-            </View>
-            {historyData.length > 0 ? (
-              <FlatList
-              showsVerticalScrollIndicator={false}
-                data={historyData}
-                renderItem={renderHistory}
-                keyExtractor={(item) => `history-${item.id}`}
-                ListEmptyComponent={<Text style={styles.noDataText}>No History Available</Text>}
-              />
-            ) : (
-              <Text style={styles.noDataText}>No History Available</Text>
-            )}
-          </>
-        }
-      />
-      {renderModal()}
-      <FAB
-        icon="plus"
-        color="white"
-        style={styles.fab}
-        onPress={() => {
-          navigation.navigate("CreateRequest", { teacherDetail: teacherDetail });
-        }}
-      />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  Bcontainer: {
+  container: {
     flex: 1,
-    padding: 24,
-    justifyContent: 'center',
-    backgroundColor: 'grey',
+    backgroundColor: '#F4F7FB',
   },
-  BcontentContainer: {
-    flex: 1,
-    alignItems: 'center',
+  content: {
+    paddingHorizontal: 16,
+    paddingBottom: 120,
   },
-  searchBox: {
+  heroCard: {
+    backgroundColor: Colors.SECONDARY,
+    borderRadius: 28,
+    padding: 20,
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  heroHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    margin: 10,
-    borderWidth: 1,
-    borderColor: Colors.SECONDARY,
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: '#ffff'
+  },
+  heroCopy: {
+    flex: 1,
+  },
+  heroTitle: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '800',
+    marginBottom: 8,
+  },
+  heroSubtitle: {
+    color: '#DDE7EF',
+    lineHeight: 20,
+  },
+  heroAnimation: {
+    width: 120,
+    height: 120,
+  },
+  metricRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+  },
+  metricCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+  },
+  metricValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: Colors.PRIMARY,
+  },
+  metricLabel: {
+    marginTop: 4,
+    color: '#6F7F8E',
+  },
+  tabRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 14,
+  },
+  activeTab: {
+    flex: 1,
+    backgroundColor: Colors.PRIMARY,
+    borderRadius: 18,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  inactiveTab: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  activeTabText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  inactiveTabText: {
+    color: Colors.PRIMARY,
+    fontWeight: '700',
+  },
+  controlsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+  },
+  searchBar: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    height: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 10,
+    color: Colors.PRIMARY,
+  },
+  filterButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  requestCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 18,
+    marginBottom: 12,
+  },
+  requestTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 14,
+    alignItems: 'center',
+  },
+  requestCopy: {
+    flex: 1,
+  },
+  badgeLive: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#E7F2EA',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginBottom: 10,
+  },
+  badgeHistory: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#EAF0F5',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginBottom: 10,
+  },
+  badgeTextLive: {
+    color: '#237646',
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  badgeTextHistory: {
+    color: Colors.SECONDARY,
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  requestTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: Colors.PRIMARY,
+  },
+  requestSubtitle: {
+    marginTop: 4,
+    color: '#708191',
+  },
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 14,
+  },
+  metaText: {
+    color: '#5E7281',
+    fontWeight: '600',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 16,
+  },
+  deleteButton: {
+    flex: 1,
+    backgroundColor: '#FCECEC',
+    borderRadius: 16,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    color: '#B14141',
+    fontWeight: '700',
+  },
+  completeButton: {
+    flex: 1,
+    backgroundColor: Colors.PRIMARY,
+    borderRadius: 16,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  completeButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 80,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.PRIMARY,
+  },
+  emptySubtitle: {
+    marginTop: 8,
+    color: '#728292',
+    textAlign: 'center',
   },
   fab: {
     position: 'absolute',
-    margin: 16,
-    right: 5,
-    bottom: 5,
-    backgroundColor: Colors.SECONDARY,
-  },
-  input: {
-    padding: 8,
-    flex: 1,  // Allow the TextInput to take the remaining space
-    marginRight: 10,
-    fontSize: 16,
-  },
-  text: {
-    fontSize: 16,
-    color: '#333',
-  },
-  container: {
-    flex: 1,
-    marginTop: Platform.OS === 'ios' ? 0 : 25,
-  },
-  noDataText: {
-    fontSize: 14,
-    color: '#888',
-    textAlign: 'center',
-    marginVertical: Platform.OS === 'ios' ? 0 : 0,
-  },
-  header: {
-    height: 60,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    right: 24,
+    bottom: 24,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     alignItems: 'center',
-    paddingHorizontal: 10,
+    justifyContent: 'center',
+    backgroundColor: Colors.PRIMARY,
   },
-  leftIcon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  backText: {
-    marginLeft: 4,
-    color: Colors.PRIMARY,
-    fontSize: 16,
-  },
-  rightIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  icon: {
-    marginLeft: 16,
-  },
-  contentContainer: {
-    paddingHorizontal: 16,
-  },
-  sectionHeader: {
-    fontSize: 18,
-    color: Colors.SECONDARY,
-    marginVertical: 16,
-    fontWeight: 'bold',
-  },
-  requestCardContainer: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 10,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0.5, height: 2 },
-  },
-  requestCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  requestDetails: {
-    flex: 1,
-  },
-  requestedContainer: {
-    backgroundColor: Colors.lightBg,
-    padding: 4,
-    borderRadius: 4,
-    alignSelf: 'flex-start',
-  },
-  label: {
-    fontSize: 14,
-    color: 'black',
-  },
-  classContainer: {
-    flexDirection: 'row',
-    paddingVertical: 8,
-    alignItems: 'center',
-  },
-
-  classText: {
-    fontSize: 18,
-    color: '#333',
-    fontFamily: 'Signika-regular',
-    fontWeight: 600,
-  },
-  dateText: {
-    fontSize: 14,
-    color: '#888',
-  },
-  requestActionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 16,
-    width: '100%',
-  },
-  cancelButton: {
-    backgroundColor: '#ebf4f9',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    flex: 1,
-    marginRight: 8,
-  },
-  closeButton: {
-    backgroundColor: Colors.SECONDARY,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    flex: 1,
-    marginLeft: 8,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  buttonTextSecondary: {
-    color: '#333',
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  historyContainer: {
-    paddingHorizontal: 16,
-  },
-  modalContainer: {
+  modalBackdrop: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: 'rgba(15, 27, 39, 0.35)',
   },
-  modalContent: {
-    backgroundColor: 'white',
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
+  modalCard: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     padding: 20,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    alignSelf: 'center',
-    marginBottom: 15,
+    fontSize: 20,
+    fontWeight: '800',
+    color: Colors.PRIMARY,
+    marginBottom: 12,
   },
-  radioOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 10,
+  modalOption: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEF3F6',
   },
-  radioButton: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: Colors.PRIMARY,
-    marginRight: 10,
+  modalOptionText: {
+    color: Colors.PRIMARY,
+    fontWeight: '600',
   },
-  radioButtonSelected: {
+  radioActive: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     backgroundColor: Colors.PRIMARY,
   },
-  optionText: {
-    fontSize: 16,
-  },
-  applyButtonModal: {
-    backgroundColor: Colors.SECONDARY,
-    padding: 15,
-    borderRadius: 8,
-    marginTop: 20,
-  },
-  applyButtonTextModal: {
-    color: "#fff",
-    textAlign: "center",
-    fontWeight: "bold",
-  },
-  cancelButtonModal: {
-    marginTop: 10,
-    alignItems: "center",
-  },
-  cancelTextModal: {
-    color: Colors.SECONDARY,
-    fontSize: 16,
+  radioInactive: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: '#B3C1CC',
   },
 });
 

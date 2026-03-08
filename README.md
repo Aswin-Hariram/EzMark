@@ -6,13 +6,13 @@ EzMark is a React Native application for managing attendance in a seamless and s
 The app allows:  
 - **Admins** to add and manage teachers and students.  
 - **Teachers** to create attendance requests with OTPs.  
-- **Students** to verify their identity using facial recognition and enter the OTP for attendance verification.
+- **Students** to complete live selfie verification and enter the OTP for attendance verification.
 
 ## Features
 
 - **Admin Panel**: Admins can add and manage teachers and students.
 - **Attendance Requests**: Teachers can create attendance requests with OTPs for students.
-- **Biometric Verification**: Students use facial recognition to verify their identity.
+- **Biometric Verification**: Students use AWS Rekognition live selfie checks before marking attendance.
 - **Secure Data Storage**: Firestore is used for storing data and AWS S3 for image storage.
 
 ---
@@ -21,7 +21,7 @@ The app allows:
 
 - **React Native**: Cross-platform mobile application development.
 - **Firestore**: Cloud-based NoSQL database.
-- **AWS Rekognition**: Facial recognition for secure attendance validation.
+- **AWS Rekognition**: Live selfie validation for secure attendance verification.
 - **AWS S3**: Image storage service for handling facial images.
 
 ---

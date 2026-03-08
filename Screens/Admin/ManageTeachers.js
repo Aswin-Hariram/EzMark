@@ -1,366 +1,350 @@
-import { FlatList, Image, StyleSheet, Text, TextInput, TouchableWithoutFeedback, TouchableOpacity, View, Modal, Platform, SafeAreaView } from 'react-native';
-import React, { useEffect, useState } from 'react';
-import Feather from '@expo/vector-icons/Feather';
-import Entypo from '@expo/vector-icons/Entypo'
-import AntDesign from '@expo/vector-icons/AntDesign';
+import React, { useCallback, useMemo, useState } from 'react';
+import { FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Entypo from '@expo/vector-icons/Entypo';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useNavigation } from '@react-navigation/native';
-import { Colors } from '../../assets/Colors';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { collection, getDocs, query, where } from 'firebase/firestore';
+import { Colors } from '../../assets/Colors';
 import { firestore } from '../../Config/FirebaseConfig';
-import profilePic from '../../assets/Teachers/profile.png';
-import { ActivityIndicator } from 'react-native-paper';
-import { RadioButton } from 'react-native-paper';
 
+const sortOptions = ['Name', 'Department', 'Classes'];
 
-const ManageTeachers = () => {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [teachersData, setTeachersData] = useState([]);
-    const [isRefreshing, setisRefreshing] = useState(false);
-    const [isLoading, setisLoading] = useState(true)
-    const [modalVisible, setModalVisible] = useState(false);
-    const [sortOption, setSortOption] = useState('Name(A-Z)');
+const ManageTeachers = ({ embedded = false }) => {
+  const navigation = useNavigation();
+  const [teachers, setTeachers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortOption, setSortOption] = useState('Name');
 
-    const [searchVisible, setSearchVisible] = useState(false);
-    const filteredTeachers = teachersData.filter(
-        (teacher) =>
-            teacher.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            teacher.department.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    const navigation = useNavigation();
-
-    const getTeachers = async () => {
-        console.log('Fetching teachers from database');
-
-        try {
-
-            const q = query(collection(firestore, 'UserData'), where('type', '==', 'Teacher'));
-            const querySnapshot = await getDocs(q);
-            const teachers = []; // Temporary array to hold fetched teachers
-            querySnapshot.forEach((doc) => {
-                console.log(doc.id, ' => ', doc.data());
-                teachers.push(doc.data()); // Add teacher data to the array
-            });
-            setTeachersData(teachers); // Set state with all fetched teachers
-        } catch (error) {
-            console.log('Error getting documents: ', error);
-        }
-        setisLoading(false)
-    };
-    useEffect(() => {
-
-        getTeachers();
-    }, []);
-
-    if (isLoading) {
-        return (<View style={{ flex: 1, justifyContent: 'center', alignContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator size={'small'} color={Colors.PRIMARY} />
-        </View>)
+  const getTeachers = useCallback(async () => {
+    try {
+      const teacherQuery = query(collection(firestore, 'UserData'), where('type', '==', 'Teacher'));
+      const querySnapshot = await getDocs(teacherQuery);
+      const records = querySnapshot.docs.map((item) => item.data());
+      setTeachers(records);
+    } catch (error) {
+      console.log('Error getting teachers:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
+  }, []);
 
-    const applySort = (option) => {
-        setSortOption(option);
-        // Example sorting logic
-        const sortedTeachers = [...teachersData];
-        if (option === 'Name(A-Z)') {
-            sortedTeachers.sort((a, b) => a.name.localeCompare(b.name));
-        } else if (option === 'Name(Z-A)') {
-            sortedTeachers.sort((a, b) => b.name.localeCompare(a.name));
-        }
-        setTeachersData(sortedTeachers);
-        setModalVisible(false);
-    };
+  useFocusEffect(
+    useCallback(() => {
+      getTeachers();
+    }, [getTeachers])
+  );
 
+  const summary = useMemo(() => ({
+    total: teachers.length,
+    activeDepartments: new Set(teachers.map((item) => item.department).filter(Boolean)).size,
+    fullyAssigned: teachers.filter((item) => (item.classes || []).length && (item.subjects || []).length).length,
+  }), [teachers]);
 
-    const renderModal = () => {
-        const options = [
-            { label: "Name(A-Z)", value: "Name(A-Z)" },
-            { label: "Name(Z-A)", value: "Name(Z-A)" },
-            { label: "Deparment", value: "Deparment" },
-
-        ];
-
-        return (
-            <Modal
-                visible={modalVisible}
-                transparent={true}
-                animationType="slide"
-                onRequestClose={() => setModalVisible(false)}
-            >
-                <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
-                    <View style={styles.modalContainer}>
-                        <TouchableWithoutFeedback>
-                            <View style={styles.modalContent}>
-                                <Text style={styles.modalTitle}>Sort By</Text>
-                                {options.map((option) => (
-                                    <TouchableOpacity
-                                        key={option.value}
-                                        style={styles.radioOption}
-                                        onPress={() => applySort(option.value)}
-                                    >
-                                        <Text style={styles.optionText}>{option.label}</Text>
-                                        <RadioButton
-                                            color={Colors.SECONDARY}
-                                            value={option.value}
-                                            status={sortOption === option.value ? "checked" : "unchecked"}
-                                            onPress={() => applySort(option.value)}
-                                        />
-                                    </TouchableOpacity>
-                                ))}
-                                <TouchableOpacity
-                                    style={styles.cancelButtonModal}
-                                    onPress={() => setModalVisible(false)}
-                                >
-                                    <Text style={styles.cancelTextModal}>Close</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </TouchableWithoutFeedback>
-                    </View>
-                </TouchableWithoutFeedback>
-            </Modal>
-        );
-    };
-
-    return (
-        <SafeAreaView style={styles.container}>
-
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.leftIcon} onPress={() => navigation.goBack()}>
-                    <Ionicons name="chevron-back-outline" size={24} color={Colors.PRIMARY} />
-                    <Text style={styles.backText}>Back</Text>
-                </TouchableOpacity>
-                <View style={styles.rightIcons}>
-                    <TouchableOpacity style={styles.icon} onPress={() => { setSearchVisible(true) }} >
-                        <Ionicons name="search-outline" size={24} color={Colors.PRIMARY} />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.icon} >
-                        <AntDesign name="calendar" size={24} color="black" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.icon} onPress={() => { setModalVisible(true) }}>
-                        <Ionicons name="filter-outline" size={24} color={Colors.PRIMARY} />
-                    </TouchableOpacity>
-                </View>
-
-            </View>
-            {/* Search Bar */}
-            {
-                searchVisible && <View style={styles.search}>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Search Teachers"
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        cursorColor={Colors.SECONDARY}
-                    />
-                    <TouchableOpacity onPress={() => { setSearchVisible(false) }}>
-                        <Text style={styles.text}>Close</Text>
-                    </TouchableOpacity>
-                </View>
-            }
-
-            {/* Teachers List */}
-            {filteredTeachers.length > 0 ? (
-                <FlatList
-                showsVerticalScrollIndicator={false}
-                    style={{ marginTop: 13 }}
-                    data={filteredTeachers}  // Use filteredTeachers instead of teachersData
-                    keyExtractor={(item) => item.email}
-                    refreshing={isRefreshing}
-                    onRefresh={getTeachers}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity
-                            style={styles.teacherCard}
-                            onPress={() => navigation.navigate('TeacherProfile', { teacher: item, getTeachers: getTeachers })}
-                        >
-                            <View style={styles.image}>
-                                <Image style={styles.profile_img} source={item.image ? { uri: item.image } : profilePic} />
-                            </View>
-                            <View style={styles.info}>
-                                <Text style={styles.teacherName}>{item.name}</Text>
-                                <Text style={styles.teacherDept}>Department: {item.department}</Text>
-                            </View>
-                            <Entypo name="chevron-right" size={24} color={Colors.PRIMARY} />
-                        </TouchableOpacity>
-                    )}
-                />
-            ) : (
-                !isLoading && <View style={{ alignItems: 'center', marginTop: 20 }}>
-                    <Text style={{ color: Colors.SECONDARY, fontSize: 16 }}>No teachers found</Text>
-                </View>
-            )}
-
-            {/* Floating Add Button */}
-            <TouchableOpacity
-                style={styles.floating_btn}
-                activeOpacity={0.7}
-                accessibilityLabel="Add Teacher"
-                onPress={() => {
-                    navigation.navigate('AddTeacher', { getTeachers: getTeachers });
-                }}>
-                <Entypo name="plus" size={24} color="white" />
-            </TouchableOpacity>
-            {renderModal()}
-        </SafeAreaView>
+  const filteredTeachers = useMemo(() => {
+    const queryText = searchQuery.trim().toLowerCase();
+    const matches = teachers.filter((teacher) =>
+      `${teacher.name} ${teacher.department} ${(teacher.classes || []).join(' ')} ${(teacher.subjects || []).join(' ')}`
+        .toLowerCase()
+        .includes(queryText)
     );
+
+    return [...matches].sort((a, b) => {
+      if (sortOption === 'Department') {
+        return (a.department || '').localeCompare(b.department || '');
+      }
+      if (sortOption === 'Classes') {
+        return (b.classes || []).length - (a.classes || []).length;
+      }
+      return (a.name || '').localeCompare(b.name || '');
+    });
+  }, [searchQuery, sortOption, teachers]);
+
+  const Container = embedded ? View : SafeAreaView;
+
+  return (
+    <Container style={styles.container}>
+      <FlatList
+        data={filteredTeachers}
+        keyExtractor={(item) => item.id || item.email}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.teacherCard}
+            onPress={() => navigation.navigate('TeacherProfile', { teacher: item, getTeachers })}
+          >
+            <View style={styles.teacherCopy}>
+              <Text style={styles.teacherName}>{item.name}</Text>
+              <Text style={styles.teacherMeta}>{item.department || 'Department pending'}</Text>
+              <View style={styles.teacherStats}>
+                <View style={styles.statPill}>
+                  <Text style={styles.statPillText}>{(item.classes || []).length} classes</Text>
+                </View>
+                <View style={styles.statPill}>
+                  <Text style={styles.statPillText}>{(item.subjects || []).length} subjects</Text>
+                </View>
+              </View>
+            </View>
+            <Entypo name="chevron-right" size={20} color={Colors.PRIMARY} />
+          </TouchableOpacity>
+        )}
+        ListHeaderComponent={
+          <View>
+            <View style={[styles.hero, embedded && styles.embeddedHero]}>
+              <Text style={styles.heroTitle}>Teacher Management</Text>
+              <Text style={styles.heroSubtitle}>
+                Track ownership, teaching coverage, and profile completeness across your faculty.
+              </Text>
+              <TouchableOpacity style={styles.inlineAction} onPress={() => navigation.navigate('AddTeacher', { getTeachers })}>
+                <MaterialIcons name="person-add-alt-1" size={22} color="#fff" />
+                <Text style={styles.inlineActionText}>Add Teacher</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.metricsRow}>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricValue}>{summary.total}</Text>
+                <Text style={styles.metricLabel}>Teachers</Text>
+              </View>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricValue}>{summary.activeDepartments}</Text>
+                <Text style={styles.metricLabel}>Departments</Text>
+              </View>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricValue}>{summary.fullyAssigned}</Text>
+                <Text style={styles.metricLabel}>Fully Mapped</Text>
+              </View>
+            </View>
+
+            <View style={styles.searchBar}>
+              <Ionicons name="search-outline" size={20} color={Colors.SECONDARY} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search teacher, department, subject, class"
+                placeholderTextColor="#708191"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+            </View>
+
+            <FlatList
+              horizontal
+              data={sortOptions}
+              keyExtractor={(item) => item}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.sortList}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={item === sortOption ? styles.sortChipActive : styles.sortChip}
+                  onPress={() => setSortOption(item)}
+                >
+                  <Text style={item === sortOption ? styles.sortChipTextActive : styles.sortChipText}>
+                    Sort: {item}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        }
+        ListEmptyComponent={
+          !loading ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyTitle}>No teachers found</Text>
+              <Text style={styles.emptySubtitle}>Add faculty profiles to start assignment management.</Text>
+            </View>
+          ) : null
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              getTeachers();
+            }}
+            colors={[Colors.PRIMARY]}
+          />
+        }
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      />
+
+      <TouchableOpacity style={styles.floatingButton} onPress={() => navigation.navigate('AddTeacher', { getTeachers })}>
+        <Entypo name="plus" size={24} color="#fff" />
+      </TouchableOpacity>
+    </Container>
+  );
 };
 
-export default ManageTeachers;
-
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        paddingTop: Platform.OS === 'android' ? 25 : 0,
-    },
-    header: {
-        height: 60,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 10,
-    },
-    leftIcon: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    backText: {
-        marginLeft: 4,
-        color: Colors.PRIMARY,
-        fontWeight:'bold',
-        fontSize: 16,
-    },
-    rightIcons: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    icon: {
-        marginLeft: 16,
-    },
-    teacherCard: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        padding: 15,
-        borderRadius: 10,
-        backgroundColor: 'white',
-        marginVertical: 5,
-        marginHorizontal: 10,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 3,
-        alignItems: 'center',
-    },
-    profile_img: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-    },
-    info: {
-        marginLeft: 10,
-        flex: 1,
-        justifyContent: 'center',
-    },
-    teacherName: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#333',
-    },
-    teacherDept: {
-        fontSize: 14,
-        color: Colors.SECONDARY,
-    },
-    floating_btn: {
-        backgroundColor: Colors.SECONDARY,
-        position: 'absolute',
-        width: 60,
-        height: 60,
-        bottom: 25,
-        right: 25,
-        borderRadius: 30,
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 5,
-        elevation: 4,
-    },
-    search: {
-        backgroundColor: 'white',
-        marginTop: 10,
-        flexDirection: 'row',
-        marginHorizontal: 10,
-        borderRadius: 10,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: Platform.OS === 'ios' ? 15 : 8,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 3,
-    },
-    input: {
-        flex: 1,
-        fontSize: 16,
-        marginRight: 10,
-    },
-    modalContainer: {
-        flex: 1,
-        justifyContent: 'flex-end',
-        backgroundColor: 'rgba(0, 0, 0, 0.1)',
-    },
-    modalContent: {
-        backgroundColor: 'white',
-        borderTopLeftRadius: 40,
-        borderTopRightRadius: 40,
-        padding: 20,
-    },
-    modalTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        alignSelf: 'center',
-        marginBottom: 15,
-    },
-    radioOption: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginVertical: 10,
-        justifyContent: 'space-between',
-    },
-    radioButton: {
-        width: 20,
-        height: 20,
-        borderRadius: 10,
-        borderWidth: 2,
-        borderColor: Colors.PRIMARY,
-        marginRight: 10,
-    },
-    radioButtonSelected: {
-        backgroundColor: Colors.PRIMARY,
-    },
-    optionText: {
-        fontSize: 16,
-    },
-    applyButtonModal: {
-        backgroundColor: Colors.SECONDARY,
-        padding: 15,
-        borderRadius: 8,
-        marginTop: 20,
-    },
-    applyButtonTextModal: {
-        color: "#fff",
-        textAlign: "center",
-        fontWeight: "bold",
-    },
-    cancelButtonModal: {
-        marginTop: 10,
-        alignItems: "center",
-    },
-    cancelTextModal: {
-        color: Colors.SECONDARY,
-        fontSize: 16,
-    },
+  container: {
+    flex: 1,
+    backgroundColor: '#F4F7FB',
+  },
+  content: {
+    paddingHorizontal: 16,
+    paddingBottom: 100,
+  },
+  hero: {
+    marginTop: 12,
+    marginBottom: 16,
+    padding: 20,
+    borderRadius: 28,
+    backgroundColor: Colors.PRIMARY,
+  },
+  embeddedHero: {
+    marginTop: 0,
+  },
+  heroTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 6,
+  },
+  heroSubtitle: {
+    color: '#D9E3ED',
+    lineHeight: 20,
+    marginBottom: 14,
+  },
+  inlineAction: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.SECONDARY,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  inlineActionText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  metricsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+  },
+  metricCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+  },
+  metricValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: Colors.PRIMARY,
+  },
+  metricLabel: {
+    color: '#607181',
+    marginTop: 4,
+  },
+  searchBar: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    height: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 10,
+    color: Colors.PRIMARY,
+  },
+  sortList: {
+    gap: 8,
+    marginBottom: 14,
+  },
+  sortChip: {
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: '#EAF0F5',
+  },
+  sortChipActive: {
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: Colors.SECONDARY,
+  },
+  sortChipText: {
+    color: '#456072',
+    fontWeight: '600',
+  },
+  sortChipTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  teacherCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 18,
+    marginBottom: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  teacherCopy: {
+    flex: 1,
+  },
+  teacherName: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: Colors.PRIMARY,
+  },
+  teacherMeta: {
+    color: '#6E7E8E',
+    marginTop: 4,
+  },
+  teacherStats: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+  },
+  statPill: {
+    borderRadius: 999,
+    backgroundColor: '#EAF0F5',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  statPillText: {
+    color: Colors.SECONDARY,
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 80,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.PRIMARY,
+  },
+  emptySubtitle: {
+    marginTop: 8,
+    textAlign: 'center',
+    color: '#6B7C8D',
+  },
+  floatingButton: {
+    position: 'absolute',
+    right: 24,
+    bottom: 24,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.PRIMARY,
+  },
 });
+
+export default ManageTeachers;

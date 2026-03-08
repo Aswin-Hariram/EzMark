@@ -2,9 +2,9 @@ import AWS from 'aws-sdk';
 
 // Configure AWS with your access keys and region
 AWS.config.update({
-    accessKeyId: 'your-access-key',
-    secretAccessKey: 'your-secretAccessKey',
-    region: 'your-aws-region',
+  accessKeyId: process.env.EXPO_PUBLIC_AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.EXPO_PUBLIC_AWS_SECRET_ACCESS_KEY,
+  region: process.env.EXPO_PUBLIC_AWS_REGION,
 });
 
 export const s3 = new AWS.S3();

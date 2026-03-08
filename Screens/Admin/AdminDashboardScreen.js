@@ -1,161 +1,418 @@
-import React from 'react';
-import { Platform, SafeAreaView, StyleSheet, Text, View, FlatList } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-
+import React, { useEffect, useMemo, useState } from 'react';
+import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Feather from '@expo/vector-icons/Feather';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { useNavigation } from '@react-navigation/native';
+import { ActivityIndicator } from 'react-native-paper';
 import { Colors } from '../../assets/Colors';
+import { auth, firestore } from '../../Config/FirebaseConfig';
 import ManageStudents from './ManageStudents';
 import ManageClasses from './ManageClasses';
 import ManageTeachers from './ManageTeachers';
+import ManageSubjects from './ManageSubjects';
 import AdminMainDashBoard from './AdminMainDashBoard';
-// Sample data for recent attendance activities
-const recentAttendanceData = [
-    { id: '1', className: 'Class 1A', subject: 'Maths', date: '2024-12-22', percentage: '95%' },
-    { id: '2', className: 'Class 2B', subject: 'Science', date: '2024-12-21', percentage: '88%' },
-    { id: '3', className: 'Class 3C', subject: 'English', date: '2024-12-20', percentage: '92%' },
-    { id: '4', className: 'Class 4D', subject: 'History', date: '2024-12-19', percentage: '85%' },
+
+const sectionItems = [
+  { key: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
+  { key: 'teachers', label: 'Teachers', icon: 'groups' },
+  { key: 'students', label: 'Students', icon: 'school' },
+  { key: 'classes', label: 'Classes', icon: 'class' },
+  { key: 'subjects', label: 'Subjects', icon: 'menu-book' },
 ];
 
-// Create Bottom Tab Navigator instance
-const Tab = createBottomTabNavigator(); // Declare Tab navigator here
-
-const Dashboard = () => {
-
-    return (
-
-        <AdminMainDashBoard />
-
-    );
-};
-
-
-
+const quickActionItems = [
+  { key: 'AddTeacher', label: 'Add Teacher', icon: 'person-add-alt-1' },
+  { key: 'AddStudent', label: 'Add Student', icon: 'group-add' },
+  { key: 'AddClass', label: 'Add Class', icon: 'playlist-add' },
+  { key: 'AddAdmin', label: 'Add Admin', icon: 'admin-panel-settings' },
+];
 
 const AdminDashboardScreen = () => {
-    return (
+  const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
+  const { width } = useWindowDimensions();
+  const isWideLayout = width >= 980;
+  const [activeSection, setActiveSection] = useState('dashboard');
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [adminData, setAdminData] = useState(null);
+  const [loadingAdmin, setLoadingAdmin] = useState(true);
 
-        <Tab.Navigator
-            screenOptions={({ route }) => ({
-                headerShown: false,
-                tabBarIcon: ({ color, size }) => {
-                    let iconName;
+  useEffect(() => {
+    const loadAdmin = async () => {
+      try {
+        const userEmail = auth.currentUser?.email;
 
-                    if (route.name === 'Dashboard') {
-                        iconName = 'dashboard';
-                    } else if (route.name === 'Teachers') {
-                        iconName = 'people';
-                    } else if (route.name === 'Students') {
-                        iconName = 'person';
-                    } else if (route.name === 'Classes') {
-                        iconName = 'class';
-                    }
+        if (!userEmail) {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Login' }],
+          });
+          return;
+        }
 
-                    return <Icon name={iconName} size={size} color={color} />;
-                },
-                tabBarActiveTintColor: Colors.SECONDARY,
-                tabBarInactiveTintColor: 'gray',
-            })}
+        const adminQuery = query(
+          collection(firestore, 'UserData'),
+          where('email', '==', userEmail),
+          where('type', '==', 'Admin')
+        );
+
+        const adminSnapshot = await getDocs(adminQuery);
+        const adminRecord = adminSnapshot.docs[0];
+        setAdminData(adminRecord ? { id: adminRecord.id, ...adminRecord.data() } : null);
+      } catch (error) {
+        console.log('Error loading admin profile:', error);
+        setAdminData(null);
+      } finally {
+        setLoadingAdmin(false);
+      }
+    };
+
+    loadAdmin();
+  }, [navigation]);
+
+  useEffect(() => {
+    if (isWideLayout && menuVisible) {
+      setMenuVisible(false);
+    }
+  }, [isWideLayout, menuVisible]);
+
+  const activeSectionLabel = useMemo(
+    () => sectionItems.find((item) => item.key === activeSection)?.label || 'Dashboard',
+    [activeSection]
+  );
+
+  const openSection = (sectionKey) => {
+    setActiveSection(sectionKey);
+    setMenuVisible(false);
+  };
+
+  const handleQuickAction = (routeName) => {
+    setMenuVisible(false);
+    navigation.navigate(routeName);
+  };
+
+  const handleOpenProfile = () => {
+    if (!adminData) {
+      return;
+    }
+
+    setMenuVisible(false);
+    navigation.navigate('AdminProfile', { adminData });
+  };
+
+  const handleLogout = () => {
+    auth.signOut().then(() => {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+    });
+  };
+
+  const renderSectionContent = () => {
+    switch (activeSection) {
+      case 'teachers':
+        return <ManageTeachers embedded />;
+      case 'students':
+        return <ManageStudents embedded />;
+      case 'classes':
+        return <ManageClasses embedded />;
+      case 'subjects':
+        return <ManageSubjects embedded />;
+      case 'dashboard':
+      default:
+        return <AdminMainDashBoard onOpenSection={openSection} embedded />;
+    }
+  };
+
+  const renderSidebar = () => (
+    <View style={styles.sidebar}>
+      <View style={styles.sidebarTop}>
+        <Text style={styles.sidebarEyebrow}>EzMark Admin</Text>
+        <Text style={styles.sidebarTitle}>Control Menu</Text>
+      </View>
+
+      <View style={styles.sidebarGroup}>
+        {sectionItems.map((item) => {
+          const isActive = activeSection === item.key;
+
+          return (
+            <TouchableOpacity
+              key={item.key}
+              style={[styles.menuItem, isActive && styles.menuItemActive]}
+              onPress={() => openSection(item.key)}
+            >
+              <MaterialIcons
+                name={item.icon}
+                size={20}
+                color={isActive ? '#FFFFFF' : Colors.PRIMARY}
+              />
+              <Text style={[styles.menuItemText, isActive && styles.menuItemTextActive]}>
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <View style={styles.sidebarGroup}>
+        <Text style={styles.sidebarGroupLabel}>Quick Actions</Text>
+        {quickActionItems.map((item) => (
+          <TouchableOpacity
+            key={item.key}
+            style={styles.secondaryMenuItem}
+            onPress={() => handleQuickAction(item.key)}
+          >
+            <MaterialIcons name={item.icon} size={18} color={Colors.PRIMARY} />
+            <Text style={styles.secondaryMenuText}>{item.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <View style={styles.sidebarFooter}>
+        <TouchableOpacity
+          style={styles.footerAction}
+          onPress={handleOpenProfile}
+          disabled={!adminData || loadingAdmin}
         >
-            <Tab.Screen name="Dashboard" component={Dashboard} />
-            <Tab.Screen name="Teachers" component={ManageTeachers} />
-            <Tab.Screen name="Students" component={ManageStudents} />
-        </Tab.Navigator>
+          <Feather name="user" size={18} color={Colors.PRIMARY} />
+          <Text style={styles.footerActionText}>
+            {adminData?.name ? `${adminData.name.split(' ')[0]}'s Profile` : 'Profile'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.footerAction} onPress={handleLogout}>
+          <MaterialIcons name="logout" size={18} color={Colors.PRIMARY} />
+          <Text style={styles.footerActionText}>Logout</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
-    );
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.shell}>
+        {isWideLayout ? <View style={[styles.sidebarRail, { paddingTop: insets.top }]}>{renderSidebar()}</View> : null}
+
+        <View style={styles.contentColumn}>
+          <View style={styles.topBar}>
+            {!isWideLayout ? (
+              <TouchableOpacity style={styles.menuTrigger} onPress={() => setMenuVisible(true)}>
+                <Feather name="menu" size={22} color={Colors.PRIMARY} />
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.menuTriggerPlaceholder} />
+            )}
+
+            <View style={styles.topBarCopy}>
+              <Text style={styles.topBarLabel}>Admin Workspace</Text>
+              <Text style={styles.topBarTitle}>{activeSectionLabel}</Text>
+            </View>
+
+            <TouchableOpacity style={styles.topBarAction} onPress={handleLogout}>
+              <MaterialIcons name="logout" size={20} color={Colors.PRIMARY} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.contentSurface}>
+            {loadingAdmin && !adminData && activeSection === 'dashboard' ? (
+              <View style={styles.loadingState}>
+                <ActivityIndicator size="large" color={Colors.PRIMARY} />
+                <Text style={styles.loadingText}>Loading admin workspace...</Text>
+              </View>
+            ) : (
+              renderSectionContent()
+            )}
+          </View>
+        </View>
+      </View>
+
+      {!isWideLayout ? (
+        <Modal
+          visible={menuVisible}
+          animationType="fade"
+          transparent
+          onRequestClose={() => setMenuVisible(false)}
+        >
+          <Pressable style={styles.drawerBackdrop} onPress={() => setMenuVisible(false)}>
+            <Pressable style={[styles.drawerPanel, { paddingTop: insets.top }]} onPress={() => {}}>
+              <SafeAreaView edges={["top", "left", "bottom"]} style={styles.drawerSidebar}>
+                {renderSidebar()}
+              </SafeAreaView>
+            </Pressable>
+          </Pressable>
+        </Modal>
+      ) : null}
+    </SafeAreaView>
+  );
 };
 
-export default AdminDashboardScreen;
-
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: Platform.OS === 'android' ? 25 : 15, // Adjust padding for iOS and Android
-        backgroundColor: '#f8f9fa',
-    },
-    greetingSection: {
-
-    },
-    greetingTitle: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: '#333',
-        marginBottom: 10,
-        fontFamily: 'Arial', // Example font family
-    },
-    greetingDate: {
-        fontSize: 16,
-        color: '#666',
-        fontFamily: 'Arial', // Example font family
-    },
-    section: {
-        marginBottom: 20,
-        paddingHorizontal: 10,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#333',
-        marginLeft: Platform.OS === 'android' ? 0 : 10,
-        marginBottom: 10,
-    },
-    cardsRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-    card: {
-        flex: 1,
-        backgroundColor: Colors.SECONDARY,
-        padding: 20,
-        margin: 10,
-        borderRadius: 10,
-        alignItems: 'center',
-        justifyContent: 'center',
-        elevation: 5,
-    },
-    cardIcon: {
-        marginBottom: 10,
-    },
-    cardTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#fff',
-        marginBottom: 5,
-    },
-    cardValue: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#fff',
-    },
-    attendanceCard: {
-        backgroundColor: '#fff',
-        padding: 15,
-        margin: Platform.OS === 'android' ? 10 : 15, // Adjust vertical margin for iOS
-        borderRadius: 10,
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-    },
-    attendanceClass: {
-        fontSize: 16,
-        fontWeight: '700', // Increased weight for emphasis
-        color: '#333',
-    },
-    attendanceDate: {
-        fontSize: 14,
-        color: '#555',
-        marginTop: 5,
-    },
-    attendancePercentage: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#28a745',
-        marginTop: 5,
-    },
-    centered: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
+  container: {
+    flex: 1,
+    backgroundColor: '#EAF0F5',
+  },
+  shell: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  sidebarRail: {
+    width: 280,
+    backgroundColor: '#FFFFFF',
+    borderRightWidth: 1,
+    borderRightColor: '#E1E8EE',
+  },
+  sidebar: {
+    flex: 1,
+    paddingHorizontal: 18,
+    paddingVertical: 20,
+  },
+  sidebarTop: {
+    marginBottom: 24,
+  },
+  sidebarEyebrow: {
+    color: '#6D8090',
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  sidebarTitle: {
+    color: Colors.PRIMARY,
+    fontSize: 24,
+    fontWeight: '800',
+  },
+  sidebarGroup: {
+    marginBottom: 20,
+  },
+  sidebarGroupLabel: {
+    color: '#7A8A97',
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    marginBottom: 8,
+    backgroundColor: '#F5F8FB',
+  },
+  menuItemActive: {
+    backgroundColor: Colors.PRIMARY,
+  },
+  menuItemText: {
+    marginLeft: 12,
+    color: Colors.PRIMARY,
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  menuItemTextActive: {
+    color: '#FFFFFF',
+  },
+  secondaryMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginBottom: 8,
+    backgroundColor: '#F8FBFD',
+  },
+  secondaryMenuText: {
+    marginLeft: 10,
+    color: Colors.PRIMARY,
+    fontWeight: '600',
+  },
+  sidebarFooter: {
+    marginTop: 'auto',
+    gap: 10,
+  },
+  footerAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 13,
+    backgroundColor: '#F4F7FB',
+  },
+  footerActionText: {
+    marginLeft: 10,
+    color: Colors.PRIMARY,
+    fontWeight: '700',
+  },
+  contentColumn: {
+    flex: 1,
+    minWidth: 0,
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    paddingTop: 10,
+    paddingBottom: 12,
+  },
+  menuTrigger: {
+    width: 44,
+    height: 44,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuTriggerPlaceholder: {
+    width: 44,
+  },
+  topBarCopy: {
+    flex: 1,
+    marginHorizontal: 14,
+  },
+  topBarLabel: {
+    color: '#708392',
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  topBarTitle: {
+    color: Colors.PRIMARY,
+    fontSize: 24,
+    fontWeight: '800',
+  },
+  topBarAction: {
+    width: 44,
+    height: 44,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contentSurface: {
+    flex: 1,
+    minHeight: 0,
+  },
+  loadingState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    color: '#6C7D8B',
+    fontWeight: '600',
+  },
+  drawerBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(16, 43, 60, 0.28)',
+    justifyContent: 'flex-start',
+  },
+  drawerPanel: {
+    width: 294,
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+  },
+  drawerSidebar: {
+    flex: 1,
+  },
 });
+
+export default AdminDashboardScreen;

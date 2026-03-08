@@ -1,390 +1,743 @@
-import { FlatList, Image, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import React, { useEffect, useState } from 'react';
-import CPB from '../../Components/CPB'; // Ensure this component is implemented correctly.
+import React, { useEffect, useMemo, useState } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Feather from '@expo/vector-icons/Feather';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { Colors } from '../../assets/Colors';
-import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
-import { firestore } from '../../Config/FirebaseConfig';
-import { set } from 'date-fns';
 import LottieView from 'lottie-react-native';
-import { StatusBar } from 'expo-status-bar';
-
+import { useNavigation } from '@react-navigation/native';
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import CPB from '../../Components/CPB';
+import { Colors } from '../../assets/Colors';
+import { firestore } from '../../Config/FirebaseConfig';
 
 const StudentMainDashboard = ({ studentDetail }) => {
-  const [sortOrder, setSortOrder] = useState("desc");
-  const [selectedId, setSelectedId] = useState(null); // To track selected subject
-  const [enrolledSubjects, setEnrolledSubjects] = useState([]);
-  const [overAll, setOverAll] = useState([]);
-  const [sub, setSub] = useState(overAll[0] || {});
-  const [isrefreshing, setIsRefreshing] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const navigation = useNavigation();
+  const [subjectSummaries, setSubjectSummaries] = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [selectedSubjectId, setSelectedSubjectId] = useState('overall');
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const fetchSubjects = async () => {
+  const fetchStudentOverview = async () => {
     try {
-      setIsRefreshing(true)
-      setIsLoading(true)
-      console.log("Fetching student details...");
-      if (!studentDetail || !studentDetail.id) {
-        console.error("Student details are missing!");
+      setLoading(true);
+
+      if (!studentDetail?.id) {
+        setSubjectSummaries([]);
+        setRequests([]);
         return;
       }
 
+      const studentRef = doc(firestore, 'UserData', studentDetail.id);
+      const studentSnap = await getDoc(studentRef);
+      const studentData = studentSnap.exists() ? studentSnap.data() : studentDetail;
+      const subjects = studentData.subjects || [];
 
-      const ref = doc(firestore, "UserData", studentDetail.id);
-      const res = await getDoc(ref);
-      if (!res.exists()) {
-        console.error("No user data found!");
-        return;
-      }
+      const attendanceQuery = query(
+        collection(firestore, `UserData/${studentDetail.id}/AttendanceRequests`)
+      );
+      const attendanceSnapshot = await getDocs(attendanceQuery);
+      const requestItems = attendanceSnapshot.docs.map((item) => ({
+        id: item.id,
+        ...item.data(),
+      }));
 
-      const data = res.data();
-      if (data.subjects) {
-        console.log("Subjects =>", data.subjects);
+      requestItems.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setRequests(requestItems);
 
-        // Process subjects
-        const subjectDetails = await Promise.all(
-          data.subjects.map(async (sub, index) => {
-            const findSub = query(
-              collection(firestore, `UserData/${studentDetail.id}/AttendanceRequests`),
-              where("subjectName", "==", sub)
-            );
+      const summaries = await Promise.all(
+        subjects.map(async (subject, index) => {
+          const subjectQuery = query(
+            collection(firestore, `UserData/${studentDetail.id}/AttendanceRequests`),
+            where('subjectName', '==', subject)
+          );
+          const subjectSnapshot = await getDocs(subjectQuery);
+          const total = subjectSnapshot.size;
+          let attended = 0;
+          let pending = 0;
 
-            const qRes = await getDocs(findSub);
-            if (qRes.size === 0) {
-              return { id: index, subject: sub, total: 0, attended: 0 };
-            } else {
-              const totalHrs = qRes.size;
-              let completedHrs = 0;
-
-              qRes.forEach((sd) => {
-                const entryData = sd.data();
-                if (entryData.status === "Completed") {
-                  completedHrs++;
-                }
-              });
-
-              return {
-                id: index,
-                subject: sub,
-                total: totalHrs,
-                attended: completedHrs,
-                percentage: ((completedHrs / totalHrs) * 100 || 0).toFixed(1)
-              };
+          subjectSnapshot.forEach((entry) => {
+            const data = entry.data();
+            if (data.status === 'Completed') {
+              attended += 1;
             }
-          })
-        );
+            if (data.status === 'Requested') {
+              pending += 1;
+            }
+          });
 
-        setEnrolledSubjects(subjectDetails);
-        console.log("Updated enrolled subjects =>", subjectDetails);
-      }
-    } catch (err) {
-      console.error("Error fetching subjects:", err);
-    }
-    finally {
-      setIsLoading(false)
+          return {
+            id: `${subject}-${index}`,
+            subject,
+            total,
+            attended,
+            pending,
+            percentage: total ? Math.round((attended / total) * 100) : 0,
+          };
+        })
+      );
+
+      setSubjectSummaries(summaries);
+    } catch (error) {
+      console.log('Error fetching student overview:', error);
+      setSubjectSummaries([]);
+      setRequests([]);
+    } finally {
+      setRefreshing(false);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchSubjects();
-  }, [studentDetail]); // Fetch subjects when `studentDetail` changes
+    fetchStudentOverview();
+  }, [studentDetail?.id]);
+
+  const dashboardData = useMemo(() => {
+    const pendingRequests = requests.filter((item) => item.status === 'Requested');
+    const completedRequests = requests.filter((item) => item.status === 'Completed');
+    const averageAttendance = subjectSummaries.length
+      ? Math.round(subjectSummaries.reduce((sum, item) => sum + item.percentage, 0) / subjectSummaries.length)
+      : 0;
+    const strongestSubject = [...subjectSummaries].sort((a, b) => b.percentage - a.percentage)[0] || null;
+    const attentionSubject = [...subjectSummaries].sort((a, b) => a.percentage - b.percentage)[0] || null;
+
+    return {
+      pendingRequests,
+      completedRequests,
+      averageAttendance,
+      strongestSubject,
+      attentionSubject,
+      recentRequests: requests.slice(0, 4),
+    };
+  }, [requests, subjectSummaries]);
+
+  const subjectSelectorData = useMemo(() => {
+    const completedTotal = subjectSummaries.reduce((sum, item) => sum + item.attended, 0);
+    const sessionTotal = subjectSummaries.reduce((sum, item) => sum + item.total, 0);
+    const pendingTotal = subjectSummaries.reduce((sum, item) => sum + item.pending, 0);
+    const overallPercentage = sessionTotal ? Number(((completedTotal / sessionTotal) * 100).toFixed(1)) : 0;
+
+    return [
+      {
+        id: 'overall',
+        subject: 'Overall',
+        attended: completedTotal,
+        total: sessionTotal,
+        pending: pendingTotal,
+        percentage: overallPercentage,
+      },
+      ...subjectSummaries.map((item) => ({
+        id: item.id,
+        subject: item.subject,
+        attended: item.attended,
+        total: item.total,
+        pending: item.pending,
+        percentage: Number(item.percentage || 0),
+      })),
+    ];
+  }, [subjectSummaries]);
+
+  const selectedSubject = useMemo(
+    () => subjectSelectorData.find((item) => item.id === selectedSubjectId) || subjectSelectorData[0],
+    [selectedSubjectId, subjectSelectorData]
+  );
 
   useEffect(() => {
-    if (enrolledSubjects.length > 0) {
-      let overAllPercentage = 0;
-      let size = 0;
-
-      // Calculate individual subject percentages and collect data
-      const overallData = enrolledSubjects.map((data, ind) => {
-        const percentage = (data.attended / data.total) * 100 || 0;
-        const roundedPercentage = parseFloat(percentage.toFixed(1));
-        if (roundedPercentage != 0) {
-          overAllPercentage += roundedPercentage;
-          size++;
-        }
-        return { id: ind + 1, name: data.subject, percentage: roundedPercentage };
-      });
-      const averagePercentage = size > 0 ? (overAllPercentage / size).toFixed(1) : 0;
-      const overallResult = [{ id: 0, name: "Overall", percentage: parseFloat(averagePercentage) }, ...overallData];
-      setSub({ id: 0, name: "Overall", percentage: parseFloat(averagePercentage) })
-      setOverAll(overallResult);
+    if (!subjectSelectorData.find((item) => item.id === selectedSubjectId)) {
+      setSelectedSubjectId('overall');
     }
-    setIsRefreshing(false)
-  }, [enrolledSubjects]); // Recalculate overall when `enrolledSubjects` changes
+  }, [selectedSubjectId, subjectSelectorData]);
 
-  const handleSubjectPress = (item) => {
-    setSub({ name: item.name, percentage: item.percentage });
-    setSelectedId(item.id);
-  };
-
-  const renderSubjects = (item) => {
+  if (loading) {
     return (
-      <View style={styles.attendanceContainer}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <View>
-            <Text style={styles.subjectName}>{item.subject}</Text>
-            <Text style={styles.detailsText}>
-              Total Hours: {item.total} | Attend Hours: {item.attended}
-            </Text>
-          </View>
-          <Text style={styles.percentageStyle}>{item.percentage || 0}%</Text>
-        </View>
-        <View style={styles.progressBar}>
-          <View
-            style={[
-              styles.progress,
-              { width: `${(item.attended / item.total) * 100 || 0}%` },
-            ]}
-          />
-        </View>
-      </View>
-    );
-  };
-
-
-  const handleSort = () => {
-    const sortedSubjects = [...enrolledSubjects];
-
-    if (sortOrder === "desc") {
-      // Sort in descending order
-      sortedSubjects.sort((a, b) => b.percentage - a.percentage);
-      setSortOrder("asc"); // Toggle to ascending order after sorting
-    } else {
-      // Sort in ascending order
-      sortedSubjects.sort((a, b) => a.percentage - b.percentage);
-      setSortOrder("desc"); // Toggle to descending order after sorting
-    }
-
-    setEnrolledSubjects(sortedSubjects); // Update the state with sorted subjects
-  };
-
-  const renderView = () => (
-    <View>
-      <View style={styles.header}>
-        <Feather name="menu" size={28} color="black" />
-        <Text style={styles.headerText}>EzMark</Text>
-        <MaterialCommunityIcons name="qrcode-scan" size={24} color="black" />
-      </View>
-
-      <View style={styles.container}>
-        <View style={styles.overview}>
-          <Text style={styles.title}>{sub.name}</Text>
-        </View>
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBarContainer}>
-            <CPB percentage={sub.percentage} size={'110'} strokeWidth={8} color={Colors.SECONDARY} tsize={22} />
-          </View>
-          <FlatList
-            data={overAll}
-            renderItem={({ item }) => (
-              <TouchableOpacity onPress={() => handleSubjectPress(item)}>
-                <View
-                  style={[
-                    styles.subject,
-                    selectedId === item.id && styles.elevatedSubject,
-                  ]}
-                >
-                  <View style={styles.btn} />
-                  <View style={styles.textContainer}>
-                    <Text style={styles.subjectText}>{item.name}</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            )}
-            keyExtractor={(item) => item.id.toString()}
-          />
-
-        </View>
-      </View>
-
-      <View style={styles.enrolledHeader}>
-        <Text style={styles.enrolledText}>Enrolled Subjects</Text>
-        <TouchableOpacity onPress={handleSort}>
-          <Ionicons name="filter-outline" size={24} color="black" />
-        </TouchableOpacity>
-      </View>
-
-    </View>
-  )
-
-  if (isLoading) {
-    return (
-      <SafeAreaView>
-
-        <View style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
-          <LottieView source={require('../../assets/loadingPage.json')} autoPlay loop style={{ width: '70%', height: 100 }} />
-        </View>
+      <SafeAreaView style={styles.loadingShell}>
+        <LottieView source={require('../../assets/loadingPage.json')} autoPlay loop style={styles.loadingAnimation} />
+        <Text style={styles.loadingText}>Loading your attendance insights...</Text>
       </SafeAreaView>
-    )
+    );
   }
 
   return (
-    <SafeAreaView>
-      <StatusBar
-       // Android-specific background color
-        barStyle="light-content"  // Text and icon color (light-content or dark-content)
-      />
-      <FlatList
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-        style={styles.mainList}
-        ListHeaderComponent={renderView()}
-        ListFooterComponent={
-          (
-            <FlatList
-              style={{ paddingBottom: 40 }}
-              showsVerticalScrollIndicator={false}
-              data={enrolledSubjects}
-              renderItem={({ item }) => renderSubjects(item)}
-              keyExtractor={(item) => item.id.toString()}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              fetchStudentOverview();
+            }}
+            colors={[Colors.PRIMARY]}
+          />
+        }
+      >
+        <View style={styles.heroShell}>
+          <View style={styles.heroTop}>
+            <View style={styles.heroCopy}>
+              <Text style={styles.heroEyebrow}>Student Hub</Text>
+              <Text style={styles.heroTitle}>Everything you need for attendance in one place</Text>
+              <Text style={styles.heroSubtitle}>
+                Track your subject performance, live requests, and recent verification activity.
+              </Text>
+            </View>
+            <LottieView
+              source={require('../../assets/avatar.json')}
+              autoPlay
+              loop
+              style={styles.heroAnimation}
             />
+          </View>
+
+          <View style={styles.heroFooter}>
+            <View>
+              <Text style={styles.heroName}>{studentDetail?.name || 'Student'}</Text>
+              <Text style={styles.heroMeta}>{studentDetail?.class || 'Class pending'} • {studentDetail?.rollno}</Text>
+            </View>
+            <TouchableOpacity style={styles.heroButton} onPress={() => navigation.navigate('Requests')}>
+              <Feather name="bell" size={18} color={Colors.PRIMARY} />
+              <Text style={styles.heroButtonText}>Open Requests</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.metricsRow}>
+          <View style={styles.metricCard}>
+            <Text style={styles.metricLabel}>Average Attendance</Text>
+            <Text style={styles.metricValue}>{dashboardData.averageAttendance}%</Text>
+          </View>
+          <View style={styles.metricCard}>
+            <Text style={styles.metricLabel}>Pending Requests</Text>
+            <Text style={styles.metricValue}>{dashboardData.pendingRequests.length}</Text>
+          </View>
+        </View>
+
+        <View style={styles.metricsRow}>
+          <View style={[styles.metricCard, styles.metricCardAccent]}>
+            <Text style={styles.metricLabel}>Completed Sessions</Text>
+            <Text style={styles.metricValue}>{dashboardData.completedRequests.length}</Text>
+          </View>
+          <View style={styles.metricCard}>
+            <Text style={styles.metricLabel}>Subjects</Text>
+            <Text style={styles.metricValue}>{subjectSummaries.length}</Text>
+          </View>
+        </View>
+
+        <View style={styles.analyticsCard}>
+          <View style={styles.analyticsHeader}>
+            <View style={styles.analyticsHeaderCopy}>
+              <Text style={styles.sectionTitle}>Subject Performance</Text>
+              <Text style={styles.sectionSubtitle}>View overall attendance or switch to any subject.</Text>
+            </View>
+            <View style={styles.analyticsBadge}>
+              <Text style={styles.analyticsBadgeText}>{subjectSummaries.length || 0} tracked</Text>
+            </View>
+          </View>
+          <View style={styles.analyticsBody}>
+            <View style={styles.circularSummaryCard}>
+              <CPB
+                percentage={selectedSubject?.percentage || 0}
+                size={126}
+                strokeWidth={10}
+                color={Colors.SECONDARY}
+                backgroundColor="#E7EEF4"
+                tsize={22}
+              />
+              <Text style={styles.circularSubjectTitle}>{selectedSubject?.subject || 'Overall'}</Text>
+              <Text style={styles.circularSubjectMeta}>
+                Completed {selectedSubject?.attended || 0}/{selectedSubject?.total || 0} sessions
+              </Text>
+              <Text style={styles.circularSubjectHint}>{selectedSubject?.pending || 0} pending requests</Text>
+            </View>
+
+            <View style={styles.subjectSelectorColumn}>
+              {subjectSelectorData.map((item) => {
+                const isActive = item.id === selectedSubject?.id;
+
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[styles.subjectSelectorCard, isActive && styles.subjectSelectorCardActive]}
+                    onPress={() => setSelectedSubjectId(item.id)}
+                  >
+                    <View style={styles.subjectSelectorCopy}>
+                      <Text style={[styles.subjectSelectorTitle, isActive && styles.subjectSelectorTitleActive]}>
+                        {item.subject}
+                      </Text>
+                      <Text style={styles.subjectSelectorMeta}>
+                        {item.attended}/{item.total} completed
+                      </Text>
+                    </View>
+                    <Text style={[styles.subjectSelectorPercent, isActive && styles.subjectSelectorPercentActive]}>
+                      {item.percentage.toFixed(1)}%
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.focusRow}>
+          <View style={styles.focusCard}>
+            <Text style={styles.focusLabel}>Best Performing</Text>
+            <Text style={styles.focusTitle}>{dashboardData.strongestSubject?.subject || 'No data'}</Text>
+            <Text style={styles.focusMeta}>{dashboardData.strongestSubject?.percentage || 0}% attendance</Text>
+          </View>
+          <View style={styles.focusCard}>
+            <Text style={styles.focusLabel}>Needs Attention</Text>
+            <Text style={styles.focusTitle}>{dashboardData.attentionSubject?.subject || 'No data'}</Text>
+            <Text style={styles.focusMeta}>{dashboardData.attentionSubject?.percentage || 0}% attendance</Text>
+          </View>
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recent Requests</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Requests')}>
+            <Text style={styles.sectionLink}>View all</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.timelinePanel}>
+          {dashboardData.recentRequests.length ? dashboardData.recentRequests.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.timelineRow}
+              onPress={() => navigation.navigate('Requests')}
+            >
+              <View style={styles.timelineMarkerColumn}>
+                <View style={styles.timelineDot} />
+                <View style={styles.timelineLine} />
+              </View>
+              <View style={styles.timelineCopy}>
+                <Text style={styles.timelineTitle}>{item.subjectName}</Text>
+                <Text style={styles.timelineMeta}>
+                  {item.createdBy} • {new Date(item.createdAt).toLocaleDateString()}
+                </Text>
+              </View>
+              <View style={item.status === 'Requested' ? styles.statusPillPending : styles.statusPillDone}>
+                <Text style={item.status === 'Requested' ? styles.statusTextPending : styles.statusTextDone}>
+                  {item.status}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )) : (
+            <Text style={styles.emptyText}>No request activity yet.</Text>
           )}
-        refreshing={isrefreshing}
-        onRefresh={fetchSubjects}
-      />
+        </View>
+
+        <Text style={styles.sectionTitle}>Subject Cards</Text>
+        <View style={styles.subjectGrid}>
+          {subjectSummaries.length ? subjectSummaries.map((item) => (
+            <View key={item.id} style={styles.subjectCard}>
+              <Text style={styles.subjectTitle}>{item.subject}</Text>
+              <Text style={styles.subjectMeta}>{item.attended}/{item.total} completed</Text>
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, { width: `${item.percentage}%` }]} />
+              </View>
+              <View style={styles.subjectFooter}>
+                <Text style={styles.subjectFooterText}>{item.pending} pending</Text>
+                <Text style={styles.subjectPercentage}>{item.percentage}%</Text>
+              </View>
+            </View>
+          )) : (
+            <View style={styles.emptyPanel}>
+              <Text style={styles.emptyText}>No enrolled subjects found.</Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
-export default StudentMainDashboard;
-
 const styles = StyleSheet.create({
-  mainList: {
-    paddingTop: Platform.OS === 'android' ? 20 : 0,
-    paddingHorizontal: 5,
-  },
   container: {
-    padding: 16,
-    marginVertical: 10,
-    marginHorizontal: 10,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    elevation: 3,
-    justifyContent: 'space-between',
+    flex: 1,
+    backgroundColor: '#EFF4F8',
+  },
+  content: {
+    paddingHorizontal: 16,
+    paddingBottom: 110,
+  },
+  loadingShell: {
+    flex: 1,
     alignItems: 'center',
-    flex: 1,  // Make sure the container takes up the available space
-  },
-
-  progressContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center', // Align the items vertically centered
-    width: '100%', // Ensure it takes up the full width of the container
-  },
-
-  progressBarContainer: {
     justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-    maxWidth: '40%', // Restrict progress bar width to avoid overflow
+    backgroundColor: '#EFF4F8',
   },
-
-  subject: {
+  loadingAnimation: {
+    width: '72%',
+    height: 120,
+  },
+  loadingText: {
+    marginTop: 14,
+    color: '#6D7E8D',
+    fontWeight: '600',
+  },
+  heroShell: {
+    backgroundColor: '#0F2B3C',
+    borderRadius: 30,
+    padding: 22,
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  heroTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 1,
-    padding: 5,
-    borderRadius: 5,
   },
-
-  elevatedSubject: {
-    elevation: 10,
-    backgroundColor: Colors.lightBg, // Highlighted color
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+  heroCopy: {
+    flex: 1,
   },
-
-  btn: {
-    width: 10,
-    height: 10,
-    backgroundColor: "#8babc1",
-    borderRadius: 5,
+  heroEyebrow: {
+    color: '#A8C0D0',
+    fontWeight: '700',
+    fontSize: 11,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 8,
   },
-
-  textContainer: {
-    flexDirection: 'row',
-  },
-
-  subjectText: {
-    marginLeft: 5,
-    fontFamily: 'Signika-regular',
-    fontSize: 15,
-    textAlign: 'left',
-  },
-
-  overview: {
-    marginBottom: 20,
-  },
-
-  attendanceContainer: {
-    padding: 15,
-    marginVertical: 10,
-    marginHorizontal: 10,
-    backgroundColor: 'white',
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  subjectName: {
-    fontSize: 18,
-    fontFamily: 'Signika-regular',
-    fontWeight: '500',
-    marginBottom: 5,
-    color: 'black',
-  },
-  detailsText: {
-    fontSize: 14,
-    color: '#111',
-    fontFamily: 'Signika-regular',
+  heroTitle: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: '800',
+    lineHeight: 34,
     marginBottom: 10,
   },
-  progressBar: {
-    height: 10,
-    backgroundColor: Colors.lightBg,
-    borderRadius: 5,
-    overflow: 'hidden',
+  heroSubtitle: {
+    color: '#C9D8E2',
+    lineHeight: 20,
   },
-  progress: {
-    height: '100%',
-    backgroundColor: Colors.SECONDARY,
+  heroAnimation: {
+    width: 118,
+    height: 118,
   },
-  header: {
+  heroFooter: {
+    marginTop: 18,
+    paddingTop: 18,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.12)',
     flexDirection: 'row',
-    paddingHorizontal: 10,
-    paddingTop: 15,
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    gap: 12,
   },
-  headerText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
+  heroName: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '700',
   },
-  enrolledHeader: {
+  heroMeta: {
+    color: '#AFC2D0',
+    marginTop: 5,
+  },
+  heroButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  heroButtonText: {
+    color: Colors.PRIMARY,
+    fontWeight: '700',
+  },
+  metricsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  metricCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 18,
+  },
+  metricCardAccent: {
+    backgroundColor: '#F5F9FC',
+  },
+  metricLabel: {
+    color: '#6F8190',
+    fontWeight: '600',
+  },
+  metricValue: {
+    color: Colors.PRIMARY,
+    fontSize: 28,
+    fontWeight: '800',
+    marginTop: 10,
+  },
+  analyticsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 28,
+    padding: 18,
+    marginBottom: 16,
+  },
+  analyticsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginHorizontal: 20,
-    paddingVertical: 10,
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 14,
   },
-  enrolledText: {
-    fontSize: 22,
-    fontFamily: 'Signika-regular',
-    fontWeight: 500,
-    color: Colors.SECONDARY
+  analyticsHeaderCopy: {
+    flex: 1,
+    paddingRight: 4,
   },
-  percentageStyle: {
-    fontSize: 16,
-    fontFamily: 'metro-regular',
+  analyticsBadge: {
+    backgroundColor: '#E7EEF4',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignSelf: 'flex-start',
   },
-  title: {
+  analyticsBadgeText: {
+    color: Colors.PRIMARY,
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  analyticsBody: {
+    flexDirection: 'column',
+    gap: 14,
+  },
+  circularSummaryCard: {
+    backgroundColor: '#F6FAFC',
+    borderRadius: 24,
+    padding: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 230,
+  },
+  circularSubjectTitle: {
+    marginTop: 16,
+    color: Colors.PRIMARY,
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '800',
     textAlign: 'center',
   },
+  circularSubjectMeta: {
+    marginTop: 8,
+    color: '#647887',
+    textAlign: 'center',
+    lineHeight: 19,
+  },
+  circularSubjectHint: {
+    marginTop: 6,
+    color: Colors.SECONDARY,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  subjectSelectorColumn: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    justifyContent: 'space-between',
+  },
+  subjectSelectorCard: {
+    width: '48%',
+    backgroundColor: '#F7FAFC',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#E7EEF4',
+    minHeight: 78,
+  },
+  subjectSelectorCardActive: {
+    backgroundColor: Colors.lightBg,
+    borderColor: '#BED2DF',
+  },
+  subjectSelectorCopy: {
+    flex: 1,
+    paddingRight: 10,
+  },
+  subjectSelectorTitle: {
+    color: Colors.PRIMARY,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  subjectSelectorTitleActive: {
+    color: Colors.SECONDARY,
+  },
+  subjectSelectorMeta: {
+    marginTop: 4,
+    color: '#748494',
+    fontSize: 12,
+  },
+  subjectSelectorPercent: {
+    color: Colors.PRIMARY,
+    fontWeight: '800',
+    fontSize: 14,
+  },
+  subjectSelectorPercentActive: {
+    color: Colors.SECONDARY,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    color: Colors.PRIMARY,
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  sectionSubtitle: {
+    color: '#758594',
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  sectionLink: {
+    color: Colors.SECONDARY,
+    fontWeight: '700',
+  },
+  focusRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  focusCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 18,
+  },
+  focusLabel: {
+    color: '#7A8997',
+    fontSize: 12,
+    marginBottom: 8,
+  },
+  focusTitle: {
+    color: Colors.PRIMARY,
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  focusMeta: {
+    color: '#647887',
+    marginTop: 6,
+  },
+  timelinePanel: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 28,
+    paddingHorizontal: 18,
+    marginBottom: 16,
+  },
+  timelineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEF3F6',
+  },
+  timelineMarkerColumn: {
+    width: 16,
+    alignItems: 'center',
+  },
+  timelineDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: Colors.PRIMARY,
+    marginTop: 6,
+  },
+  timelineLine: {
+    flex: 1,
+    width: 2,
+    backgroundColor: '#D7E1E9',
+    marginTop: 6,
+  },
+  timelineCopy: {
+    flex: 1,
+  },
+  timelineTitle: {
+    color: Colors.PRIMARY,
+    fontWeight: '700',
+  },
+  timelineMeta: {
+    color: '#748494',
+    marginTop: 5,
+  },
+  statusPillPending: {
+    backgroundColor: '#EAF3EF',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  statusPillDone: {
+    backgroundColor: '#EAF0F5',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  statusTextPending: {
+    color: '#246E47',
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  statusTextDone: {
+    color: Colors.SECONDARY,
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  subjectGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  subjectCard: {
+    width: '48%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 16,
+  },
+  subjectTitle: {
+    color: Colors.PRIMARY,
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  subjectMeta: {
+    color: '#728292',
+    marginTop: 6,
+  },
+  progressTrack: {
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: '#E7EEF4',
+    overflow: 'hidden',
+    marginTop: 14,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: Colors.PRIMARY,
+  },
+  subjectFooter: {
+    marginTop: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  subjectFooterText: {
+    color: '#758594',
+    fontSize: 12,
+  },
+  subjectPercentage: {
+    color: Colors.SECONDARY,
+    fontWeight: '700',
+  },
+  emptyPanel: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 18,
+  },
+  emptyText: {
+    color: '#748494',
+  },
 });
+
+export default StudentMainDashboard;

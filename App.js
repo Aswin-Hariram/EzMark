@@ -26,6 +26,8 @@ import VerificationScreen from './Screens/Student/VerificationScreen';
 import TProfile from './Screens/Teacher/TProfile';
 import IntroScreen from './Screens/IntroScreen';
 import ClassSummary from './Screens/Teacher/ClassSummary';
+import AddAdmin from './Screens/Admin/AddAdmin';
+import AdminProfile from './Screens/Admin/AdminProfile';
 
 // Import assets
 import SignikaFont from './assets/Signika.ttf';
@@ -105,6 +107,9 @@ export default function App() {
       <Stack.Screen name="VerificationScreen" component={VerificationScreen} />
       <Stack.Screen name="TProfile" component={TProfile} />
       <Stack.Screen name="ClassSummary" component={ClassSummary} />
+      <Stack.Screen name="AddAdmin" component={AddAdmin} />
+      {/* <Stack.Screen name="ManageAdmins" component={ManageAdmins} /> */}
+      <Stack.Screen name="AdminProfile" component={AdminProfile} />
     </Stack.Navigator>
   );
 

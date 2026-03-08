@@ -1,5 +1,6 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, FlatList, Alert, Modal, TouchableWithoutFeedback, Platform, Image } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Modal, TouchableWithoutFeedback, Platform, Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import CPB from '../../Components/CPB';
 import { Colors } from '../../assets/Colors';
@@ -9,6 +10,8 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import MapView, { Marker } from 'react-native-maps';
 import dp from "../../assets/Teachers/profile.png"
 import { TextInput, RadioButton } from 'react-native-paper';
+import QRCode from 'react-native-qrcode-svg';
+import { buildAttendanceQrPayload, normalizeRadius } from '../../utils/attendance';
 
 const RequestDetails = () => {
     const { requestDetails = {}, type = '', teacherDetail } = useRoute()?.params || {};
@@ -18,7 +21,21 @@ const RequestDetails = () => {
     const [summaryData, setHistoryData] = useState(requestDetails.enrolledStudents);
     const [sortOption, setSortOption] = useState("No Filter");
     const [modalVisible, setModalVisible] = useState(false)
+    const [qrVisible, setQrVisible] = useState(false)
     const navigation = useNavigation();
+    const geofenceRadiusMeters = normalizeRadius(requestDetails?.geofenceRadiusMeters);
+    const qrPayload = useMemo(() => {
+        if (!requestDetails?.requestId || !requestDetails?.teacherId || !requestDetails?.qrToken) {
+            return '';
+        }
+
+        return buildAttendanceQrPayload({
+            requestId: requestDetails.requestId,
+            teacherId: requestDetails.teacherId,
+            createdAt: requestDetails.createdAt,
+            qrToken: requestDetails.qrToken,
+        });
+    }, [requestDetails?.createdAt, requestDetails?.qrToken, requestDetails?.requestId, requestDetails?.teacherId]);
 
 
     console.log(requestDetails);
@@ -46,10 +63,14 @@ const RequestDetails = () => {
                 const reqQuery = query(
                     collection(firestore, `UserData/${userDoc.id}/AttendanceRequests`),
                     where("status", "==", "Requested"),
-                    where("createdAt", "==", item.createdAt),
-                    where("class", "==", item.class),
-                    where("createdBy", "==", item.createdBy),
-                    where("subjectName", "==", item.subjectName)
+                    ...(item.requestId
+                        ? [where("requestId", "==", item.requestId)]
+                        : [
+                            where("createdAt", "==", item.createdAt),
+                            where("class", "==", item.class),
+                            where("createdBy", "==", item.createdBy),
+                            where("subjectName", "==", item.subjectName)
+                        ])
                 );
 
                 const snap = await getDocs(reqQuery);
@@ -106,10 +127,14 @@ const RequestDetails = () => {
                 const reqQuery = query(
                     collection(firestore, `UserData/${userDoc.id}/AttendanceRequests`),
                     where("status", "==", "Requested"),
-                    where("createdAt", "==", item.createdAt),
-                    where("class", "==", item.class),
-                    where("createdBy", "==", item.createdBy),
-                    where("subjectName", "==", item.subjectName)
+                    ...(item.requestId
+                        ? [where("requestId", "==", item.requestId)]
+                        : [
+                            where("createdAt", "==", item.createdAt),
+                            where("class", "==", item.class),
+                            where("createdBy", "==", item.createdBy),
+                            where("subjectName", "==", item.subjectName)
+                        ])
                 );
 
                 const snap = await getDocs(reqQuery);
@@ -150,27 +175,36 @@ const RequestDetails = () => {
                         <Text style={styles.subjectText}>{` (${item.subjectName})`}</Text>
                     </View>
                     <Text style={styles.dateText}>{item.time || 'Unknown Date'}</Text>
+                    <Text style={styles.geoFenceText}>Geo-fence radius: {geofenceRadiusMeters}m</Text>
                 </View>
                 <CPB percentage={item.percentage || 0} size={80} tsize={item.percentage >= 100 ? 16 : 18} strokeWidth={6} color={Colors.SECONDARY} />
             </View>
             {type !== 'History' && (
-                <View style={styles.requestActionsRow}>
-                    <TouchableOpacity style={styles.cancelButton} disabled={loadingDId === item.id} onPress={() => { handleCancel(requestDetails) }} >
-                        <Text style={styles.buttonTextSecondary}>{loadingDId === item.id ? 'Deleting...' : 'Delete'}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.closeButton}
-                        onPress={() => handleComplete(item)}
-                        disabled={loadingId === item.id}
-                    >
-                        <Text style={styles.buttonText}>
-                            {loadingId === item.id ? 'Completing...' : 'Complete'}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
+                <>
+                    <View style={styles.requestActionsRow}>
+                        <TouchableOpacity style={styles.cancelButton} disabled={loadingDId === item.id} onPress={() => { handleCancel(requestDetails) }} >
+                            <Text style={styles.buttonTextSecondary}>{loadingDId === item.id ? 'Deleting...' : 'Delete'}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={() => handleComplete(item)}
+                            disabled={loadingId === item.id}
+                        >
+                            <Text style={styles.buttonText}>
+                                {loadingId === item.id ? 'Completing...' : 'Complete'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                    {qrPayload ? (
+                        <TouchableOpacity style={styles.qrButton} onPress={() => setQrVisible(true)}>
+                            <Ionicons name="qr-code-outline" size={20} color={Colors.PRIMARY} />
+                            <Text style={styles.qrButtonText}>Show Student Attendance QR</Text>
+                        </TouchableOpacity>
+                    ) : null}
+                </>
             )}
         </View>
-    ), [loadingId]);
+    ), [geofenceRadiusMeters, loadingDId, loadingId, qrPayload]);
 
     const renderSummary = useCallback(({ item }) => (
         <TouchableOpacity
@@ -250,17 +284,18 @@ const RequestDetails = () => {
                         if (student.locationLat && student.locationLong) {
                             return (
                                 <Marker
-                                    key={student.id || index}
+                                    key={student.id ?? student.rollno ?? index}
                                     coordinate={{
                                         latitude: student.locationLat,
                                         longitude: student.locationLong,
                                     }}
                                     title={`Roll No: ${student.rollno}`}
                                     description={`Status: ${student.status}`}
-                                >
-                                </Marker>
+                                />
                             );
                         }
+
+                        return null;
                     })}
                 </MapView>
             </View>
@@ -333,13 +368,49 @@ const RequestDetails = () => {
             </Modal>
         );
     };
+
+    const renderQrModal = () => (
+        <Modal
+            visible={qrVisible}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setQrVisible(false)}
+        >
+            <TouchableWithoutFeedback onPress={() => setQrVisible(false)}>
+                <View style={styles.modalContainer}>
+                    <TouchableWithoutFeedback>
+                        <View style={styles.qrModalContent}>
+                            <View style={styles.qrModalHeader}>
+                                <View>
+                                    <Text style={styles.modalTitle}>Teacher Attendance QR</Text>
+                                    <Text style={styles.qrSubtitle}>
+                                        Students can scan this QR any time to mark attendance for this request.
+                                    </Text>
+                                </View>
+                                <TouchableOpacity onPress={() => setQrVisible(false)}>
+                                    <Ionicons name="close" size={24} color={Colors.PRIMARY} style={{marginEnd: 10}}/>
+                                </TouchableOpacity>
+                            </View>
+                            <View style={styles.qrCanvas}>
+                                <QRCode value={qrPayload} size={210} color={Colors.PRIMARY} backgroundColor="#FFFFFF" />
+                            </View>
+                            <View style={styles.qrInfoCard}>
+                                <Text style={styles.qrInfoText}>{requestDetails.subjectName} • {requestDetails.class}</Text>
+                                <Text style={styles.qrInfoHint}>Geo-fence radius: {geofenceRadiusMeters}m</Text>
+                            </View>
+                        </View>
+                    </TouchableWithoutFeedback>
+                </View>
+            </TouchableWithoutFeedback>
+        </Modal>
+    );
     return (
         <SafeAreaView style={styles.container}>
             <FlatList
                 style={{ paddingHorizontal: 13 }}
                 data={requestedData}
                 renderItem={renderPendingRequest}
-                keyExtractor={(item) => `pending-${item.id}`}
+                keyExtractor={(item, index) => `pending-${item.id ?? item.requestId ?? index}`}
                 ListHeaderComponent={
                     <>
                         <View style={styles.header}>
@@ -370,11 +441,12 @@ const RequestDetails = () => {
                         <FlatList
                             data={summaryData}
                             renderItem={renderSummary}
-                            keyExtractor={(item) => `history-${item.id}`}
+                            keyExtractor={(item, index) => `history-${item.id ?? item.rollno ?? index}`}
                             ListEmptyComponent={<Text style={styles.noDataText}>No Data Available</Text>}
                         />
                         {renderMap(requestDetails.enrolledStudents)}
                         {renderModal()}
+                        {renderQrModal()}
                     </View>
                 }
             />
@@ -465,6 +537,10 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#888',
     },
+    geoFenceText: {
+        fontSize: 13,
+        color: '#5A7284',
+    },
     requestActionsRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -486,6 +562,22 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         flex: 1,
         marginLeft: 8,
+    },
+    qrButton: {
+        marginTop: 10,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#D7E1EA',
+        backgroundColor: '#F8FBFD',
+        paddingVertical: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+        gap: 8,
+    },
+    qrButtonText: {
+        color: Colors.PRIMARY,
+        fontWeight: '700',
     },
     buttonText: {
         color: '#FFFFFF',
@@ -575,6 +667,45 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 40,
         borderTopRightRadius: 40,
         padding: 20,
+    },
+    qrModalContent: {
+        backgroundColor: 'white',
+        borderTopLeftRadius: 40,
+        borderTopRightRadius: 40,
+        padding: 20,
+    },
+    qrModalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 14,
+        paddingRight: 14,
+    },
+    qrSubtitle: {
+        marginTop: 4,
+        color: '#6E8090',
+        lineHeight: 20,
+    },
+    qrCanvas: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 18,
+        borderRadius: 24,
+        backgroundColor: '#F7FAFC',
+        marginBottom: 14,
+    },
+    qrInfoCard: {
+        borderRadius: 18,
+        padding: 14,
+        backgroundColor: '#F4F7FB',
+    },
+    qrInfoText: {
+        color: Colors.PRIMARY,
+        fontWeight: '700',
+        marginBottom: 4,
+    },
+    qrInfoHint: {
+        color: '#667B8A',
     },
     modalTitle: {
         fontSize: 18,
