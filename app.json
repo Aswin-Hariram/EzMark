@@ -21,7 +21,7 @@
         "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.aswin_hariram.EzMark"
+      "package": "com.aswinhariram.ezmark"
     },
     "web": {
       "favicon": "./assets/logo.png"
@@ -36,6 +36,12 @@
           ]
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "abab473e-663c-4c15-bb04-7b2af6ffc91d"
+      }
+    },
+    "owner": "aswin_hariram"
   }
 }
